@@ -1,5 +1,6 @@
 package io.vertx.blueprint.kue.queue;
 
+import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
 
 /**

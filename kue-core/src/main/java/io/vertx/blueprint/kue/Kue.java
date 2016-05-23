@@ -2,6 +2,7 @@ package io.vertx.blueprint.kue;
 
 import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.blueprint.kue.queue.KueVerticle;
+
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -49,7 +50,5 @@ public class Kue {
   public Job create(String type, JsonObject data) {
     return new Job(type, data);
   }
-
-
 
 }
