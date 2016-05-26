@@ -14,40 +14,17 @@ import io.vertx.core.json.JsonObject;
  */
 public class Kue {
 
-  private final Vertx vertx = Vertx.vertx();
-  private final KueVerticle kueVerticle;
-  private final JsonObject deployConfig;
+  private final Vertx vertx;
 
-  private Kue() {
-    this(new JsonObject());
+  public Kue(Vertx vertx) {
+    this.vertx = vertx;
   }
 
-  private Kue(JsonObject deployConfig) {
-    this.deployConfig = deployConfig;
-    this.kueVerticle = new KueVerticle();
-    deploy();
+  public static Kue createQueue(Vertx vertx) {
+    return new Kue(vertx);
   }
 
-  public static Kue createQueue() {
-    return new Kue();
-  }
-
-  public static Kue createQueue(JsonObject deployConfig) {
-    return new Kue(deployConfig);
-  }
-
-  private void deploy() {
-    Vertx vertx = Vertx.vertx();
-    vertx.deployVerticle(kueVerticle, new DeploymentOptions(deployConfig), res -> {
-      if (res.succeeded()) {
-        // TODO...
-      } else {
-        res.cause().printStackTrace();
-      }
-    });
-  }
-
-  public Job create(String type, JsonObject data) {
+  public Job createJob(String type, JsonObject data) {
     return new Job(type, data);
   }
 

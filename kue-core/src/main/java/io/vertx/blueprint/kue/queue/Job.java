@@ -9,11 +9,25 @@ import io.vertx.core.json.JsonObject;
  *
  * @author Eric Zhao
  */
+@DataObject(generateConverter = true)
 public class Job {
 
   private String type;
   private JsonObject data;
   private Priority priority = Priority.NORMAL;
+
+  public Job() {
+  }
+
+  public Job(JsonObject json) {
+    JobConverter.fromJson(json, this);
+  }
+
+  public Job(Job other) {
+    this.type = other.type;
+    this.data = other.data.copy();
+    this.priority = other.priority;
+  }
 
   public Job(String type, JsonObject data) {
     this.type = type;

@@ -11,7 +11,7 @@ import io.vertx.ext.web.handler.BodyHandler;
  *
  * @author Eric Zhao
  */
-public class KueRestVerticle extends AbstractVerticle {
+public class KueHttpVerticle extends AbstractVerticle {
 
   @Override
   public void start(Future<Void> startFuture) throws Exception {

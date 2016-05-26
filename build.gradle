@@ -12,6 +12,9 @@ configure(allprojects) { project ->
 
   dependencies {
     compile("io.vertx:vertx-core:${vertxVersion}")
+    compile("io.vertx:vertx-codegen:${vertxVersion}")
+    compile("io.vertx:vertx-rx-java:${vertxVersion}")
+    compile("io.vertx:vertx-hazelcast:${vertxVersion}")
 
     testCompile("io.vertx:vertx-unit:${vertxVersion}")
     testCompile group: 'junit', name: 'junit', version: '4.12'
@@ -24,7 +27,7 @@ configure(allprojects) { project ->
     options.compilerArgs = [
       "-proc:only",
       "-processor", "io.vertx.codegen.CodeGenProcessor",
-      "-AoutputDirectory=${destinationDir.absolutePath}"
+      "-AoutputDirectory=${project.projectDir}/src/main"
     ]
   }
 
@@ -49,7 +52,15 @@ project("kue-core") {
   dependencies {
     compile("io.vertx:vertx-redis-client:${vertxVersion}")
     compile("io.vertx:vertx-service-proxy:${vertxVersion}")
-    compile("io.vertx:vertx-codegen:${vertxVersion}")
+  }
+
+  jar {
+    archiveName = 'vertx-blueprint-kue-core.jar'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    manifest {
+      attributes 'Main-Class': 'io.vertx.core.Launcher'
+      attributes 'Main-Verticle': 'io.vertx.blueprint.kue.queue.KueVerticle'
+    }
   }
 }
 
@@ -57,6 +68,31 @@ project("kue-http") {
 
   dependencies {
     compile("io.vertx:vertx-web:${vertxVersion}")
+  }
+
+  jar {
+    archiveName = 'vertx-blueprint-kue-http.jar'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    manifest {
+      attributes 'Main-Class': 'io.vertx.core.Launcher'
+      attributes 'Main-Verticle': 'io.vertx.blueprint.kue.http.KueHttpVerticle'
+    }
+  }
+}
+
+project("kue-example") {
+
+  dependencies {
+    compile(project(":kue-core"))
+  }
+
+  jar {
+    archiveName = 'vertx-blueprint-kue-example.jar'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    manifest {
+      attributes 'Main-Class': 'io.vertx.core.Launcher'
+      attributes 'Main-Verticle': 'io.vertx.blueprint.kue.example.ExampleProcessVerticle'
+    }
   }
 }
 
