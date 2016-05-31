@@ -21,14 +21,18 @@ import io.vertx.core.json.JsonArray;
 
 /**
  * Converter for {@link io.vertx.blueprint.kue.queue.Job}.
- * <p>
+ *
  * NOTE: This class has been automatically generated from the {@link io.vertx.blueprint.kue.queue.Job} original class using Vert.x codegen.
  */
 public class JobConverter {
 
   public static void fromJson(JsonObject json, Job obj) {
+    if (json.getValue("id") instanceof Number) {
+      obj.setId(((Number) json.getValue("id")).longValue());
+    }
   }
 
   public static void toJson(Job obj, JsonObject json) {
+    json.put("id", obj.getId());
   }
 }

@@ -17,15 +17,18 @@
 package io.vertx.blueprint.kue.service.rxjava;
 
 import java.util.Map;
-
 import io.vertx.lang.rxjava.InternalHelper;
 import rx.Observable;
+import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.rxjava.core.Vertx;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
 
 /**
  * Vert.x Blueprint - Job Queue
  * Kue Service Interface
- * <p>
+ *
  * <p/>
  * NOTE: This class has been automatically generated from the {@link io.vertx.blueprint.kue.service.KueService original} non RX-ified interface using Vert.x codegen.
  */
@@ -42,14 +45,32 @@ public class KueService {
     return delegate;
   }
 
-  public static KueService create(Vertx vertx) {
-    KueService ret = KueService.newInstance(io.vertx.blueprint.kue.service.KueService.create((io.vertx.core.Vertx) vertx.getDelegate()));
+  public static KueService create(Vertx vertx, JsonObject config) {
+    KueService ret = KueService.newInstance(io.vertx.blueprint.kue.service.KueService.create((io.vertx.core.Vertx) vertx.getDelegate(), config));
     return ret;
   }
 
   public static KueService createProxy(Vertx vertx, String address) {
     KueService ret = KueService.newInstance(io.vertx.blueprint.kue.service.KueService.createProxy((io.vertx.core.Vertx) vertx.getDelegate(), address));
     return ret;
+  }
+
+  public void process(String type, int n, Handler<AsyncResult<JsonObject>> handler) {
+    this.delegate.process(type, n, handler);
+  }
+
+  public Observable<JsonObject> processObservable(String type, int n) {
+    io.vertx.rx.java.ObservableFuture<JsonObject> handler = io.vertx.rx.java.RxHelper.observableFuture();
+    process(type, n, handler.toHandler());
+    return handler;
+  }
+
+  public void saveJob(Job job) {
+    this.delegate.saveJob(job);
+  }
+
+  public void updateJob(Job job) {
+    this.delegate.updateJob(job);
   }
 
 

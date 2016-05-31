@@ -1,6 +1,7 @@
 package io.vertx.blueprint.kue.queue;
 
 import io.vertx.codegen.annotations.DataObject;
+import io.vertx.codegen.annotations.Fluent;
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -12,6 +13,7 @@ import io.vertx.core.json.JsonObject;
 @DataObject(generateConverter = true)
 public class Job {
 
+  private long id = -1;
   private String type;
   private JsonObject data;
   private Priority priority = Priority.NORMAL;
@@ -34,14 +36,24 @@ public class Job {
     this.data = data;
   }
 
+  public JsonObject toJson() {
+    JsonObject json = new JsonObject();
+    JobConverter.toJson(this, json);
+    return json;
+  }
+
+  public long getId() {
+    return id;
+  }
+
+  public void setId(long id) {
+    this.id = id;
+  }
+
+  @Fluent
   public Job priority(Priority level) {
     if (level != null)
       this.priority = level;
-    return this;
-  }
-
-  public Job save() {
-    // TODO...
     return this;
   }
 

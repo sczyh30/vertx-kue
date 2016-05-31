@@ -22,7 +22,6 @@ import io.vertx.core.Vertx;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -30,9 +29,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.function.Function;
-
 import io.vertx.serviceproxy.ProxyHelper;
+import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
 import io.vertx.blueprint.kue.service.KueService;
 
 /*
@@ -54,6 +56,47 @@ public class KueServiceVertxEBProxy implements KueService {
     this._vertx = vertx;
     this._address = address;
     this._options = options;
+  }
+
+  public void process(String type, int n, Handler<AsyncResult<JsonObject>> handler) {
+    if (closed) {
+      handler.handle(Future.failedFuture(new IllegalStateException("Proxy is closed")));
+      return;
+    }
+    JsonObject _json = new JsonObject();
+    _json.put("type", type);
+    _json.put("n", n);
+    DeliveryOptions _deliveryOptions = (_options != null) ? new DeliveryOptions(_options) : new DeliveryOptions();
+    _deliveryOptions.addHeader("action", "process");
+    _vertx.eventBus().<JsonObject>send(_address, _json, _deliveryOptions, res -> {
+      if (res.failed()) {
+        handler.handle(Future.failedFuture(res.cause()));
+      } else {
+        handler.handle(Future.succeededFuture(res.result().body()));
+      }
+    });
+  }
+
+  public void saveJob(Job job) {
+    if (closed) {
+      throw new IllegalStateException("Proxy is closed");
+    }
+    JsonObject _json = new JsonObject();
+    _json.put("job", job == null ? null : job.toJson());
+    DeliveryOptions _deliveryOptions = (_options != null) ? new DeliveryOptions(_options) : new DeliveryOptions();
+    _deliveryOptions.addHeader("action", "saveJob");
+    _vertx.eventBus().send(_address, _json, _deliveryOptions);
+  }
+
+  public void updateJob(Job job) {
+    if (closed) {
+      throw new IllegalStateException("Proxy is closed");
+    }
+    JsonObject _json = new JsonObject();
+    _json.put("job", job == null ? null : job.toJson());
+    DeliveryOptions _deliveryOptions = (_options != null) ? new DeliveryOptions(_options) : new DeliveryOptions();
+    _deliveryOptions.addHeader("action", "updateJob");
+    _vertx.eventBus().send(_address, _json, _deliveryOptions);
   }
 
 
@@ -93,9 +136,8 @@ public class KueServiceVertxEBProxy implements KueService {
       return ((Map<String, T>) map).entrySet()
         .stream()
         .collect(Collectors.toMap(Map.Entry::getKey, converter::apply));
-    }
+    } 
   }
-
   private <T> List<T> convertList(List list) {
     if (list.isEmpty()) {
       return (List<T>) list;
@@ -112,9 +154,8 @@ public class KueServiceVertxEBProxy implements KueService {
         converter = object -> (T) new JsonObject((Map) object);
       }
       return (List<T>) list.stream().map(converter).collect(Collectors.toList());
-    }
+    } 
   }
-
   private <T> Set<T> convertSet(List list) {
     return new HashSet<T>(convertList(list));
   }

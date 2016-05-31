@@ -27,7 +27,6 @@ import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.ReplyException;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
-
 import java.util.Collection;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -36,10 +35,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
 import io.vertx.serviceproxy.ProxyHelper;
 import io.vertx.serviceproxy.ProxyHandler;
+import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
 import io.vertx.blueprint.kue.service.KueService;
 
 /*
@@ -116,6 +118,18 @@ public class KueServiceVertxProxyHandler extends ProxyHandler {
       switch (action) {
 
 
+        case "process": {
+          service.process((java.lang.String) json.getValue("type"), json.getValue("n") == null ? null : (json.getLong("n").intValue()), createHandler(msg));
+          break;
+        }
+        case "saveJob": {
+          service.saveJob(json.getJsonObject("job") == null ? null : new io.vertx.blueprint.kue.queue.Job(json.getJsonObject("job")));
+          break;
+        }
+        case "updateJob": {
+          service.updateJob(json.getJsonObject("job") == null ? null : new io.vertx.blueprint.kue.queue.Job(json.getJsonObject("job")));
+          break;
+        }
         default: {
           throw new IllegalStateException("Invalid action: " + action);
         }
