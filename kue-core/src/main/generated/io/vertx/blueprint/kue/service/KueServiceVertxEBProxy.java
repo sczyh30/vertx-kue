@@ -30,7 +30,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.function.Function;
 import io.vertx.serviceproxy.ProxyHelper;
-import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.AsyncResult;
@@ -77,28 +76,6 @@ public class KueServiceVertxEBProxy implements KueService {
     });
   }
 
-  public void saveJob(Job job) {
-    if (closed) {
-      throw new IllegalStateException("Proxy is closed");
-    }
-    JsonObject _json = new JsonObject();
-    _json.put("job", job == null ? null : job.toJson());
-    DeliveryOptions _deliveryOptions = (_options != null) ? new DeliveryOptions(_options) : new DeliveryOptions();
-    _deliveryOptions.addHeader("action", "saveJob");
-    _vertx.eventBus().send(_address, _json, _deliveryOptions);
-  }
-
-  public void updateJob(Job job) {
-    if (closed) {
-      throw new IllegalStateException("Proxy is closed");
-    }
-    JsonObject _json = new JsonObject();
-    _json.put("job", job == null ? null : job.toJson());
-    DeliveryOptions _deliveryOptions = (_options != null) ? new DeliveryOptions(_options) : new DeliveryOptions();
-    _deliveryOptions.addHeader("action", "updateJob");
-    _vertx.eventBus().send(_address, _json, _deliveryOptions);
-  }
-
 
   private List<Character> convertToListChar(JsonArray arr) {
     List<Character> list = new ArrayList<>();
@@ -119,8 +96,8 @@ public class KueServiceVertxEBProxy implements KueService {
   }
 
   private <T> Map<String, T> convertMap(Map map) {
-    if (map.isEmpty()) {
-      return (Map<String, T>) map;
+    if (map.isEmpty()) { 
+      return (Map<String, T>) map; 
     }
 
     Object elem = map.values().stream().findFirst().get();
@@ -152,8 +129,8 @@ public class KueServiceVertxEBProxy implements KueService {
         converter = object -> (T) new JsonArray((List) object);
       } else {
         converter = object -> (T) new JsonObject((Map) object);
-      }
-      return (List<T>) list.stream().map(converter).collect(Collectors.toList());
+      } 
+      return (List<T>) list.stream().map(converter).collect(Collectors.toList()); 
     } 
   }
   private <T> Set<T> convertSet(List list) {

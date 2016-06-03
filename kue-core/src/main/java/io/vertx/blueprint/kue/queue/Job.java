@@ -2,6 +2,8 @@ package io.vertx.blueprint.kue.queue;
 
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.codegen.annotations.Fluent;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -13,10 +15,18 @@ import io.vertx.core.json.JsonObject;
 @DataObject(generateConverter = true)
 public class Job {
 
+  // TODO: not a good design
+  private static Vertx vertx;
+  private static HandlerCache handlerCache;
+
   private long id = -1;
   private String type;
   private JsonObject data;
   private Priority priority = Priority.NORMAL;
+
+  private int progress = 0;
+
+  private JsonObject result;
 
   public Job() {
   }
@@ -54,6 +64,23 @@ public class Job {
   public Job priority(Priority level) {
     if (level != null)
       this.priority = level;
+    return this;
+  }
+
+  public static void setVertx(Vertx v) {
+    vertx = v;
+    handlerCache = HandlerCache.getInstance(vertx);
+  }
+
+  @Fluent
+  public Job onComplete(Handler<Job> completeHandler) {
+    handlerCache.addCompleteHandler(this.type, completeHandler);
+    return this;
+  }
+
+  @Fluent
+  public Job onFailure(Handler<Throwable> failureHandler) {
+    handlerCache.addFailureHandler(this.type, failureHandler);
     return this;
   }
 

@@ -37,7 +37,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import io.vertx.serviceproxy.ProxyHelper;
 import io.vertx.serviceproxy.ProxyHandler;
-import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.AsyncResult;
@@ -120,14 +119,6 @@ public class KueServiceVertxProxyHandler extends ProxyHandler {
 
         case "process": {
           service.process((java.lang.String) json.getValue("type"), json.getValue("n") == null ? null : (json.getLong("n").intValue()), createHandler(msg));
-          break;
-        }
-        case "saveJob": {
-          service.saveJob(json.getJsonObject("job") == null ? null : new io.vertx.blueprint.kue.queue.Job(json.getJsonObject("job")));
-          break;
-        }
-        case "updateJob": {
-          service.updateJob(json.getJsonObject("job") == null ? null : new io.vertx.blueprint.kue.queue.Job(json.getJsonObject("job")));
           break;
         }
         default: {

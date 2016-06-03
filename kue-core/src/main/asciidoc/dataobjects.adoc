@@ -16,3 +16,24 @@
 |[[id]]`id`|`Number (long)`|-
 |===
 
+[[JobMetrics]]
+== JobMetrics
+
+++++
+ Vert.x Blueprint - Job Queue
+ Job Metrics Class
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[createdAt]]`createdAt`|`Number (long)`|-
+|[[duration]]`duration`|`Number (double)`|-
+|[[failedAt]]`failedAt`|`Number (long)`|-
+|[[promoteAt]]`promoteAt`|`Number (long)`|-
+|[[startedAt]]`startedAt`|`Number (long)`|-
+|[[updatedAt]]`updatedAt`|`Number (long)`|-
+|===
+

@@ -31,9 +31,4 @@ public interface KueService {
 
   void process(String type, int n, Handler<AsyncResult<JsonObject>> handler);
 
-  // job service
-  void saveJob(Job job);
-
-  void updateJob(Job job);
-
 }

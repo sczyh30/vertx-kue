@@ -21,7 +21,6 @@ var Vertx = require('vertx-js/vertx');
 var io = Packages.io;
 var JsonObject = io.vertx.core.json.JsonObject;
 var JKueService = io.vertx.blueprint.kue.service.KueService;
-var Job = io.vertx.blueprint.kue.queue.Job;
 
 /**
  Vert.x Blueprint - Job Queue
@@ -38,8 +37,8 @@ var KueService = function (j_val) {
 
    @public
    @param type {string}
-   @param n {number}
-   @param handler {function}
+   @param n {number} 
+   @param handler {function} 
    */
   this.process = function (type, n, handler) {
     var __args = arguments;
@@ -54,30 +53,6 @@ var KueService = function (j_val) {
     } else throw new TypeError('function invoked with invalid arguments');
   };
 
-  /**
-
-   @public
-   @param job {Object}
-   */
-  this.saveJob = function (job) {
-    var __args = arguments;
-    if (__args.length === 1 && (typeof __args[0] === 'object' && __args[0] != null)) {
-      j_kueService["saveJob(io.vertx.blueprint.kue.queue.Job)"](job != null ? new Job(new JsonObject(JSON.stringify(job))) : null);
-    } else throw new TypeError('function invoked with invalid arguments');
-  };
-
-  /**
-
-   @public
-   @param job {Object}
-   */
-  this.updateJob = function (job) {
-    var __args = arguments;
-    if (__args.length === 1 && (typeof __args[0] === 'object' && __args[0] != null)) {
-      j_kueService["updateJob(io.vertx.blueprint.kue.queue.Job)"](job != null ? new Job(new JsonObject(JSON.stringify(job))) : null);
-    } else throw new TypeError('function invoked with invalid arguments');
-  };
-
   // A reference to the underlying Java delegate
   // NOTE! This is an internal API and must not be used in user code.
   // If you rely on this property your code is likely to break if we change it / remove it without warning.
@@ -87,7 +62,7 @@ var KueService = function (j_val) {
 /**
 
  @memberof module:vertx-kue-service-module-js/kue_service
- @param vertx {Vertx}
+ @param vertx {Vertx} 
  @param config {Object} 
  @return {KueService}
  */
@@ -101,7 +76,7 @@ KueService.create = function (vertx, config) {
 /**
 
  @memberof module:vertx-kue-service-module-js/kue_service
- @param vertx {Vertx}
+ @param vertx {Vertx} 
  @param address {string} 
  @return {KueService}
  */
