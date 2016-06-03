@@ -10,6 +10,8 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisClient;
 
+import java.util.Objects;
+
 import static io.vertx.blueprint.kue.util.RedisHelper.getRedisKey;
 
 /**
@@ -34,6 +36,13 @@ public class Kue implements KueService {
     Job.setVertx(vertx);
   }
 
+  /**
+   * Format: vertx.kue.handler.job.handlerType.jobType
+   */
+  public static String getHandlerAddress(String handlerType, String jobType) {
+    return "vertx.kue.handler.job." + handlerType + "." + jobType;
+  }
+
   public static Kue createQueue(Vertx vertx, JsonObject config) {
     return new Kue(vertx, config);
   }
@@ -44,6 +53,9 @@ public class Kue implements KueService {
   }
 
   public Job saveJob(Job job) {
+    // check
+    Objects.requireNonNull(job.getType(), "Job type cannot be null");
+
     if (job.getId() > 0)
       return this.updateJob(job);
 
@@ -51,6 +63,7 @@ public class Kue implements KueService {
       if (res.succeeded()) {
         long id = res.result();
         job.setId(id);
+        job.getJobMetrics().setCreatedAt(System.currentTimeMillis());
       }
     });
     // TODO

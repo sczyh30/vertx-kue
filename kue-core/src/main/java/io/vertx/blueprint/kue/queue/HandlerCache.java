@@ -11,7 +11,9 @@ import io.vertx.core.shareddata.SharedData;
  * Handler Cache (cache the callbacks)
  *
  * @author Eric Zhao
+ * @deprecated
  */
+@Deprecated
 public class HandlerCache {
 
   private static final String ON_COMPLETE_MAP = "kue_on_complete_handler_map";

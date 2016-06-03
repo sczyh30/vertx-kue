@@ -13,7 +13,13 @@
 [frame="topbot"]
 |===
 ^|Name | Type ^| Description
+|[[data]]`data`|`Json object`|-
 |[[id]]`id`|`Number (long)`|-
+|[[jobMetrics]]`jobMetrics`|`link:dataobjects.html#JobMetrics[JobMetrics]`|-
+|[[priority]]`priority`|`link:enums.html#Priority[Priority]`|-
+|[[progress]]`progress`|`Number (int)`|-
+|[[result]]`result`|`Json object`|-
+|[[type]]`type`|`String`|-
 |===
 
 [[JobMetrics]]

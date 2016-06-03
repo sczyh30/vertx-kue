@@ -36,7 +36,7 @@ var KueService = function (j_val) {
   /**
 
    @public
-   @param type {string}
+   @param type {string} 
    @param n {number} 
    @param handler {function} 
    */

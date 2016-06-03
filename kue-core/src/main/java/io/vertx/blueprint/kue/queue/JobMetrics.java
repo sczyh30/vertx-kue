@@ -3,8 +3,6 @@ package io.vertx.blueprint.kue.queue;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
 
-import java.time.Instant;
-
 /**
  * Vert.x Blueprint - Job Queue
  * Job Metrics Class
@@ -25,7 +23,7 @@ public class JobMetrics {
   }
 
   public JobMetrics(JsonObject json) {
-
+    JobMetricsConverter.fromJson(json, this);
   }
 
   public JobMetrics(JobMetrics other) {
@@ -41,47 +39,58 @@ public class JobMetrics {
     return createdAt;
   }
 
-  public void setCreatedAt(long createdAt) {
+  public JobMetrics setCreatedAt(long createdAt) {
     this.createdAt = createdAt;
+    return this;
   }
 
   public long getPromoteAt() {
     return promoteAt;
   }
 
-  public void setPromoteAt(long promoteAt) {
+  public JobMetrics setPromoteAt(long promoteAt) {
     this.promoteAt = promoteAt;
+    return this;
   }
 
   public long getUpdatedAt() {
     return updatedAt;
   }
 
-  public void setUpdatedAt(long updatedAt) {
+  public JobMetrics setUpdatedAt(long updatedAt) {
     this.updatedAt = updatedAt;
+    return this;
+  }
+
+  public JobMetrics updateNow() {
+    this.updatedAt = System.currentTimeMillis();
+    return this;
   }
 
   public long getFailedAt() {
     return failedAt;
   }
 
-  public void setFailedAt(long failedAt) {
+  public JobMetrics setFailedAt(long failedAt) {
     this.failedAt = failedAt;
+    return this;
   }
 
   public long getStartedAt() {
     return startedAt;
   }
 
-  public void setStartedAt(long startedAt) {
+  public JobMetrics setStartedAt(long startedAt) {
     this.startedAt = startedAt;
+    return this;
   }
 
   public double getDuration() {
     return duration;
   }
 
-  public void setDuration(double duration) {
+  public JobMetrics setDuration(double duration) {
     this.duration = duration;
+    return this;
   }
 }
