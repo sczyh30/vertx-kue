@@ -30,6 +30,9 @@ public class JobConverter {
     if (json.getValue("data") instanceof JsonObject) {
       obj.setData(((JsonObject) json.getValue("data")).copy());
     }
+    if (json.getValue("delay") instanceof Number) {
+      obj.setDelay(((Number) json.getValue("delay")).intValue());
+    }
     if (json.getValue("id") instanceof Number) {
       obj.setId(((Number) json.getValue("id")).longValue());
     }
@@ -45,8 +48,14 @@ public class JobConverter {
     if (json.getValue("result") instanceof JsonObject) {
       obj.setResult(((JsonObject) json.getValue("result")).copy());
     }
+    if (json.getValue("state") instanceof String) {
+      obj.setState(io.vertx.blueprint.kue.queue.JobState.valueOf((String) json.getValue("state")));
+    }
     if (json.getValue("type") instanceof String) {
       obj.setType((String) json.getValue("type"));
+    }
+    if (json.getValue("zid") instanceof String) {
+      obj.setZid((String) json.getValue("zid"));
     }
   }
 
@@ -54,7 +63,11 @@ public class JobConverter {
     if (obj.getData() != null) {
       json.put("data", obj.getData());
     }
+    json.put("delay", obj.getDelay());
     json.put("id", obj.getId());
+    if (obj.getJobMetrics() != null) {
+      json.put("jobMetrics", obj.getJobMetrics().toJson());
+    }
     if (obj.getPriority() != null) {
       json.put("priority", obj.getPriority().name());
     }
@@ -62,8 +75,14 @@ public class JobConverter {
     if (obj.getResult() != null) {
       json.put("result", obj.getResult());
     }
+    if (obj.getState() != null) {
+      json.put("state", obj.getState().name());
+    }
     if (obj.getType() != null) {
       json.put("type", obj.getType());
+    }
+    if (obj.getZid() != null) {
+      json.put("zid", obj.getZid());
     }
   }
 }

@@ -14,12 +14,15 @@
 |===
 ^|Name | Type ^| Description
 |[[data]]`data`|`Json object`|-
+|[[delay]]`delay`|`Number (int)`|-
 |[[id]]`id`|`Number (long)`|-
 |[[jobMetrics]]`jobMetrics`|`link:dataobjects.html#JobMetrics[JobMetrics]`|-
 |[[priority]]`priority`|`link:enums.html#Priority[Priority]`|-
 |[[progress]]`progress`|`Number (int)`|-
 |[[result]]`result`|`Json object`|-
+|[[state]]`state`|`link:enums.html#JobState[JobState]`|-
 |[[type]]`type`|`String`|-
+|[[zid]]`zid`|`String`|-
 |===
 
 [[JobMetrics]]

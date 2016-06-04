@@ -1,4 +1,4 @@
-Vert.x 蓝图 - Kue开发教程
+# Vert.x 蓝图 - Vert.x Kue开发教程
 
 ## 目录
 

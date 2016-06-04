@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Preface](#preface)
+- [Basic design of Kue](#)
 
 ## Preface
 

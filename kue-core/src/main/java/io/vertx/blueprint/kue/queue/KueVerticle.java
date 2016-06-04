@@ -1,6 +1,7 @@
 package io.vertx.blueprint.kue.queue;
 
 import io.vertx.blueprint.kue.service.KueService;
+import io.vertx.blueprint.kue.service.impl.KueServiceImpl;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -28,8 +29,9 @@ public class KueVerticle extends AbstractVerticle {
 
   @Override
   public void start(Future<Void> future) throws Exception {
-    config = config();
-    eventBus = vertx.eventBus();
+    this.config = config();
+    this.eventBus = vertx.eventBus();
+    this.kueService = new KueServiceImpl(vertx, config);
 
     RedisOptions redisOptions = new RedisOptions()
       .setHost(config.getString("redis.host", "127.0.0.1"))

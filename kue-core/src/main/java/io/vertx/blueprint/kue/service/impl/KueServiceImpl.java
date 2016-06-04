@@ -39,6 +39,19 @@ public class KueServiceImpl implements KueService {
     if (n <= 0) {
       throw new IllegalStateException("The process times must be positive");
     }
+    while (n-- > 0) {
+      vertx.executeBlocking(f -> {
+        // TODO: process the job
+      }, false, r -> {
+        // TODO: process the maybe result
+      });
+    }
   }
+
+  private void getJob(Handler<Job> handler) {
+    // TODO
+  }
+
+
 
 }

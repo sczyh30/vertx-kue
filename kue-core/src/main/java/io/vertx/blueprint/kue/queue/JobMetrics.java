@@ -35,6 +35,12 @@ public class JobMetrics {
     this.duration = other.duration;
   }
 
+  public JsonObject toJson() {
+    JsonObject json = new JsonObject();
+    JobMetricsConverter.toJson(this, json);
+    return json;
+  }
+
   public long getCreatedAt() {
     return createdAt;
   }

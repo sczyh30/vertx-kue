@@ -127,7 +127,7 @@ public class KueServiceVertxEBProxy implements KueService {
       Function<Object, T> converter;
       if (elem instanceof List) {
         converter = object -> (T) new JsonArray((List) object);
-      } else {
+      } else { 
         converter = object -> (T) new JsonObject((Map) object); 
       } 
       return (List<T>) list.stream().map(converter).collect(Collectors.toList()); 

@@ -12,7 +12,7 @@ import io.vertx.redis.RedisClient;
 
 import java.util.Objects;
 
-import static io.vertx.blueprint.kue.util.RedisHelper.getRedisKey;
+import io.vertx.blueprint.kue.util.RedisHelper;
 
 /**
  * Vert.x Blueprint - Job Queue
@@ -50,29 +50,6 @@ public class Kue implements KueService {
   // job stuff
   public Job createJob(String type, JsonObject data) {
     return new Job(type, data);
-  }
-
-  public Job saveJob(Job job) {
-    // check
-    Objects.requireNonNull(job.getType(), "Job type cannot be null");
-
-    if (job.getId() > 0)
-      return this.updateJob(job);
-
-    redis.incr(getRedisKey("ids"), res -> {
-      if (res.succeeded()) {
-        long id = res.result();
-        job.setId(id);
-        job.getJobMetrics().setCreatedAt(System.currentTimeMillis());
-      }
-    });
-    // TODO
-    return job;
-  }
-
-  public Job updateJob(Job job) {
-    // TODO
-    return job;
   }
 
   @Override
