@@ -5,6 +5,7 @@ import io.vertx.blueprint.kue.util.RedisHelper;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.codegen.annotations.Fluent;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
@@ -210,44 +211,61 @@ public class Job {
     return this;
   }
 
-  private static <T> Handler<AsyncResult<T>> _fh() {
+  private static <T> Handler<AsyncResult<T>> _failure() {
     return r -> {
       if (r.failed())
         r.cause().printStackTrace();
     };
   }
 
-  public static void getJob(long id, String jobType, Handler<Job> handler, Handler<Throwable> failureHandler) {
+  private static <T> Handler<AsyncResult<T>> _failure(Future future) {
+    return r -> {
+      if (r.failed())
+        future.fail(r.cause());
+    };
+  }
+
+  private static <T, R> Handler<AsyncResult<T>> _failure(Future<R> future, R result) {
+    return r -> {
+      if (r.failed())
+        future.fail(r.cause());
+      else
+        future.complete(result);
+    };
+  }
+
+  public static Future<Void> getJob(long id, String jobType, Handler<Job> handler) {
+    Future<Void> future = Future.future();
     String zid = RedisHelper.createFIFO(id);
     client.hgetall(RedisHelper.getRedisKey("job:" + id), r -> {
       if (r.succeeded()) {
         try {
           Job job = new Job(r.result());
+          job.zid = zid;
           handler.handle(job);
+          future.complete(); // TODO: right?
         } catch (Exception e) {
           removeBadJob(id, jobType);
-          if (failureHandler != null)
-            failureHandler.handle(r.cause());
-          else
-            r.cause().printStackTrace();
+          future.fail(e);
         }
       } else {
         removeBadJob(id, jobType);
-        if (failureHandler != null)
-          failureHandler.handle(r.cause());
-        else
-          r.cause().printStackTrace();
+        future.fail(r.cause());
       }
     });
+    return future;
   }
 
-  public static void removeBadJob(long id, String jobType) {
-    Handler<AsyncResult<Long>> fh = r -> {
-      if (r.failed())
-        r.cause().printStackTrace();
+  public static Future<Void> removeBadJob(long id, String jobType) {
+    Future<Void> future = Future.future();
+    Handler<AsyncResult<String>> fh = r -> {
+      if (r.succeeded())
+        future.complete();
+      else
+        future.fail(r.cause());
     };
     String zid = RedisHelper.createFIFO(id);
-    client.multi(_fh())
+    client.transaction().multi(_failure(future))
       .del(RedisHelper.getRedisKey("job:" + id + ":log"), fh)
       .del(RedisHelper.getRedisKey("job:" + id), fh)
       .zrem(RedisHelper.getRedisKey("jobs:inactive"), zid, fh)
@@ -261,18 +279,21 @@ public class Job {
       .zrem(RedisHelper.getRedisKey("jobs:" + jobType + ":complete"), zid, fh)
       .zrem(RedisHelper.getRedisKey("jobs:" + jobType + ":failed"), zid, fh)
       .zrem(RedisHelper.getRedisKey("jobs:" + jobType + ":delayed"), zid, fh)
-      .exec(_fh());
+      .exec(_failure(future, null));
     // TODO: search
+    return future;
   }
 
   @Fluent
-  public Job save() {
+  public Future<Job> save() {
     // check
     Objects.requireNonNull(this.type, "Job type cannot be null");
 
     if (this.id > 0)
       return update(this);
 
+    Future<Job> future = Future.future();
+    // generate id
     client.incr(RedisHelper.getRedisKey("ids"), res -> {
       if (res.succeeded()) {
         this.id = res.result();
@@ -282,23 +303,24 @@ public class Job {
         if (this.delay > 0) {
           this.state = JobState.DELAYED;
         }
-        client.sadd(RedisHelper.getRedisKey("job:types"), this.type, _fh());
+        client.sadd(RedisHelper.getRedisKey("job:types"), this.type, _failure(future));
         this.jobMetrics.setCreatedAt(System.currentTimeMillis());
         this.jobMetrics.setPromoteAt(System.currentTimeMillis() + this.delay);
-        client.hmset(key, this.toJson(), _fh());
-        update(this);
+        // save job
+        client.hmset(key, this.toJson(), _failure(future, this));
       }
     });
     // TODO
-    return this;
+    return future.compose(this::update);
   }
 
   @Fluent
-  public Job update(Job job) {
+  public Future<Job> update(Job job) {
+    Future<Job> future = Future.future();
     this.jobMetrics.setUpdatedAt(System.currentTimeMillis());
-    client.zadd(RedisHelper.getRedisKey("jobs"), resolvePriority(), this.zid, _fh());
+    client.zadd(RedisHelper.getRedisKey("jobs"), resolvePriority(), this.zid, _failure(future, job));
     // TODO: search
-    return job;
+    return future;
   }
 
   @Fluent

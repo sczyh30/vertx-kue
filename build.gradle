@@ -1,12 +1,15 @@
 configure(allprojects) { project ->
 
   ext {
-    vertxVersion = "3.2.1"
+    vertxVersion = "3.3.0-SNAPSHOT"
   }
 
   apply plugin: 'java'
 
   repositories {
+    maven { // snapshot repo, will be removed after 3.3 version released
+      url "https://oss.sonatype.org/content/repositories/snapshots"
+    }
     jcenter()
   }
 
@@ -67,6 +70,7 @@ project("kue-core") {
 project("kue-http") {
 
   dependencies {
+    compile(project(":kue-core"))
     compile("io.vertx:vertx-web:${vertxVersion}")
   }
 

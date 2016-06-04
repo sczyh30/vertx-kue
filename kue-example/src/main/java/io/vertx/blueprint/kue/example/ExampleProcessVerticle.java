@@ -23,8 +23,8 @@ public class ExampleProcessVerticle extends AbstractVerticle {
 
     Job job0 = kue.createJob("video", new JsonObject().put("id", 3001))
       .priority(Priority.HIGH)
-      .onComplete(System.out::println)
-      .save();
+      .onComplete(System.out::println);
+    job0.save();
 
     kue.process("video", 1, res -> {
       if (res.succeeded()) {

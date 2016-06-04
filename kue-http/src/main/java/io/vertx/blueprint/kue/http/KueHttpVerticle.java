@@ -1,7 +1,11 @@
 package io.vertx.blueprint.kue.http;
 
+import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
+import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.json.DecodeException;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -32,6 +36,7 @@ public class KueHttpVerticle extends AbstractVerticle {
     router.route().handler(BodyHandler.create());
     // routes
     router.get(KUE_API_JOB_SEARCH).handler(this::handleSearchJob);
+    router.put(KUE_API_CREATE_JOB).handler(this::handleCreateJob);
     // create server
     vertx.createHttpServer()
       .requestHandler(router::accept)
@@ -49,5 +54,19 @@ public class KueHttpVerticle extends AbstractVerticle {
 
   private void handleSearchJob(RoutingContext context) {
 
+  }
+
+  private void handleCreateJob(RoutingContext context) {
+    try {
+      Job job = new Job(new JsonObject(context.getBodyAsString()));
+      job.save();
+    } catch (DecodeException e) {
+      sendError(400, context.response());
+    }
+
+  }
+
+  private void sendError(int statusCode, HttpServerResponse response) {
+    response.setStatusCode(statusCode).end();
   }
 }
