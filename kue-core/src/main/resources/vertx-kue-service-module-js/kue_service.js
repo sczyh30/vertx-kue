@@ -21,6 +21,7 @@ var Vertx = require('vertx-js/vertx');
 var io = Packages.io;
 var JsonObject = io.vertx.core.json.JsonObject;
 var JKueService = io.vertx.blueprint.kue.service.KueService;
+var Job = io.vertx.blueprint.kue.queue.Job;
 
 /**
  Vert.x Blueprint - Job Queue
@@ -45,7 +46,7 @@ var KueService = function (j_val) {
     if (__args.length === 3 && typeof __args[0] === 'string' && typeof __args[1] === 'number' && typeof __args[2] === 'function') {
       j_kueService["process(java.lang.String,int,io.vertx.core.Handler)"](type, n, function (ar) {
         if (ar.succeeded()) {
-          handler(utils.convReturnJson(ar.result()), null);
+          handler(utils.convReturnDataObject(ar.result()), null);
         } else {
           handler(null, ar.cause());
         }

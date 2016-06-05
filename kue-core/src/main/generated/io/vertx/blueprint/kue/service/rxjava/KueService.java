@@ -18,6 +18,7 @@ package io.vertx.blueprint.kue.service.rxjava;
 
 import java.util.Map;
 import rx.Observable;
+import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.AsyncResult;
@@ -53,12 +54,12 @@ public class KueService {
     return ret;
   }
 
-  public void process(String type, int n, Handler<AsyncResult<JsonObject>> handler) {
+  public void process(String type, int n, Handler<AsyncResult<Job>> handler) { 
     delegate.process(type, n, handler);
   }
 
-  public Observable<JsonObject> processObservable(String type, int n) { 
-    io.vertx.rx.java.ObservableFuture<JsonObject> handler = io.vertx.rx.java.RxHelper.observableFuture();
+  public Observable<Job> processObservable(String type, int n) {
+    io.vertx.rx.java.ObservableFuture<Job> handler = io.vertx.rx.java.RxHelper.observableFuture();
     process(type, n, handler.toHandler());
     return handler;
   }

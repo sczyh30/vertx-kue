@@ -26,16 +26,16 @@ public class ExampleProcessVerticle extends AbstractVerticle {
       .onComplete(System.out::println);
     job0.save();
 
-    kue.process("video", 1, res -> {
-      if (res.succeeded()) {
-          Job job = new Job(res.result());
+    kue.process("video", 1, r -> {
+      if (r.succeeded()) {
+        Job job = r.result();
         // consume 2 seconds
         vertx.setTimer(2000, l -> {
           job.progress(100, 100);
           System.out.println("Video id: " + job.getId());
         });
       } else {
-        res.cause().printStackTrace();
+        r.cause().printStackTrace();
       }
     });
   }

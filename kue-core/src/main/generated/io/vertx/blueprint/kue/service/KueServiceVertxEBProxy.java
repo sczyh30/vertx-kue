@@ -32,6 +32,7 @@ import java.util.function.Function;
 import io.vertx.serviceproxy.ProxyHelper;
 import io.vertx.serviceproxy.ServiceException;
 import io.vertx.serviceproxy.ServiceExceptionMessageCodec;
+import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.AsyncResult;
@@ -64,7 +65,7 @@ public class KueServiceVertxEBProxy implements KueService {
     }
   }
 
-  public void process(String type, int n, Handler<AsyncResult<JsonObject>> handler) {
+  public void process(String type, int n, Handler<AsyncResult<Job>> handler) {
     if (closed) {
       handler.handle(Future.failedFuture(new IllegalStateException("Proxy is closed")));
       return;
@@ -78,7 +79,7 @@ public class KueServiceVertxEBProxy implements KueService {
       if (res.failed()) {
         handler.handle(Future.failedFuture(res.cause()));
       } else {
-        handler.handle(Future.succeededFuture(res.result().body()));
+        handler.handle(Future.succeededFuture(res.result().body() == null ? null : new Job(res.result().body())));
       }
     });
   }
@@ -132,7 +133,7 @@ public class KueServiceVertxEBProxy implements KueService {
       return (List<T>) list;
     } else {
       Function<Object, T> converter;
-      if (elem instanceof List) {
+      if (elem instanceof List) { 
         converter = object -> (T) new JsonArray((List) object); 
       } else { 
         converter = object -> (T) new JsonObject((Map) object); 

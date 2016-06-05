@@ -1,18 +1,16 @@
 package io.vertx.blueprint.kue.service.impl;
 
 import io.vertx.blueprint.kue.queue.Job;
-import io.vertx.blueprint.kue.queue.KueVerticle;
+import io.vertx.blueprint.kue.queue.KueWorker;
 import io.vertx.blueprint.kue.service.KueService;
 
 import io.vertx.blueprint.kue.util.RedisHelper;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisClient;
-import io.vertx.redis.RedisOptions;
-
-import static io.vertx.blueprint.kue.util.RedisHelper.getRedisKey;
 
 /**
  * Vert.x Blueprint - Job Queue
@@ -37,23 +35,18 @@ public class KueServiceImpl implements KueService {
   }
 
   @Override
-  public void process(String type, int n, Handler<AsyncResult<JsonObject>> handler) {
+  public void process(String type, int n, Handler<AsyncResult<Job>> handler) {
     if (n <= 0) {
       throw new IllegalStateException("The process times must be positive");
     }
     while (n-- > 0) {
-      vertx.executeBlocking(f -> {
-        // TODO: process the job
-      }, false, r -> {
-        // TODO: process the maybe result
-      });
+      KueWorker worker = new KueWorker(/* TODO: undone */);
+      vertx.deployVerticle(worker, new DeploymentOptions().setWorker(true));
     }
   }
 
   private void getJob(Handler<Job> handler) {
     // TODO
   }
-
-
 
 }

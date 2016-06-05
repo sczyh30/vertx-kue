@@ -39,6 +39,7 @@ import io.vertx.serviceproxy.ProxyHelper;
 import io.vertx.serviceproxy.ProxyHandler;
 import io.vertx.serviceproxy.ServiceException;
 import io.vertx.serviceproxy.ServiceExceptionMessageCodec;
+import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.AsyncResult;
@@ -125,7 +126,17 @@ public class KueServiceVertxProxyHandler extends ProxyHandler {
 
 
         case "process": {
-          service.process((java.lang.String) json.getValue("type"), json.getValue("n") == null ? null : (json.getLong("n").intValue()), createHandler(msg));
+          service.process((java.lang.String) json.getValue("type"), json.getValue("n") == null ? null : (json.getLong("n").intValue()), res -> {
+            if (res.failed()) {
+              if (res.cause() instanceof ServiceException) {
+                msg.reply(res.cause());
+              } else {
+                msg.reply(new ServiceException(-1, res.cause().getMessage()));
+              }
+            } else {
+              msg.reply(res.result() == null ? null : res.result().toJson());
+            }
+          });
           break;
         }
         default: {

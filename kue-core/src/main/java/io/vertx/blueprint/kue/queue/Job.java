@@ -12,6 +12,7 @@ import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisClient;
 import io.vertx.redis.RedisOptions;
+import io.vertx.redis.RedisTransaction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -175,43 +176,88 @@ public class Job {
     return this;
   }
 
+  public Future<Job> state(JobState newState, Handler<Void> handler) {
+    List<Future<Job>> futureList = new ArrayList<>();
+
+    Handler<AsyncResult<String>> _fn = _failure(futureList, null); // no use of prev result
+    JobState oldState = this.state;
+    RedisTransaction multi = client.transaction().multi(_failure());
+    if (oldState != null && !oldState.equals(newState)) {
+      multi.zrem(RedisHelper.getRedisKey("jobs:" + oldState.state()), this.zid, _fn)
+        .zrem(RedisHelper.getRedisKey("jobs:" + this.type + ":" + oldState.state()), this.zid, _fn);
+    }
+    multi.hset(RedisHelper.getRedisKey("job:" + this.id), "state", newState.state(), _fn)
+      .zadd(RedisHelper.getRedisKey("jobs:" + newState.state()), this.priority.getValue(), this.zid, _fn)
+      .zadd(RedisHelper.getRedisKey("jobs:" + this.type + ":" + newState.state()), this.priority.getValue(), this.zid, _fn);
+
+
+    this.state = newState;
+    multi.exec(r -> {
+      if (r.succeeded()) {
+        handler.handle(null);
+        futureList.add(this.update()); //TODO: MUST TEST
+      } else {
+        futureList.add(Future.failedFuture(r.cause()));
+      }
+    });
+    return futureList.stream()
+      .reduce(Future.succeededFuture(), (a, b) -> a.compose(r -> b));
+  }
+
+  public Future<Job> complete(Handler<Void> handler) {
+    return this.setProgress(100)
+      .state(JobState.COMPLETE, handler);
+  }
+
+  public Future<Job> failed(Handler<Void> handler) {
+    this.getJobMetrics().setFailedAt(System.currentTimeMillis());
+    return this.state(JobState.FAILED, handler);
+  }
+
+  public Future<Job> inactive(Handler<Void> handler) {
+    return this.state(JobState.INACTIVE, handler);
+  }
+
+  public Future<Job> active(Handler<Void> handler) {
+    return this.state(JobState.ACTIVE, handler);
+  }
+
+  public Future<Job> delayed(Handler<Void> handler) {
+    return this.state(JobState.DELAYED, handler);
+  }
+
   @Fluent
   public Job progress(int complete, int total) {
     int n = Math.min(100, complete * 100 / total);
     this.setProgress(n);
-    this.jobMetrics.updateNow();
+    this.update();
     // TODO: need callback?
     eventBus.send(Kue.getHandlerAddress("failure", this.type), n);
     return this;
   }
 
-  private int resolvePriority() {
-    switch (this.priority) {
-      case LOW:
-        return 10;
-      case NORMAL:
-        return 0;
-      case MEDIUM:
-        return -5;
-      case HIGH:
-        return -10;
-      case CRITICAL:
-        return -15;
-      default:
-        return 0;
-    }
-  }
-
-  @Fluent
-  private Job set(String key, String value, Handler<AsyncResult<Long>> handler) {
-    client.hset(RedisHelper.getRedisKey("job:" + this.id), key, value, handler);
-    return this;
+  public Future<Job> set(String key, String value) {
+    Future<Job> future = Future.future();
+    client.hset(RedisHelper.getRedisKey("job:" + this.id), key, value, r -> {
+      if (r.succeeded())
+        future.complete(this);
+      else
+        future.fail(r.cause());
+    });
+    return future;
   }
 
   @Fluent
   private Job get(String key, Handler<AsyncResult<String>> handler) {
     client.hget(RedisHelper.getRedisKey("job:" + this.id), key, handler);
     return this;
+  }
+
+  private static <T> Handler<AsyncResult<T>> _failure() {
+    return r -> {
+      if (r.failed())
+        r.cause().printStackTrace();
+    };
   }
 
   private static <T> Handler<AsyncResult<T>> _failure(Future future) {
@@ -246,6 +292,11 @@ public class Job {
       else
         list.add(Future.succeededFuture(result));
     };
+  }
+
+  public Future<Job> updateNow() {
+    this.getJobMetrics().updateNow();
+    return this.set("jobMetrics", this.getJobMetrics().toJson().encodePrettily());
   }
 
   public static void getJob(long id, String jobType, Handler<Job> handler, Handler<Throwable> failureHandler) {
@@ -303,13 +354,12 @@ public class Job {
       .reduce(Future.succeededFuture(), (a, b) -> a.compose(r -> b));
   }
 
-  @Fluent
   public Future<Job> save() {
     // check
     Objects.requireNonNull(this.type, "Job type cannot be null");
 
     if (this.id > 0)
-      return update(this);
+      return update();
 
     List<Future<Job>> futureList = new ArrayList<>();
     // generate id
@@ -322,12 +372,12 @@ public class Job {
         if (this.delay > 0) {
           this.state = JobState.DELAYED;
         }
-        client.sadd(RedisHelper.getRedisKey("job:types"), this.type, _failure(futureList));
+        client.sadd(RedisHelper.getRedisKey("job:types"), this.type, _failure(futureList, this));
         this.jobMetrics.setCreatedAt(System.currentTimeMillis());
         this.jobMetrics.setPromoteAt(System.currentTimeMillis() + this.delay);
         System.out.println(this.toJson().encodePrettily());
         // save job
-        client.hmset(key, this.toJson(), _failure(futureList));
+        client.hmset(key, this.toJson(), _failure(futureList, this));
       } else {
         futureList.add(Future.failedFuture(res.cause()));
       }
@@ -335,16 +385,17 @@ public class Job {
     // TODO: other update logic
     return futureList.stream()
       .reduce(Future.succeededFuture(), (a, b) -> a.compose(r -> b))
-      .compose(this::update);
+      .compose(r -> update());
   }
 
-  @Fluent
-  public Future<Job> update(Job job) {
-    Future<Job> future = Future.future();
-    this.jobMetrics.setUpdatedAt(System.currentTimeMillis());
-    client.zadd(RedisHelper.getRedisKey("jobs"), resolvePriority(), this.zid, _failure(future, job));
+  public Future<Job> update() {
+    List<Future<Job>> futureList = new ArrayList<>();
+    this.jobMetrics.updateNow();
+    client.hmset(RedisHelper.getRedisKey("job:" + this.id), this.toJson(), _failure(futureList, this));
+    client.zadd(RedisHelper.getRedisKey("jobs"), this.priority.getValue(), this.zid, _failure(futureList, this));
     // TODO: search
-    return future;
+    return futureList.stream()
+      .reduce(Future.succeededFuture(), (a, b) -> a.compose(r -> b));
   }
 
   @Fluent

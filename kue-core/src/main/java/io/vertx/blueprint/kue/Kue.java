@@ -1,7 +1,6 @@
 package io.vertx.blueprint.kue;
 
 import io.vertx.blueprint.kue.queue.Job;
-import io.vertx.blueprint.kue.queue.KueVerticle;
 import io.vertx.blueprint.kue.service.KueService;
 
 import io.vertx.core.AsyncResult;
@@ -10,10 +9,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisClient;
 
-import java.util.Objects;
-
 import io.vertx.blueprint.kue.util.RedisHelper;
-import io.vertx.redis.RedisOptions;
 
 /**
  * Vert.x Blueprint - Job Queue
@@ -54,7 +50,7 @@ public class Kue implements KueService {
   }
 
   @Override
-  public void process(String type, int n, Handler<AsyncResult<JsonObject>> handler) {
+  public void process(String type, int n, Handler<AsyncResult<Job>> handler) {
     service.process(type, n, handler);
   }
 }

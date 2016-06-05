@@ -4,7 +4,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisOptions;
 
 /**
- * Vert.x Blueprint - Job Queue
+ * Vert.x Blueprint - Job Queue Utils
  * Redis helper class
  *
  * @author Eric Zhao

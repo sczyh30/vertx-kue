@@ -29,6 +29,6 @@ public interface KueService {
     return ProxyHelper.createProxy(KueService.class, vertx, address);
   }
 
-  void process(String type, int n, Handler<AsyncResult<JsonObject>> handler);
+  void process(String type, int n, Handler<AsyncResult<Job>> handler);
 
 }
