@@ -132,7 +132,7 @@ public class KueServiceVertxEBProxy implements KueService {
     if (!(elem instanceof Map) && !(elem instanceof List)) {
       return (List<T>) list;
     } else {
-      Function<Object, T> converter;
+      Function<Object, T> converter; 
       if (elem instanceof List) { 
         converter = object -> (T) new JsonArray((List) object); 
       } else { 

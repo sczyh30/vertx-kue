@@ -58,7 +58,7 @@ public class KueService {
     delegate.process(type, n, handler);
   }
 
-  public Observable<Job> processObservable(String type, int n) {
+  public Observable<Job> processObservable(String type, int n) { 
     io.vertx.rx.java.ObservableFuture<Job> handler = io.vertx.rx.java.RxHelper.observableFuture();
     process(type, n, handler.toHandler());
     return handler;

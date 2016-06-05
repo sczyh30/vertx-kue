@@ -33,6 +33,10 @@ public class Kue implements KueService {
     Job.setVertx(vertx, redis);
   }
 
+  public RedisClient getRedis() {
+    return this.redis;
+  }
+
   /**
    * Format: vertx.kue.handler.job.handlerType.jobType
    */

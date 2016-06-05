@@ -1,6 +1,8 @@
 package io.vertx.blueprint.kue.util;
 
+import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
+import io.vertx.redis.RedisClient;
 import io.vertx.redis.RedisOptions;
 
 /**
@@ -16,13 +18,17 @@ public final class RedisHelper {
   private RedisHelper() {
   }
 
+  public static RedisClient client(Vertx vertx, JsonObject config) {
+    return RedisClient.create(vertx, options(config));
+  }
+
   public static RedisOptions options(JsonObject config) {
     return new RedisOptions()
       .setHost(config.getString("redis.host", "127.0.0.1"))
       .setPort(config.getInteger("redis.port", 6379));
   }
 
-  public static String getRedisKey(String key) {
+  public static String getKey(String key) {
     return VERTX_KUE_REDIS_PREFIX + ":" + key;
   }
 

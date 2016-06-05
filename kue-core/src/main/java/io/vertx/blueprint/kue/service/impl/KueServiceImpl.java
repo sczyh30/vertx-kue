@@ -40,7 +40,7 @@ public class KueServiceImpl implements KueService {
       throw new IllegalStateException("The process times must be positive");
     }
     while (n-- > 0) {
-      KueWorker worker = new KueWorker(/* TODO: undone */);
+      KueWorker worker = new KueWorker(type, handler, redis);
       vertx.deployVerticle(worker, new DeploymentOptions().setWorker(true));
     }
   }
