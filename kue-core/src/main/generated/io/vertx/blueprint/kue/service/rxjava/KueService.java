@@ -17,7 +17,6 @@
 package io.vertx.blueprint.kue.service.rxjava;
 
 import java.util.Map;
-import io.vertx.lang.rxjava.InternalHelper;
 import rx.Observable;
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -54,8 +53,8 @@ public class KueService {
     return ret;
   }
 
-  public void process(String type, int n, Handler<AsyncResult<JsonObject>> handler) { 
-    this.delegate.process(type, n, handler);
+  public void process(String type, int n, Handler<AsyncResult<JsonObject>> handler) {
+    delegate.process(type, n, handler);
   }
 
   public Observable<JsonObject> processObservable(String type, int n) { 

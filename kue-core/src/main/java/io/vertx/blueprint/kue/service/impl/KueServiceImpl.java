@@ -4,11 +4,13 @@ import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.blueprint.kue.queue.KueVerticle;
 import io.vertx.blueprint.kue.service.KueService;
 
+import io.vertx.blueprint.kue.util.RedisHelper;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisClient;
+import io.vertx.redis.RedisOptions;
 
 import static io.vertx.blueprint.kue.util.RedisHelper.getRedisKey;
 
@@ -31,7 +33,7 @@ public class KueServiceImpl implements KueService {
   public KueServiceImpl(Vertx vertx, JsonObject config) {
     this.vertx = vertx;
     this.config = config;
-    this.redis = KueVerticle.getRedis();
+    this.redis = RedisClient.create(vertx, RedisHelper.options(config));
   }
 
   @Override

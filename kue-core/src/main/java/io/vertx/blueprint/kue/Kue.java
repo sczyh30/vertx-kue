@@ -13,6 +13,7 @@ import io.vertx.redis.RedisClient;
 import java.util.Objects;
 
 import io.vertx.blueprint.kue.util.RedisHelper;
+import io.vertx.redis.RedisOptions;
 
 /**
  * Vert.x Blueprint - Job Queue
@@ -32,8 +33,8 @@ public class Kue implements KueService {
     this.vertx = vertx;
     this.config = config;
     this.service = KueService.createProxy(vertx, EB_KUE_ADDRESS);
-    this.redis = KueVerticle.getRedis();
-    Job.setVertx(vertx);
+    this.redis = RedisClient.create(vertx, RedisHelper.options(config));
+    Job.setVertx(vertx, redis);
   }
 
   /**

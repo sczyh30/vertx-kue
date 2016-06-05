@@ -2,6 +2,7 @@ package io.vertx.blueprint.kue.queue;
 
 import io.vertx.blueprint.kue.service.KueService;
 import io.vertx.blueprint.kue.service.impl.KueServiceImpl;
+import io.vertx.blueprint.kue.util.RedisHelper;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -33,21 +34,20 @@ public class KueVerticle extends AbstractVerticle {
     this.eventBus = vertx.eventBus();
     this.kueService = new KueServiceImpl(vertx, config);
 
-    RedisOptions redisOptions = new RedisOptions()
-      .setHost(config.getString("redis.host", "127.0.0.1"))
-      .setPort(config.getInteger("redis.port", 6379));
-    redisClient = RedisClient.create(vertx, redisOptions);
+    redisClient = RedisClient.create(vertx, RedisHelper.options(config));
+    redisClient.ping(pr -> {
+      if (pr.succeeded()) {
+        System.out.println("Kue Verticle is running...");
 
-    System.out.println("Kue Verticle is running...");
+        // register kue service
+        ProxyHelper.registerService(KueService.class, vertx, kueService, EB_KUE_ADDRESS);
 
-    // register kue service
-    ProxyHelper.registerService(KueService.class, vertx, kueService, EB_KUE_ADDRESS);
-
-    future.complete();
-  }
-
-  public static RedisClient getRedis() {
-    return redisClient;
+        future.complete();
+      } else {
+        System.err.println("[ERROR] Redis service is noe running!");
+        future.fail(pr.cause());
+      }
+    });
   }
 
 }

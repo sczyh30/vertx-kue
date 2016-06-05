@@ -1,5 +1,6 @@
 package io.vertx.blueprint.kue.http;
 
+import io.vertx.blueprint.kue.Kue;
 import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -29,8 +30,12 @@ public class KueHttpVerticle extends AbstractVerticle {
   public static final String KUE_API_DELETE_JOB = "/job/:id";
   public static final String KUE_API_GET_JOB_LOG = "/job/:id/log";
 
+  private Kue kue;
+
   @Override
   public void start(Future<Void> future) throws Exception {
+
+    kue = Kue.createQueue(vertx, config());
 
     Router router = Router.router(vertx);
     router.route().handler(BodyHandler.create());
@@ -59,7 +64,13 @@ public class KueHttpVerticle extends AbstractVerticle {
   private void handleCreateJob(RoutingContext context) {
     try {
       Job job = new Job(new JsonObject(context.getBodyAsString()));
-      job.save();
+      job.save().setHandler(r -> {
+        if (r.succeeded()) {
+          context.response().setStatusCode(201).end();
+        } else {
+          internalError(context.response());
+        }
+      });
     } catch (DecodeException e) {
       sendError(400, context.response());
     }
@@ -68,5 +79,9 @@ public class KueHttpVerticle extends AbstractVerticle {
 
   private void sendError(int statusCode, HttpServerResponse response) {
     response.setStatusCode(statusCode).end();
+  }
+
+  private void internalError(HttpServerResponse response) {
+    response.setStatusCode(503).end();
   }
 }
