@@ -2,15 +2,15 @@ package io.vertx.blueprint.kue.queue;
 
 import io.vertx.blueprint.kue.Kue;
 import io.vertx.blueprint.kue.util.RedisHelper;
-import io.vertx.blueprint.kue.util.functional.Either;
+
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisClient;
-import io.vertx.redis.RedisTransaction;
 
 
 /**
@@ -19,7 +19,7 @@ import io.vertx.redis.RedisTransaction;
  *
  * @author Eric Zhao
  */
-public class KueWorker extends AbstractVerticle {
+public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
 
   private RedisClient client; // every worker use a client?
   private EventBus eventBus;
@@ -36,35 +36,52 @@ public class KueWorker extends AbstractVerticle {
   @Override
   public void start() throws Exception {
     this.eventBus = vertx.eventBus();
-
-    this.getJobFromBackend(job -> {
-
+    this.getJobFromBackend(jr -> {
+      if (jr.succeeded()) {
+        this.job = jr.result();
+        process();
+      } else {
+        jr.cause().printStackTrace();
+      }
     });
   }
 
   @Override
   public void stop() throws Exception {
-
+    // stop hook
   }
 
   private void process() {
-    // TODO: get job
-    Handler<Either<Throwable, JsonObject>> doneCallback = createDoneCallback();
 
     job.active(r -> {
       // TODO: emit event
       this.emitJobEvent("start", this.job);
-      jobHandler.handle(Future.succeededFuture(job));
+      jobHandler.handle(Future.succeededFuture(job)); // should not do this, refactor
+      createDoneCallback().handle(Future.succeededFuture(job.getResult())); // should not do this, refactor
     });
   }
 
-  private Future<Void> zpop(String key) {
-    Future<Void> future = Future.future();
-    RedisTransaction multi = client.transaction()
-      .watch(key, null)
-      .zrange(key, 0, 0, r -> {
+  /**
+   * Redis zpop atomic primitive with transaction
+   *
+   * @param key redis key
+   * @return the async result of zpop
+   */
+  private Future<String> zpop(String key) {
+    Future<String> future = Future.future();
+    client.transaction()
+      .multi(null)
+      .zrange(key, 0, 0, null)
+      .zremrangebyrank(key, 0, 0, null)
+      .exec(r -> {
         if (r.succeeded()) {
-          // TODO
+          JsonArray res = r.result();
+          if (res.getJsonArray(0).size() == 0)
+            future.fail(new IllegalStateException("Empty zpop set"));
+          else
+            future.complete(RedisHelper.stripFIFO(res.getJsonArray(0).getString(0)));
+        } else {
+          future.fail(r.cause());
         }
       });
     return future;
@@ -77,30 +94,42 @@ public class KueWorker extends AbstractVerticle {
           if (r2.failed())
             handler.handle(Future.failedFuture(r2.cause()));
         });
-        // failureHandler.handle(r1.cause());
       } else {
-        // TODO: zpop
-
-        // TODO: get job
+        this.zpop(RedisHelper.getKey("jobs:" + this.type + ":INACTIVE"))
+          .setHandler(r -> {
+            if (r.succeeded()) {
+              String _id = r.result();
+              Job.getJob(Long.parseLong(_id), this.type)
+                .setHandler(handler);
+            } else {
+              // TODO: maybe should idle
+              r.cause().printStackTrace();
+            }
+          });
       }
     });
   }
 
-  private Handler<Either<Throwable, JsonObject>> createDoneCallback() {
-    return either -> {
+  private Handler<AsyncResult<JsonObject>> createDoneCallback() { //TODO
+    return r0 -> {
       if (this.job == null) {
         // maybe should warn
         return;
       }
-      if (either.isLeft()) {
+      if (r0.failed()) {
         // TODO: FAIL
         return;
       }
       job.getJobMetrics().setDuration(System.currentTimeMillis() - job.getJobMetrics().getStartedAt());
-      job.setResult(either.right())
-        .update()
-        .compose(r1 -> r1.complete(r2 -> {
-        })); // TODO
+      JsonObject result = r0.result();
+      if (result != null) {
+        job.setResult(result)
+          .set("result", result.encodePrettily());
+      }
+
+      job.complete(e -> {
+        eventBus.send(Kue.getHandlerAddress("complete", type), job.toJson());
+      });
 
 
     };

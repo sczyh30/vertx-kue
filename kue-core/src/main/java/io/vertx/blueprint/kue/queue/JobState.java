@@ -10,20 +10,9 @@ import io.vertx.codegen.annotations.VertxGen;
  */
 @VertxGen
 public enum JobState {
-  INACTIVE("inactive"),
-  ACTIVE("active"),
-  COMPLETE("complete"),
-  FAILED("failed"),
-  DELAYED("delayed");
-
-  private String state;
-
-  JobState(String state) {
-    this.state = state;
-  }
-
-  public String state() {
-    return state;
-  }
-
+  INACTIVE,
+  ACTIVE,
+  COMPLETE,
+  FAILED,
+  DELAYED
 }

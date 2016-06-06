@@ -41,12 +41,11 @@ public class KueServiceImpl implements KueService {
     }
     while (n-- > 0) {
       KueWorker worker = new KueWorker(type, handler, redis);
-      vertx.deployVerticle(worker, new DeploymentOptions().setWorker(true));
+      vertx.deployVerticle(worker, new DeploymentOptions().setWorker(true), r -> {
+        if (r.succeeded())
+          System.out.println("Kue worker created");
+      });
     }
-  }
-
-  private void getJob(Handler<Job> handler) {
-    // TODO
   }
 
 }

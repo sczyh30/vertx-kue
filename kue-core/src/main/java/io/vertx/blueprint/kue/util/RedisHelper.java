@@ -32,6 +32,11 @@ public final class RedisHelper {
     return VERTX_KUE_REDIS_PREFIX + ":" + key;
   }
 
+  /**
+   * Create an id for the zset to preserve FIFO order
+   *
+   * @param id id
+   */
   public static String createFIFO(long id) {
     String idLen = "" + ("" + id).length();
     int len = 2 - idLen.length();
@@ -40,6 +45,10 @@ public final class RedisHelper {
     return idLen + "|" + id;
   }
 
+  /**
+   * Parse out original ID from zid
+   * @param zid zid
+   */
   public static String stripFIFO(String zid) {
     return zid.substring(zid.indexOf('|') + 1);
   }
