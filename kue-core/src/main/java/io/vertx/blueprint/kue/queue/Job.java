@@ -42,6 +42,8 @@ public class Job {
   private Priority priority = Priority.NORMAL;
   private int delay = 0;
   private JobState state = JobState.INACTIVE;
+  private int attempts = 0;
+  private int maxAttempts = 1;
 
   private String zid;
   private int progress = 0;
@@ -71,96 +73,6 @@ public class Job {
     JsonObject json = new JsonObject();
     JobConverter.toJson(this, json);
     return json;
-  }
-
-  public long getId() {
-    return id;
-  }
-
-  public void setId(long id) {
-    this.id = id;
-  }
-
-  public JsonObject getData() {
-    return data;
-  }
-
-  public Job setData(JsonObject data) {
-    this.data = data;
-    return this;
-  }
-
-  public String getType() {
-    return type;
-  }
-
-  public Job setType(String type) {
-    this.type = type;
-    return this;
-  }
-
-  public Priority getPriority() {
-    return priority;
-  }
-
-  public Job setPriority(Priority priority) {
-    this.priority = priority;
-    return this;
-  }
-
-  public JsonObject getResult() {
-    return result;
-  }
-
-  public Job setResult(JsonObject result) {
-    this.result = result;
-    return this;
-  }
-
-  public int getProgress() {
-    return progress;
-  }
-
-  public Job setProgress(int progress) {
-    this.progress = progress;
-    return this;
-  }
-
-  public JobMetrics getJobMetrics() {
-    return jobMetrics;
-  }
-
-  public Job setJobMetrics(JobMetrics jobMetrics) {
-    this.jobMetrics = jobMetrics;
-    return this;
-  }
-
-  public int getDelay() {
-    return delay;
-  }
-
-  public Job setDelay(int delay) {
-    if (delay > 0) {
-      this.delay = delay;
-    }
-    return this;
-  }
-
-  public JobState getState() {
-    return state;
-  }
-
-  public Job setState(JobState state) {
-    this.state = state;
-    return this;
-  }
-
-  public String getZid() {
-    return zid;
-  }
-
-  public void setZid(String zid) {
-    this.zid = zid;
   }
 
   @Fluent
@@ -213,14 +125,22 @@ public class Job {
     return future.compose(Job::updateNow);
   }
 
+  public Future<Job> error(Throwable ex) {
+    // TODO: emit error
+    return this.set("error", ex.getMessage())
+      .compose(j -> j.log("error | " + ex.getMessage()));
+  }
+
   public Future<Job> complete(Handler<Void> handler) {
     return this.setProgress(100)
-      .state(JobState.COMPLETE, handler);
+      .set("progress", "100")
+      .compose(r -> r.state(JobState.COMPLETE, handler));
   }
 
   public Future<Job> failed(Handler<Void> handler) {
     this.getJobMetrics().setFailedAt(System.currentTimeMillis());
-    return this.state(JobState.FAILED, handler);
+    return this.updateNow()
+      .compose(j -> j.state(JobState.FAILED, handler));
   }
 
   public Future<Job> inactive(Handler<Void> handler) {
@@ -265,6 +185,46 @@ public class Job {
   @Fluent
   private Job get(String key, Handler<AsyncResult<String>> handler) {
     client.hget(RedisHelper.getKey("job:" + this.id), key, handler);
+    return this;
+  }
+
+  private Future<Job> attempt() {
+    Future<Job> future = Future.future();
+    String key = RedisHelper.getKey("job:" + this.id);
+    if (this.attempts < this.maxAttempts) {
+      client.hincrby(key, "attempts", 1, r -> {
+        if (r.succeeded()) {
+          this.attempts = r.result().intValue();
+          future.complete(this);
+        } else {
+          future.fail(r.cause());
+        }
+      });
+    } else {
+      future.complete(this);
+    }
+    return future;
+  }
+
+  public Job failedAttempt(Throwable err, Handler<AsyncResult<Job>> handler) {
+    this.error(err)
+      .compose(j -> j.failed(v -> {
+        this.attempt().setHandler(r -> {
+          if (r.failed()) {
+            this.emit("error", new JsonObject().put("errorMsg", r.cause().getMessage())); // can we emit exception directly?
+            handler.handle(Future.failedFuture(r.cause()));
+          } else {
+            int remaining = maxAttempts - attempts;
+            if (remaining > 0) {
+              // reattempt
+            } else if (remaining == 0) {
+              handler.handle(Future.succeededFuture(r.result()));
+            } else {
+              handler.handle(Future.failedFuture(new IllegalStateException("Attempts Exceeded")));
+            }
+          }
+        });
+      })).setHandler(null); // // FIXME: 16-6-8 
     return this;
   }
 
@@ -439,8 +399,136 @@ public class Job {
     return this;
   }
 
+  @Fluent
+  public Job emit(String event, JsonObject msg) {
+    eventBus.send(Kue.getHandlerAddress(event, this.type), msg);
+    return this;
+  }
+
+  @Fluent
   public Job removeOnComplete() {
     eventBus.consumer(Kue.getHandlerAddress("complete", this.type)).unregister();
+    return this;
+  }
+
+
+  public long getId() {
+    return id;
+  }
+
+  public Job setId(long id) {
+    this.id = id;
+    return this;
+  }
+
+  public JsonObject getData() {
+    return data;
+  }
+
+  public Job setData(JsonObject data) {
+    this.data = data;
+    return this;
+  }
+
+  public String getType() {
+    return type;
+  }
+
+  public Job setType(String type) {
+    this.type = type;
+    return this;
+  }
+
+  public Priority getPriority() {
+    return priority;
+  }
+
+  public Job setPriority(Priority priority) {
+    this.priority = priority;
+    return this;
+  }
+
+  public JsonObject getResult() {
+    return result;
+  }
+
+  public Job setResult(JsonObject result) {
+    this.result = result;
+    return this;
+  }
+
+  public int getProgress() {
+    return progress;
+  }
+
+  public Job setProgress(int progress) {
+    this.progress = progress;
+    return this;
+  }
+
+  public JobMetrics getJobMetrics() {
+    return jobMetrics;
+  }
+
+  public Job setJobMetrics(JobMetrics jobMetrics) {
+    this.jobMetrics = jobMetrics;
+    return this;
+  }
+
+  public int getDelay() {
+    return delay;
+  }
+
+  public Job setDelay(int delay) {
+    if (delay > 0) {
+      this.delay = delay;
+    }
+    return this;
+  }
+
+  public JobState getState() {
+    return state;
+  }
+
+  public Job setState(JobState state) {
+    this.state = state;
+    return this;
+  }
+
+  public String getZid() {
+    return zid;
+  }
+
+  public Job setZid(String zid) {
+    this.zid = zid;
+    return this;
+  }
+
+  public boolean hasAttempts() {
+    return this.maxAttempts - this.attempts > 0;
+  }
+
+  public int getAttempts() {
+    return attempts;
+  }
+
+  public Job setAttempts(int attempts) {
+    this.attempts = attempts;
+    return this;
+  }
+
+  @Fluent
+  public Job addAttempts() {
+    this.attempts++;
+    return this;
+  }
+
+  public int getMaxAttempts() {
+    return maxAttempts;
+  }
+
+  public Job setMaxAttempts(int maxAttempts) {
+    this.maxAttempts = maxAttempts;
     return this;
   }
 

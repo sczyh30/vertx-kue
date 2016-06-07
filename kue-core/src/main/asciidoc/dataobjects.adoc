@@ -13,10 +13,12 @@
 [frame="topbot"]
 |===
 ^|Name | Type ^| Description
+|[[attempts]]`attempts`|`Number (int)`|-
 |[[data]]`data`|`Json object`|-
 |[[delay]]`delay`|`Number (int)`|-
 |[[id]]`id`|`Number (long)`|-
 |[[jobMetrics]]`jobMetrics`|`link:dataobjects.html#JobMetrics[JobMetrics]`|-
+|[[maxAttempts]]`maxAttempts`|`Number (int)`|-
 |[[priority]]`priority`|`link:enums.html#Priority[Priority]`|-
 |[[progress]]`progress`|`Number (int)`|-
 |[[result]]`result`|`Json object`|-

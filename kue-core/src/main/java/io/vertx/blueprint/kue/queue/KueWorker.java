@@ -41,7 +41,7 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
         this.job = jr.result();
         process();
       } else {
-        jr.cause().printStackTrace();
+        jr.cause().printStackTrace(); // fast fail
       }
     });
   }
@@ -51,12 +51,29 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
     // stop hook
   }
 
+  private void fail(Throwable ex) {
+    // TODO/UNFINISHED: fail
+    job.failedAttempt(ex, r -> {
+      if (r.failed()) {
+        // error
+      } else {
+        Job res = r.result();
+        if (res.hasAttempts()) {
+          this.emitJobEvent("failed_attempt", job, new JsonObject().put("errorMsg", ex.getMessage())); // shouldn't include err?
+        } else {
+          //
+        }
+        // fn?
+      }
+    });
+  }
+
   private void process() {
 
     job.active(r -> {
       // TODO: emit event
-      this.emitJobEvent("start", this.job);
-      jobHandler.handle(Future.succeededFuture(job)); // should not do this, refactor
+      this.emitJobEvent("start", this.job, null);
+      jobHandler.handle(Future.succeededFuture(job));
       createDoneCallback().handle(Future.succeededFuture(job.getResult())); // should not do this, refactor
     });
   }
@@ -76,7 +93,7 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
       .exec(r -> {
         if (r.succeeded()) {
           JsonArray res = r.result();
-          if (res.getJsonArray(0).size() == 0)
+          if (res.getJsonArray(0).size() == 0) // empty set
             future.fail(new IllegalStateException("Empty zpop set"));
           else
             future.complete(RedisHelper.stripFIFO(res.getJsonArray(0).getString(0)));
@@ -135,8 +152,13 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
     };
   }
 
-  private void emitJobEvent(String event, Job job) {
-    eventBus.send(Kue.getHandlerAddress(event, job.getType()), job.toJson());
+  private void emitJobEvent(String event, Job job, JsonObject other) {
+    if (other == null)
+      eventBus.send(Kue.getHandlerAddress("job_" + event, job.getType()), job.toJson());
+    else {
+      JsonObject json = other.copy().put("job", job.toJson());
+      eventBus.send(Kue.getHandlerAddress("job_" + event, job.getType()), json);
+    }
   }
 
 }

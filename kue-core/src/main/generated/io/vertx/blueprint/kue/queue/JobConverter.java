@@ -27,6 +27,9 @@ import io.vertx.core.json.JsonArray;
 public class JobConverter {
 
   public static void fromJson(JsonObject json, Job obj) {
+    if (json.getValue("attempts") instanceof Number) {
+      obj.setAttempts(((Number) json.getValue("attempts")).intValue());
+    }
     if (json.getValue("data") instanceof JsonObject) {
       obj.setData(((JsonObject) json.getValue("data")).copy());
     }
@@ -38,6 +41,9 @@ public class JobConverter {
     }
     if (json.getValue("jobMetrics") instanceof JsonObject) {
       obj.setJobMetrics(new io.vertx.blueprint.kue.queue.JobMetrics((JsonObject) json.getValue("jobMetrics")));
+    }
+    if (json.getValue("maxAttempts") instanceof Number) {
+      obj.setMaxAttempts(((Number) json.getValue("maxAttempts")).intValue());
     }
     if (json.getValue("priority") instanceof String) {
       obj.setPriority(io.vertx.blueprint.kue.queue.Priority.valueOf((String) json.getValue("priority")));
@@ -60,6 +66,7 @@ public class JobConverter {
   }
 
   public static void toJson(Job obj, JsonObject json) {
+    json.put("attempts", obj.getAttempts());
     if (obj.getData() != null) {
       json.put("data", obj.getData());
     }
@@ -68,6 +75,7 @@ public class JobConverter {
     if (obj.getJobMetrics() != null) {
       json.put("jobMetrics", obj.getJobMetrics().toJson());
     }
+    json.put("maxAttempts", obj.getMaxAttempts());
     if (obj.getPriority() != null) {
       json.put("priority", obj.getPriority().name());
     }

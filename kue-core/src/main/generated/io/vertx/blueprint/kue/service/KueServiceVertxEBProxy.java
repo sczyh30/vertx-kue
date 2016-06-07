@@ -130,7 +130,7 @@ public class KueServiceVertxEBProxy implements KueService {
 
     Object elem = list.get(0);
     if (!(elem instanceof Map) && !(elem instanceof List)) {
-      return (List<T>) list;
+      return (List<T>) list; 
     } else { 
       Function<Object, T> converter; 
       if (elem instanceof List) { 
