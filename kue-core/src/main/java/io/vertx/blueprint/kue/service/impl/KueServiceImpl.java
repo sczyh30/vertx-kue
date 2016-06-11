@@ -3,7 +3,6 @@ package io.vertx.blueprint.kue.service.impl;
 import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.blueprint.kue.queue.KueWorker;
 import io.vertx.blueprint.kue.service.KueService;
-
 import io.vertx.blueprint.kue.util.RedisHelper;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.DeploymentOptions;
@@ -18,7 +17,7 @@ import io.vertx.redis.RedisClient;
  *
  * @author Eric Zhao
  */
-public class KueServiceImpl implements KueService {
+public final class KueServiceImpl implements KueService {
 
   private final Vertx vertx;
   private final JsonObject config;
@@ -34,18 +33,34 @@ public class KueServiceImpl implements KueService {
     this.redis = RedisClient.create(vertx, RedisHelper.options(config));
   }
 
-  @Override
-  public void process(String type, int n, Handler<AsyncResult<Job>> handler) {
+  /**
+   * Process a job with a KueWorker Verticle
+   *
+   * @param type     job type
+   * @param n        job process times
+   * @param handler  job process handler
+   * @param isWorker the flag indicates if the handler do blocking procedure
+   */
+  private void processInternal(String type, int n, Handler<AsyncResult<Job>> handler, boolean isWorker) {
     if (n <= 0) {
       throw new IllegalStateException("The process times must be positive");
     }
     while (n-- > 0) {
-      KueWorker worker = new KueWorker(type, handler, redis);
-      vertx.deployVerticle(worker, new DeploymentOptions().setWorker(true), r -> {
+      KueWorker worker = new KueWorker(type, handler);
+      vertx.deployVerticle(worker, new DeploymentOptions().setWorker(isWorker), r -> {
         if (r.succeeded())
-          System.out.println("Kue worker created");
+          System.out.println("Kue worker created"); // log
       });
     }
   }
 
+  @Override
+  public void process(String type, int n, Handler<AsyncResult<Job>> handler) {
+    processInternal(type, n, handler, false);
+  }
+
+  @Override
+  public void processBlocking(String type, int n, Handler<AsyncResult<Job>> handler) {
+    processInternal(type, n, handler, true);
+  }
 }

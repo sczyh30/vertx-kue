@@ -21,14 +21,13 @@ import io.vertx.redis.RedisClient;
  */
 public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
 
-  private RedisClient client; // every worker use a client?
+  private RedisClient client; // every worker use different client
   private EventBus eventBus;
   private Job job;
   private String type;
   private Handler<AsyncResult<Job>> jobHandler;
 
-  public KueWorker(String type, Handler<AsyncResult<Job>> jobHandler, RedisClient client) {
-    this.client = client;
+  public KueWorker(String type, Handler<AsyncResult<Job>> jobHandler) {
     this.type = type;
     this.jobHandler = jobHandler;
   }
@@ -36,9 +35,14 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
   @Override
   public void start() throws Exception {
     this.eventBus = vertx.eventBus();
+    this.client = RedisHelper.client(vertx, config());
+    System.out.println(client);
+    System.out.println("START-GFBE");
     this.getJobFromBackend(jr -> {
+      System.out.println("OK-GFBE");
       if (jr.succeeded()) {
         this.job = jr.result();
+        System.out.println(job);
         process();
       } else {
         jr.cause().printStackTrace(); // fast fail
@@ -84,20 +88,28 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
    * @param key redis key
    * @return the async result of zpop
    */
-  private Future<String> zpop(String key) {
-    Future<String> future = Future.future();
+  private Future<Long> zpop(String key) {
+    Future<Long> future = Future.future();
     client.transaction()
-      .multi(null)
-      .zrange(key, 0, 0, null)
-      .zremrangebyrank(key, 0, 0, null)
+      .multi(_failure())
+      .zrange(key, 0, 0, _failure())
+      .zremrangebyrank(key, 0, 0, _failure())
       .exec(r -> {
         if (r.succeeded()) {
+          System.out.println("ZPOP SUCCESS");
           JsonArray res = r.result();
           if (res.getJsonArray(0).size() == 0) // empty set
             future.fail(new IllegalStateException("Empty zpop set"));
-          else
-            future.complete(RedisHelper.stripFIFO(res.getJsonArray(0).getString(0)));
+          else {
+            try {
+              future.complete(Long.parseLong(RedisHelper.stripFIFO(
+                res.getJsonArray(0).getString(0))));
+            } catch (Exception ex) {
+              future.fail(ex);
+            }
+          }
         } else {
+          System.out.println("ZPOP FAIL");
           future.fail(r.cause());
         }
       });
@@ -115,8 +127,8 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
         this.zpop(RedisHelper.getKey("jobs:" + this.type + ":INACTIVE"))
           .setHandler(r -> {
             if (r.succeeded()) {
-              String _id = r.result();
-              Job.getJob(Long.parseLong(_id), this.type)
+              long _id = r.result();
+              Job.getJob(_id, this.type)
                 .setHandler(handler);
             } else {
               // TODO: maybe should idle
@@ -145,7 +157,8 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
       }
 
       job.complete(e -> {
-        eventBus.send(Kue.getHandlerAddress("complete", type), job.toJson());
+        System.out.println("KueWorker::Job::complete");
+        eventBus.send(Kue.getHandlerAddress("complete", job.getType()), job.toJson());
       });
 
 
@@ -159,6 +172,13 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
       JsonObject json = other.copy().put("job", job.toJson());
       eventBus.send(Kue.getHandlerAddress("job_" + event, job.getType()), json);
     }
+  }
+
+  private static <T> Handler<AsyncResult<T>> _failure() {
+    return r -> {
+      if (r.failed())
+        r.cause().printStackTrace();
+    };
   }
 
 }

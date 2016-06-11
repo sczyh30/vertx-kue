@@ -16,6 +16,7 @@ import io.vertx.redis.RedisTransaction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Vert.x Blueprint - Job Queue
@@ -55,6 +56,11 @@ public class Job {
 
   public Job(JsonObject json) {
     JobConverter.fromJson(json, this);
+    // generated converter cannot handle this
+    if (this.getJobMetrics().getCreatedAt() > 0) {
+      this.setJobMetrics(new JobMetrics(json.getString("jobMetrics")));
+      this.setData(new JsonObject(json.getString("data")));
+    }
   }
 
   public Job(Job other) {
@@ -87,7 +93,7 @@ public class Job {
     Future<Job> future = Future.future();
 
     JobState oldState = this.state;
-    RedisTransaction multi = client.transaction().multi(_failure());
+    RedisTransaction multi = client.transaction().multi(_failure()); //changed
     if (oldState != null && !oldState.equals(newState)) {
       multi.zrem(RedisHelper.getKey("jobs:" + oldState.name()), this.zid, _failure())
         .zrem(RedisHelper.getKey("jobs:" + this.type + ":" + oldState.name()), this.zid, _failure());
@@ -100,7 +106,7 @@ public class Job {
       case ACTIVE:
         multi.zadd(RedisHelper.getKey("jobs:" + newState.name()),
           this.priority.getValue() < 0 ? this.priority.getValue() : -this.priority.getValue(),
-          this.zid, null);
+          this.zid, _failure());
         break;
       case DELAYED:
         // TODO:
@@ -118,6 +124,7 @@ public class Job {
         System.out.println("STATE SUCCESS");
         handler.handle(null);
       } else {
+        System.out.println("STATE FAILURE#?" + r.cause().getMessage());
         r.cause().printStackTrace();
         future.fail(r.cause());
       }
@@ -269,7 +276,7 @@ public class Job {
     };
   }
 
-  public static Future<Job> getJob(long id, String jobType) {
+  public static Future<Job> getJob(long id, String jobType) { // use `Option`?
     Future<Job> future = Future.future();
     String zid = RedisHelper.createFIFO(id);
     client.hgetall(RedisHelper.getKey("job:" + id), r -> {
@@ -277,7 +284,7 @@ public class Job {
         try {
           Job job = new Job(r.result());
           job.zid = zid;
-          future.complete(job); // this cause bad failure
+          future.complete(job);
         } catch (Exception e) {
           removeBadJob(id, jobType);
           future.fail(e);
@@ -518,7 +525,7 @@ public class Job {
   }
 
   @Fluent
-  public Job addAttempts() {
+  public Job attemptAdd() {
     this.attempts++;
     return this;
   }

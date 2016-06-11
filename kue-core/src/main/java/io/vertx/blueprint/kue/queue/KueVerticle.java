@@ -33,7 +33,7 @@ public class KueVerticle extends AbstractVerticle {
     this.config = config();
     this.eventBus = vertx.eventBus();
     this.kueService = new KueServiceImpl(vertx, config);
-
+    // create redis client
     redisClient = RedisClient.create(vertx, RedisHelper.options(config));
     redisClient.ping(pr -> {
       if (pr.succeeded()) {

@@ -57,4 +57,9 @@ public class Kue implements KueService {
   public void process(String type, int n, Handler<AsyncResult<Job>> handler) {
     service.process(type, n, handler);
   }
+
+  @Override
+  public void processBlocking(String type, int n, Handler<AsyncResult<Job>> handler) {
+    service.processBlocking(type, n, handler);
+  }
 }

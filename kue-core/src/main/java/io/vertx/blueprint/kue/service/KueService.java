@@ -29,6 +29,22 @@ public interface KueService {
     return ProxyHelper.createProxy(KueService.class, vertx, address);
   }
 
+  /**
+   * Process a job in asynchronous way
+   *
+   * @param type    job type
+   * @param n       job process times
+   * @param handler job process handler
+   */
   void process(String type, int n, Handler<AsyncResult<Job>> handler);
+
+  /**
+   * Process a job in synchronous and blocking way
+   *
+   * @param type    job type
+   * @param n       job process times
+   * @param handler job process handler
+   */
+  void processBlocking(String type, int n, Handler<AsyncResult<Job>> handler);
 
 }

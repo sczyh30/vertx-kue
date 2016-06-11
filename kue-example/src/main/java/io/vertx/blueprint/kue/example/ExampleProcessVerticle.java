@@ -21,8 +21,8 @@ public class ExampleProcessVerticle extends AbstractVerticle {
     // must first create kue
     Kue kue = Kue.createQueue(vertx, config());
 
-    Job job0 = kue.createJob("video", new JsonObject().put("id", 3001))
-      .priority(Priority.HIGH)
+    Job job0 = kue.createJob("video", new JsonObject().put("id", 3009).put("intro", "great movie"))
+      .priority(Priority.NORMAL)
       .onComplete(e -> {
         System.out.println("Video result: " + e.getResult());
         System.out.println("Haha");
@@ -30,11 +30,12 @@ public class ExampleProcessVerticle extends AbstractVerticle {
 
     job0.save();
 
-    kue.process("video", 1, r -> {
+    kue.process("video", 3, r -> {
       if (r.succeeded()) {
         Job job = r.result();
-        // consume 2 seconds
-        vertx.setTimer(2000, l -> {
+        // consume 3 seconds
+        vertx.setTimer(3000, l -> {
+          System.out.println("GET:JOB::" + job);
           job.progress(100, 100);
           System.out.println("Video id: " + job.getId());
         });

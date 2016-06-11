@@ -22,6 +22,10 @@ public class JobMetrics {
   public JobMetrics() {
   }
 
+  public JobMetrics(String jsonStr) {
+    JobMetricsConverter.fromJson(new JsonObject(jsonStr), this);
+  }
+
   public JobMetrics(JsonObject json) {
     JobMetricsConverter.fromJson(json, this);
   }
@@ -98,5 +102,10 @@ public class JobMetrics {
   public JobMetrics setDuration(double duration) {
     this.duration = duration;
     return this;
+  }
+
+  @Override
+  public String toString() {
+    return this.toJson().encodePrettily();
   }
 }

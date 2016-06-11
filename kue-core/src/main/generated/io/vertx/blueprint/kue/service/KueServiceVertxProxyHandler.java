@@ -139,6 +139,20 @@ public class KueServiceVertxProxyHandler extends ProxyHandler {
           });
           break;
         }
+        case "processBlocking": {
+          service.processBlocking((java.lang.String) json.getValue("type"), json.getValue("n") == null ? null : (json.getLong("n").intValue()), res -> {
+            if (res.failed()) {
+              if (res.cause() instanceof ServiceException) {
+                msg.reply(res.cause());
+              } else {
+                msg.reply(new ServiceException(-1, res.cause().getMessage()));
+              }
+            } else {
+              msg.reply(res.result() == null ? null : res.result().toJson());
+            }
+          });
+          break;
+        }
         default: {
           throw new IllegalStateException("Invalid action: " + action);
         }

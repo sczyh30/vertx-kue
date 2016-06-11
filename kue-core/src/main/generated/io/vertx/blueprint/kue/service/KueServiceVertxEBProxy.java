@@ -84,6 +84,25 @@ public class KueServiceVertxEBProxy implements KueService {
     });
   }
 
+  public void processBlocking(String type, int n, Handler<AsyncResult<Job>> handler) {
+    if (closed) {
+      handler.handle(Future.failedFuture(new IllegalStateException("Proxy is closed")));
+      return;
+    }
+    JsonObject _json = new JsonObject();
+    _json.put("type", type);
+    _json.put("n", n);
+    DeliveryOptions _deliveryOptions = (_options != null) ? new DeliveryOptions(_options) : new DeliveryOptions();
+    _deliveryOptions.addHeader("action", "processBlocking");
+    _vertx.eventBus().<JsonObject>send(_address, _json, _deliveryOptions, res -> {
+      if (res.failed()) {
+        handler.handle(Future.failedFuture(res.cause()));
+      } else {
+        handler.handle(Future.succeededFuture(res.result().body() == null ? null : new Job(res.result().body())));
+      }
+    });
+  }
+
 
   private List<Character> convertToListChar(JsonArray arr) {
     List<Character> list = new ArrayList<>();
@@ -129,7 +148,7 @@ public class KueServiceVertxEBProxy implements KueService {
     }
 
     Object elem = list.get(0);
-    if (!(elem instanceof Map) && !(elem instanceof List)) {
+    if (!(elem instanceof Map) && !(elem instanceof List)) { 
       return (List<T>) list; 
     } else { 
       Function<Object, T> converter; 

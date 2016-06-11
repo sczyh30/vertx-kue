@@ -35,16 +35,38 @@ var KueService = function (j_val) {
   var that = this;
 
   /**
+   Process a job in asynchronous way
 
    @public
-   @param type {string} 
-   @param n {number} 
-   @param handler {function} 
+   @param type {string} job type
+   @param n {number} job process times
+   @param handler {function} job process handler 
    */
   this.process = function (type, n, handler) {
     var __args = arguments;
     if (__args.length === 3 && typeof __args[0] === 'string' && typeof __args[1] === 'number' && typeof __args[2] === 'function') {
       j_kueService["process(java.lang.String,int,io.vertx.core.Handler)"](type, n, function (ar) {
+        if (ar.succeeded()) {
+          handler(utils.convReturnDataObject(ar.result()), null);
+        } else {
+          handler(null, ar.cause());
+        }
+      });
+    } else throw new TypeError('function invoked with invalid arguments');
+  };
+
+  /**
+   Process a job in synchronous and blocking way
+
+   @public
+   @param type {string} job type
+   @param n {number} job process times
+   @param handler {function} job process handler
+   */
+  this.processBlocking = function (type, n, handler) {
+    var __args = arguments;
+    if (__args.length === 3 && typeof __args[0] === 'string' && typeof __args[1] === 'number' && typeof __args[2] === 'function') {
+      j_kueService["processBlocking(java.lang.String,int,io.vertx.core.Handler)"](type, n, function (ar) {
         if (ar.succeeded()) {
           handler(utils.convReturnDataObject(ar.result()), null);
         } else {
