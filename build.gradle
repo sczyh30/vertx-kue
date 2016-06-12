@@ -1,14 +1,14 @@
 configure(allprojects) { project ->
 
   ext {
-    vertxVersion = "3.3.0-SNAPSHOT"
+    vertxVersion = "3.3.0.CR1"
   }
 
   apply plugin: 'java'
 
   repositories {
     maven { // snapshot repo, will be removed after 3.3 version released
-      url "https://oss.sonatype.org/content/repositories/snapshots"
+      url "https://oss.sonatype.org/content/repositories/iovertx-2911"
     }
     jcenter()
   }

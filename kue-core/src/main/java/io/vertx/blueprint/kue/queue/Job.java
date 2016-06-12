@@ -120,7 +120,7 @@ public class Job {
               this.zid, _failure());
             break;
           case DELAYED:
-            // TODO:
+            // TODO: DELAY
             break;
           case INACTIVE:
             client.transaction().lpush(RedisHelper.getKey(this.type + ":jobs"), "1", _failure());
@@ -133,6 +133,7 @@ public class Job {
         client.transaction().exec(r -> {
           if (r.succeeded()) {
             System.out.println("STATE SUCCESS");
+            future.complete(this);
           } else {
             System.err.println("STATE FAIL!");
             r.cause().printStackTrace();
@@ -140,10 +141,9 @@ public class Job {
           }
         });
       } else {
-        System.out.println("F E");
         r0.cause().printStackTrace();
       }
-    }); //changed
+    });
 
     return future.compose(Job::updateNow);
   }
@@ -312,7 +312,6 @@ public class Job {
         future.fail(res.cause());
       }
     });
-    // TODO: other update logic
     return future.compose(Job::update);
   }
 
@@ -330,13 +329,12 @@ public class Job {
   public Future<Job> update() {
     Future<Job> future = Future.future();
     this.jobMetrics.updateNow();
-    client.transaction().multi(null)
+    client.transaction().multi(_failure())
       .hmset(RedisHelper.getKey("job:" + this.id), this.toJson(), _failure())
       .zadd(RedisHelper.getKey("jobs"), this.priority.getValue(), this.zid, _failure())
       .exec(_completer(future, this));
 
     // TODO: search
-
     return future.compose(r ->
       this.state(this.state));
   }

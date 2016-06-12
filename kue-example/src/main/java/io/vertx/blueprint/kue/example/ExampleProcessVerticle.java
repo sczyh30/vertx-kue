@@ -28,20 +28,27 @@ public class ExampleProcessVerticle extends AbstractVerticle {
         System.out.println("Haha");
       });
 
-    job0.save();
-
-    kue.process("video", 3, r -> {
-      if (r.succeeded()) {
-        Job job = r.result();
-        // consume 3 seconds
-        vertx.setTimer(3000, l -> {
-          System.out.println("GET:JOB::" + job);
-          job.progress(100, 100);
-          System.out.println("Video id: " + job.getId());
+    job0.save().setHandler(r0 -> {
+      if (r0.succeeded()) {
+        System.out.println("Start processing...");
+        // process logic start
+        kue.process("video", 3, r -> {
+          if (r.succeeded()) {
+            Job job = r.result();
+            // consume 3 seconds
+            vertx.setTimer(3000, l -> {
+              System.out.println("GET:JOB::" + job);
+              job.progress(100, 100);
+              System.out.println("Video id: " + job.getId());
+            });
+          }
         });
+        // process logic end
       } else {
-        r.cause().printStackTrace();
+        r0.cause().printStackTrace();
       }
     });
+
+
   }
 }
