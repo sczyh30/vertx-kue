@@ -59,7 +59,7 @@ var KueService = function (j_val) {
    Process a job in synchronous and blocking way
 
    @public
-   @param type {string} job type
+   @param type {string} job type 
    @param n {number} job process times 
    @param handler {function} job process handler 
    */

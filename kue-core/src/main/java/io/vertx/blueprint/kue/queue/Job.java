@@ -57,9 +57,12 @@ public class Job {
   public Job(JsonObject json) {
     JobConverter.fromJson(json, this);
     // generated converter cannot handle this
-    if (this.getJobMetrics().getCreatedAt() > 0) {
+    if (this.getJobMetrics().getCreatedAt() <= 0) {
       this.setJobMetrics(new JobMetrics(json.getString("jobMetrics")));
       this.setData(new JsonObject(json.getString("data")));
+    }
+    if (this.id < 0) {
+      this.setId(Long.parseLong(json.getString("id")));
     }
   }
 
@@ -99,7 +102,7 @@ public class Job {
    * @param newState new job state
    * @return async result of this job
    */
-  public Future<Job> state(JobState newState) { // FIXME: ESSENTIAL BUG: 16-6-11
+  public Future<Job> state(JobState newState) { // FIXME: ESSENTIAL BUG: 16-6-11 | FIXED | NEED REVIEW
     Future<Job> future = Future.future();
     RedisClient client = RedisHelper.client(vertx, new JsonObject());
     JobState oldState = this.state;
@@ -120,7 +123,8 @@ public class Job {
               this.zid, _failure());
             break;
           case DELAYED:
-            // TODO: DELAY
+            client.transaction().zadd(RedisHelper.getKey("jobs:" + newState.name()),
+              this.jobMetrics.getPromoteAt(), this.zid, _failure());
             break;
           case INACTIVE:
             client.transaction().lpush(RedisHelper.getKey(this.type + ":jobs"), "1", _failure());
@@ -132,10 +136,10 @@ public class Job {
 
         client.transaction().exec(r -> {
           if (r.succeeded()) {
-            System.out.println("STATE SUCCESS");
+            // System.out.println("STATE SUCCESS");
             future.complete(this);
           } else {
-            System.err.println("STATE FAIL!");
+            // System.err.println("STATE FAIL!");
             r.cause().printStackTrace();
             future.fail(r.cause());
           }
@@ -212,7 +216,7 @@ public class Job {
     int n = Math.min(100, complete * 100 / total);
     this.setProgress(n)
       .updateNow();
-    // TODO: need callback?
+    // TODO: need callback? need to be async?
     // eventBus.send(Kue.getHandlerAddress("failure", this.type), n);
     return this;
   }
@@ -282,7 +286,7 @@ public class Job {
   /**
    * Save the job
    */
-  public Future<Job> save() { // fixme: chain may block, need check
+  public Future<Job> save() {
     // check
     Objects.requireNonNull(this.type, "Job type cannot be null");
 
@@ -304,7 +308,6 @@ public class Job {
         multi.sadd(RedisHelper.getKey("job:types"), this.type, _failure());
         this.jobMetrics.setCreatedAt(System.currentTimeMillis());
         this.jobMetrics.setPromoteAt(System.currentTimeMillis() + this.delay);
-        System.out.println(this);
         // save job
         multi.hmset(key, this.toJson(), _failure())
           .exec(_completer(future, this));
@@ -445,11 +448,11 @@ public class Job {
     client.hgetall(RedisHelper.getKey("job:" + id), r -> {
       if (r.succeeded()) {
         try {
-          System.out.println(r.result());
           if (!r.result().containsKey("id")) {
             future.complete(Optional.empty());
           } else {
             Job job = new Job(r.result());
+            job.id = id;
             job.zid = zid;
             future.complete(Optional.of(job));
           }

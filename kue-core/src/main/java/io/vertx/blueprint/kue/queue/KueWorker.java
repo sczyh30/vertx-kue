@@ -47,7 +47,6 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
       if (jr.succeeded()) {
         if (jr.result().isPresent()) {
           this.job = jr.result().get();
-          System.out.println("To process:" + job);
           process();
         } else {
           // NOT PRESENT?

@@ -37,7 +37,6 @@ public class ExampleProcessVerticle extends AbstractVerticle {
             Job job = r.result();
             // consume 3 seconds
             vertx.setTimer(3000, l -> {
-              System.out.println("GET:JOB::" + job);
               job.progress(100, 100);
               System.out.println("Video id: " + job.getId());
             });
