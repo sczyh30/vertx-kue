@@ -30,7 +30,6 @@ public class ExampleProcessVerticle extends AbstractVerticle {
 
     job0.save().setHandler(r0 -> {
       if (r0.succeeded()) {
-        System.out.println("Start processing...");
         // process logic start
         kue.process("video", 3, r -> {
           if (r.succeeded()) {

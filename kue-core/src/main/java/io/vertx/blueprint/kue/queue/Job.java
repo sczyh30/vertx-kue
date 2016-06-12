@@ -9,6 +9,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisClient;
 import io.vertx.redis.RedisTransaction;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Vert.x Blueprint - Job Queue
@@ -482,6 +484,46 @@ public class Job {
         return Future.succeededFuture();
       }
     });
+  }
+
+  public static Future<List<Job>> jobRange(long from, long to, String order) { // TODO: NEED REVIEW
+    Future<List<Job>> future = Future.future();
+    if (to < from) {
+      future.fail("to can not be greater than from");
+      return future;
+    }
+    client.zrange(RedisHelper.getKey("jobs"), from, to, r -> {
+      if (r.succeeded()) {
+        List<Long> list = (List<Long>) r.result().getList().stream()
+          .map(e -> RedisHelper.numStripFIFO((String) e))
+          .collect(Collectors.toList());
+        long max = list.get(list.size() - 1);
+        List<Job> jobList = new ArrayList<>();
+        list.forEach(e -> {
+          Job.getJob(e).setHandler(jr -> {
+            if (jr.succeeded()) {
+              if (jr.result().isPresent()) {
+                jobList.add(jr.result().get());
+              }
+              if (e >= max) {
+                jobList.sort((a1, a2) -> {
+                  if (order.equals("asc"))
+                    return Long.compare(a1.id, a2.id);
+                  else
+                    return Long.compare(a2.id, a1.id);
+                });
+                future.complete(jobList);
+              }
+            } else {
+              future.fail(jr.cause());
+            }
+          });
+        });
+      } else {
+        future.fail(r.cause());
+      }
+    });
+    return future;
   }
 
   /**

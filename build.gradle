@@ -74,6 +74,7 @@ project("kue-http") {
   dependencies {
     compile(project(":kue-core"))
     compile("io.vertx:vertx-web:${vertxVersion}")
+    compile("io.vertx:vertx-web-templ-jade:${vertxVersion}")
   }
 
   jar {

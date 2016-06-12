@@ -9,13 +9,19 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisClient;
 
 import io.vertx.blueprint.kue.util.RedisHelper;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * Vert.x Blueprint - Job Queue
+ * Kue class
  *
  * @author Eric Zhao
  */
@@ -33,29 +39,46 @@ public class Kue implements KueService {
     this.config = config;
     this.service = KueService.createProxy(vertx, EB_KUE_ADDRESS);
     this.client = RedisClient.create(vertx, RedisHelper.options(config));
-    Job.setVertx(vertx, client);
-  }
-
-  public RedisClient getRedis() {
-    return this.client;
+    Job.setVertx(vertx, client); // init static vertx instance inner job
   }
 
   /**
-   * Format: vertx.kue.handler.job.handlerType.jobType
+   * Generate handler address on event bus
+   * Format: vertx.kue.handler.job.{handlerType}.{jobType}
+   *
+   * @return corresponding address
    */
   public static String getHandlerAddress(String handlerType, String jobType) {
     return "vertx.kue.handler.job." + handlerType + "." + jobType;
   }
 
+  /**
+   * Generate worker address on event bus
+   * Format: vertx.kue.handler.workers.{eventType}
+   *
+   * @return corresponding address
+   */
   public static String workerAddress(String eventType) {
     return "vertx.kue.handler.workers." + eventType;
   }
 
+  /**
+   * Create a Kue instance
+   *
+   * @param vertx  vertx instance
+   * @param config config json object
+   * @return kue instance
+   */
   public static Kue createQueue(Vertx vertx, JsonObject config) {
     return new Kue(vertx, config);
   }
 
-  // job stuff
+  /**
+   * Create a job instance
+   * @param type job type
+   * @param data job extra data
+   * @return a new job instance
+   */
   public Job createJob(String type, JsonObject data) {
     return new Job(type, data);
   }
@@ -155,6 +178,61 @@ public class Kue implements KueService {
       return this.card(JobState.DELAYED);
     else
       return this.cardByType(type, JobState.DELAYED);
+  }
+
+  /**
+   * Get the job types present
+   *
+   * @return async result list
+   */
+  public Future<List<String>> getAllTypes() {
+    Future<List<String>> future = Future.future();
+    client.smembers(RedisHelper.getKey("job:types"), r -> {
+      if (r.succeeded()) {
+        future.complete(r.result().getList());
+      } else {
+        future.fail(r.cause());
+      }
+    });
+    return future;
+  }
+
+  /**
+   * Return job ids with the given `state`
+   *
+   * @param state job state
+   * @return async result list
+   */
+  public Future<List<Long>> getIdsByState(JobState state) {
+    Future<List<Long>> future = Future.future();
+    client.zrange(RedisHelper.getStateKey(state), 0, -1, r -> {
+      if (r.succeeded()) {
+        List<Long> list = r.result().stream()
+          .map(e -> RedisHelper.numStripFIFO((String) e))
+          .collect(Collectors.toList());
+        future.complete(list);
+      } else {
+        future.fail(r.cause());
+      }
+    });
+    return future;
+  }
+
+  /**
+   * Get queue work time in milliseconds
+   *
+   * @return async result
+   */
+  public Future<Long> getWorkTime() {
+    Future<Long> future = Future.future();
+    client.get(RedisHelper.getKey("stats:work-time"), r -> {
+      if (r.succeeded()) {
+        future.complete(Long.parseLong(r.result()));
+      } else {
+        future.fail(r.cause());
+      }
+    });
+    return future;
   }
 
 }

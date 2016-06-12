@@ -1,5 +1,6 @@
 package io.vertx.blueprint.kue.util;
 
+import io.vertx.blueprint.kue.queue.JobState;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisClient;
@@ -32,6 +33,10 @@ public final class RedisHelper {
     return VERTX_KUE_REDIS_PREFIX + ":" + key;
   }
 
+  public static String getStateKey(JobState state) {
+    return VERTX_KUE_REDIS_PREFIX + ":jobs:" + state.name();
+  }
+
   /**
    * Create an id for the zset to preserve FIFO order
    *
@@ -51,5 +56,14 @@ public final class RedisHelper {
    */
   public static String stripFIFO(String zid) {
     return zid.substring(zid.indexOf('|') + 1);
+  }
+
+  /**
+   * Parse out original ID from zid
+   *
+   * @param zid zid
+   */
+  public static long numStripFIFO(String zid) {
+    return Long.parseLong(zid.substring(zid.indexOf('|') + 1));
   }
 }
