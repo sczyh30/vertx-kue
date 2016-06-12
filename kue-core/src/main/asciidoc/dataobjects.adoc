@@ -41,7 +41,7 @@
 |===
 ^|Name | Type ^| Description
 |[[createdAt]]`createdAt`|`Number (long)`|-
-|[[duration]]`duration`|`Number (double)`|-
+|[[duration]]`duration`|`Number (long)`|-
 |[[failedAt]]`failedAt`|`Number (long)`|-
 |[[promoteAt]]`promoteAt`|`Number (long)`|-
 |[[startedAt]]`startedAt`|`Number (long)`|-

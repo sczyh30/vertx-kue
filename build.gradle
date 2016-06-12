@@ -19,6 +19,8 @@ configure(allprojects) { project ->
     compile("io.vertx:vertx-rx-java:${vertxVersion}")
     compile("io.vertx:vertx-hazelcast:${vertxVersion}")
 
+    compile group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.21'
+
     testCompile("io.vertx:vertx-unit:${vertxVersion}")
     testCompile group: 'junit', name: 'junit', version: '4.12'
   }

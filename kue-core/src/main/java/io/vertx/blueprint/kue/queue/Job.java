@@ -88,47 +88,53 @@ public class Job {
     return this;
   }
 
-  public Future<Job> state(JobState newState, Handler<Void> handler) {
-    System.out.println("STATE OPEN");
+  public Future<Job> state(JobState newState, Handler<Void> handler) { // FIXME: ESSENTIAL BUG: 16-6-11
     Future<Job> future = Future.future();
-
+    RedisClient client = RedisHelper.client(vertx, new JsonObject());
     JobState oldState = this.state;
-    RedisTransaction multi = client.transaction().multi(_failure()); //changed
-    if (oldState != null && !oldState.equals(newState)) {
-      multi.zrem(RedisHelper.getKey("jobs:" + oldState.name()), this.zid, _failure())
-        .zrem(RedisHelper.getKey("jobs:" + this.type + ":" + oldState.name()), this.zid, _failure());
-    }
-    multi.hset(RedisHelper.getKey("job:" + this.id), "state", newState.name(), _failure())
-      .zadd(RedisHelper.getKey("jobs:" + newState.name()), this.priority.getValue(), this.zid, _failure())
-      .zadd(RedisHelper.getKey("jobs:" + this.type + ":" + newState.name()), this.priority.getValue(), this.zid, _failure());
+    client.transaction().multi(r0 -> {
+      if (r0.succeeded()) {
+        if (oldState != null && !oldState.equals(newState)) {
+          client.transaction().zrem(RedisHelper.getKey("jobs:" + oldState.name()), this.zid, _failure())
+            .zrem(RedisHelper.getKey("jobs:" + this.type + ":" + oldState.name()), this.zid, _failure());
+        }
+        client.transaction().hset(RedisHelper.getKey("job:" + this.id), "state", newState.name(), _failure())
+          .zadd(RedisHelper.getKey("jobs:" + newState.name()), this.priority.getValue(), this.zid, _failure())
+          .zadd(RedisHelper.getKey("jobs:" + this.type + ":" + newState.name()), this.priority.getValue(), this.zid, _failure());
 
-    switch (newState) {
-      case ACTIVE:
-        multi.zadd(RedisHelper.getKey("jobs:" + newState.name()),
-          this.priority.getValue() < 0 ? this.priority.getValue() : -this.priority.getValue(),
-          this.zid, _failure());
-        break;
-      case DELAYED:
-        // TODO:
-        break;
-      case INACTIVE:
-        multi.lpush(RedisHelper.getKey(this.type + ":jobs"), "1", _failure());
-        break;
-      default:
-    }
+        switch (newState) {
+          case ACTIVE:
+            client.transaction().zadd(RedisHelper.getKey("jobs:" + newState.name()),
+              this.priority.getValue() < 0 ? this.priority.getValue() : -this.priority.getValue(),
+              this.zid, _failure());
+            break;
+          case DELAYED:
+            // TODO:
+            break;
+          case INACTIVE:
+            client.transaction().lpush(RedisHelper.getKey(this.type + ":jobs"), "1", _failure());
+            break;
+          default:
+        }
 
-    this.state = newState;
+        this.state = newState;
 
-    multi.exec(r -> {
-      if (r.succeeded()) {
-        System.out.println("STATE SUCCESS");
-        handler.handle(null);
+        client.transaction().exec(r -> {
+          if (r.succeeded()) {
+            System.out.println("STATE SUCCESS");
+            handler.handle(null);
+          } else {
+            System.err.println("STATE FAIL!");
+            r.cause().printStackTrace();
+            future.fail(r.cause());
+          }
+        });
       } else {
-        System.out.println("STATE FAILURE#?" + r.cause().getMessage());
-        r.cause().printStackTrace();
-        future.fail(r.cause());
+        System.out.println("F E");
+        r0.cause().printStackTrace();
       }
-    });
+    }); //changed
+
     return future.compose(Job::updateNow);
   }
 
@@ -255,24 +261,6 @@ public class Job {
         future.fail(r.cause());
       else
         future.complete(result);
-    };
-  }
-
-  private static <T, R> Handler<AsyncResult<T>> _completer(List<Future<R>> list) {
-    return r -> {
-      if (r.failed())
-        list.add(Future.failedFuture(r.cause()));
-      else
-        list.add(Future.succeededFuture());
-    };
-  }
-
-  private static <T, R> Handler<AsyncResult<T>> _completer(List<Future<R>> list, R result) {
-    return r -> {
-      if (r.failed())
-        list.add(Future.failedFuture(r.cause()));
-      else
-        list.add(Future.succeededFuture(result));
     };
   }
 

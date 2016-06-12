@@ -11,6 +11,8 @@ import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -20,6 +22,8 @@ import io.vertx.redis.RedisClient;
  * @author Eric Zhao
  */
 public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
+
+  private static Logger logger = LoggerFactory.getLogger(KueWorker.class);
 
   private RedisClient client; // every worker use different client
   private EventBus eventBus;
@@ -36,10 +40,9 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
   public void start() throws Exception {
     this.eventBus = vertx.eventBus();
     this.client = RedisHelper.client(vertx, config());
-    System.out.println(client);
-    System.out.println("START-GFBE");
+    logger.debug("START-GFBE");
     this.getJobFromBackend(jr -> {
-      System.out.println("OK-GFBE");
+      logger.debug("OK-GFBE");
       if (jr.succeeded()) {
         this.job = jr.result();
         System.out.println(job);
@@ -96,7 +99,6 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
       .zremrangebyrank(key, 0, 0, _failure())
       .exec(r -> {
         if (r.succeeded()) {
-          System.out.println("ZPOP SUCCESS");
           JsonArray res = r.result();
           if (res.getJsonArray(0).size() == 0) // empty set
             future.fail(new IllegalStateException("Empty zpop set"));
@@ -109,7 +111,6 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
             }
           }
         } else {
-          System.out.println("ZPOP FAIL");
           future.fail(r.cause());
         }
       });
@@ -158,20 +159,23 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
 
       job.complete(e -> {
         System.out.println("KueWorker::Job::complete");
-        eventBus.send(Kue.getHandlerAddress("complete", job.getType()), job.toJson());
+        // eventBus.send(Kue.getHandlerAddress("complete", job.getType()), job.toJson());
+        this.emitJobEvent("complete", job, null);
       });
 
 
     };
   }
 
+  /**
+   * Emit job event
+   *
+   * @param event event type
+   * @param job   corresponding job
+   * @param other extra data
+   */
   private void emitJobEvent(String event, Job job, JsonObject other) {
-    if (other == null)
-      eventBus.send(Kue.getHandlerAddress("job_" + event, job.getType()), job.toJson());
-    else {
-      JsonObject json = other.copy().put("job", job.toJson());
-      eventBus.send(Kue.getHandlerAddress("job_" + event, job.getType()), json);
-    }
+    eventBus.send(Kue.workerAddress("job_" + event), job.toJson());
   }
 
   private static <T> Handler<AsyncResult<T>> _failure() {

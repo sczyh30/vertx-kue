@@ -1,5 +1,6 @@
 package io.vertx.blueprint.kue.service.impl;
 
+import io.vertx.blueprint.kue.Kue;
 import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.blueprint.kue.queue.KueWorker;
 import io.vertx.blueprint.kue.service.KueService;
@@ -8,6 +9,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisClient;
 
@@ -47,11 +49,22 @@ public final class KueServiceImpl implements KueService {
     }
     while (n-- > 0) {
       KueWorker worker = new KueWorker(type, handler);
-      vertx.deployVerticle(worker, new DeploymentOptions().setWorker(isWorker), r -> {
-        if (r.succeeded())
-          System.out.println("Kue worker created"); // log
+      vertx.deployVerticle(worker, new DeploymentOptions().setWorker(isWorker), r0 -> {
+        if (r0.succeeded()) {
+          this.on("job_complete", msg -> {
+            long dur = new Job((JsonObject) msg.body()).getJobMetrics().getDuration();
+            redis.incrby(RedisHelper.getKey("stats:work-time"), dur, r1 -> {
+              if (r1.failed())
+                r1.cause().printStackTrace();
+            });
+          });
+        }
       });
     }
+  }
+
+  private <R> void on(String eventType, Handler<Message<R>> handler) {
+    vertx.eventBus().consumer(Kue.workerAddress(eventType), handler);
   }
 
   @Override

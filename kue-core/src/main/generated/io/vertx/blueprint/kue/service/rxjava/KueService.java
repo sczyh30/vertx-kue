@@ -56,9 +56,8 @@ public class KueService {
 
   /**
    * Process a job in asynchronous way
-   *
-   * @param type    job type
-   * @param n       job process times
+   * @param type job type
+   * @param n job process times
    * @param handler job process handler
    */
   public void process(String type, int n, Handler<AsyncResult<Job>> handler) { 
@@ -79,23 +78,21 @@ public class KueService {
 
   /**
    * Process a job in synchronous and blocking way
-   *
-   * @param type    job type
-   * @param n       job process times
+   * @param type job type
+   * @param n job process times
    * @param handler job process handler
    */
-  public void processBlocking(String type, int n, Handler<AsyncResult<Job>> handler) {
+  public void processBlocking(String type, int n, Handler<AsyncResult<Job>> handler) { 
     delegate.processBlocking(type, n, handler);
   }
 
   /**
    * Process a job in synchronous and blocking way
-   *
    * @param type job type
-   * @param n    job process times
-   * @return
+   * @param n job process times
+   * @return 
    */
-  public Observable<Job> processBlockingObservable(String type, int n) {
+  public Observable<Job> processBlockingObservable(String type, int n) { 
     io.vertx.rx.java.ObservableFuture<Job> handler = io.vertx.rx.java.RxHelper.observableFuture();
     processBlocking(type, n, handler.toHandler());
     return handler;

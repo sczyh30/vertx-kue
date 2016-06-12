@@ -17,7 +17,7 @@ public class JobMetrics {
   private long updatedAt;
   private long failedAt;
   private long startedAt;
-  private double duration;
+  private long duration;
 
   public JobMetrics() {
   }
@@ -95,11 +95,11 @@ public class JobMetrics {
     return this;
   }
 
-  public double getDuration() {
+  public long getDuration() {
     return duration;
   }
 
-  public JobMetrics setDuration(double duration) {
+  public JobMetrics setDuration(long duration) {
     this.duration = duration;
     return this;
   }

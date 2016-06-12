@@ -31,7 +31,7 @@ public class JobMetricsConverter {
       obj.setCreatedAt(((Number) json.getValue("createdAt")).longValue());
     }
     if (json.getValue("duration") instanceof Number) {
-      obj.setDuration(((Number) json.getValue("duration")).doubleValue());
+      obj.setDuration(((Number) json.getValue("duration")).longValue());
     }
     if (json.getValue("failedAt") instanceof Number) {
       obj.setFailedAt(((Number) json.getValue("failedAt")).longValue());

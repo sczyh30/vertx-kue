@@ -23,7 +23,7 @@ public class KueHttpVerticle extends AbstractVerticle {
   private static final int PORT = 3000;
 
   // Kue REST API
-  public static final String KUE_API_JOB_SEARCH = "/job/search/:q";
+  public static final String KUE_API_JOB_SEARCH = "/job/search/:q"; // delayed
   public static final String KUE_API_STATS = "/stats";
   public static final String KUE_API_GET_JOB = "/job/:id";
   public static final String KUE_API_CREATE_JOB = "/job";
