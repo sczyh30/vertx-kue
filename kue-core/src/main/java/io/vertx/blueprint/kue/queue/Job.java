@@ -81,6 +81,11 @@ public class Job {
     return json;
   }
 
+  /**
+   * Set job priority
+   *
+   * @param level job priority level
+   */
   @Fluent
   public Job priority(Priority level) {
     if (level != null)
@@ -88,7 +93,13 @@ public class Job {
     return this;
   }
 
-  public Future<Job> state(JobState newState, Handler<Void> handler) { // FIXME: ESSENTIAL BUG: 16-6-11
+  /**
+   * Set new job state
+   *
+   * @param newState new job state
+   * @return async result of this job
+   */
+  public Future<Job> state(JobState newState) { // FIXME: ESSENTIAL BUG: 16-6-11
     Future<Job> future = Future.future();
     RedisClient client = RedisHelper.client(vertx, new JsonObject());
     JobState oldState = this.state;
@@ -122,7 +133,6 @@ public class Job {
         client.transaction().exec(r -> {
           if (r.succeeded()) {
             System.out.println("STATE SUCCESS");
-            handler.handle(null);
           } else {
             System.err.println("STATE FAIL!");
             r.cause().printStackTrace();
@@ -144,36 +154,59 @@ public class Job {
       .compose(j -> j.log("error | " + ex.getMessage()));
   }
 
-  public Future<Job> complete(Handler<Void> handler) {
+  /**
+   * Complete a job
+   */
+  public Future<Job> complete() {
     return this.setProgress(100)
       .set("progress", "100")
-      .compose(r -> r.state(JobState.COMPLETE, handler));
+      .compose(r -> r.state(JobState.COMPLETE));
   }
 
-  public Future<Job> failed(Handler<Void> handler) {
+  /**
+   * Set a job failed
+   */
+  public Future<Job> failed() {
     this.getJobMetrics().setFailedAt(System.currentTimeMillis());
     return this.updateNow()
-      .compose(j -> j.state(JobState.FAILED, handler));
+      .compose(j -> j.state(JobState.FAILED));
   }
 
-  public Future<Job> inactive(Handler<Void> handler) {
-    return this.state(JobState.INACTIVE, handler);
+  /**
+   * Set a job inactive
+   */
+  public Future<Job> inactive() {
+    return this.state(JobState.INACTIVE);
   }
 
-  public Future<Job> active(Handler<Void> handler) {
-    return this.state(JobState.ACTIVE, handler);
+  /**
+   * Set a job active(started)
+   */
+  public Future<Job> active() {
+    return this.state(JobState.ACTIVE);
   }
 
-  public Future<Job> delayed(Handler<Void> handler) {
-    return this.state(JobState.DELAYED, handler);
+  /**
+   * Set a job delayed
+   */
+  public Future<Job> delayed() {
+    return this.state(JobState.DELAYED);
   }
 
+  /**
+   * Log with some messages
+   */
   public Future<Job> log(String msg) {
     Future<Job> future = Future.future();
     client.rpush(RedisHelper.getKey("job:" + this.id + ":log"), msg, _completer(future, this));
     return future.compose(Job::updateNow);
   }
 
+  /**
+   * Set progress
+   * @param complete current value
+   * @param total total value
+   */
   @Fluent
   public Job progress(int complete, int total) {
     int n = Math.min(100, complete * 100 / total);
@@ -184,6 +217,11 @@ public class Job {
     return this;
   }
 
+  /**
+   * Set a key with value in Redis
+   * @param key property key
+   * @param value value
+   */
   public Future<Job> set(String key, String value) {
     Future<Job> future = Future.future();
     client.hset(RedisHelper.getKey("job:" + this.id), key, value, r -> {
@@ -220,7 +258,8 @@ public class Job {
   }
 
   public Job failedAttempt(Throwable err, Handler<AsyncResult<Job>> handler) {
-    this.error(err)
+    return this; // TODO: refactor
+    /* this.error(err)
       .compose(j -> j.failed(v -> {
         this.attempt().setHandler(r -> {
           if (r.failed()) {
@@ -237,78 +276,12 @@ public class Job {
             }
           }
         });
-      })).setHandler(null); // // FIXME: 16-6-8 
-    return this;
+      })).setHandler(null); */
   }
 
-  private static <T> Handler<AsyncResult<T>> _failure() {
-    return r -> {
-      if (r.failed())
-        r.cause().printStackTrace();
-    };
-  }
-
-  private static <T> Handler<AsyncResult<T>> _failure(Future future) {
-    return r -> {
-      if (r.failed())
-        future.fail(r.cause());
-    };
-  }
-
-  private static <T, R> Handler<AsyncResult<T>> _completer(Future<R> future, R result) {
-    return r -> {
-      if (r.failed())
-        future.fail(r.cause());
-      else
-        future.complete(result);
-    };
-  }
-
-  public static Future<Job> getJob(long id, String jobType) { // use `Option`?
-    Future<Job> future = Future.future();
-    String zid = RedisHelper.createFIFO(id);
-    client.hgetall(RedisHelper.getKey("job:" + id), r -> {
-      if (r.succeeded()) {
-        try {
-          Job job = new Job(r.result());
-          job.zid = zid;
-          future.complete(job);
-        } catch (Exception e) {
-          removeBadJob(id, jobType);
-          future.fail(e);
-        }
-      } else {
-        removeBadJob(id, jobType);
-        future.fail(r.cause());
-      }
-    });
-    return future;
-  }
-
-  public static Future<Void> removeBadJob(long id, String jobType) {
-    Future<Void> future = Future.future();
-    String zid = RedisHelper.createFIFO(id);
-    client.transaction().multi(null)
-      .del(RedisHelper.getKey("job:" + id + ":log"), null)
-      .del(RedisHelper.getKey("job:" + id), null)
-      .zrem(RedisHelper.getKey("jobs:INACTIVE"), zid, null)
-      .zrem(RedisHelper.getKey("jobs:ACTIVE"), zid, null)
-      .zrem(RedisHelper.getKey("jobs:COMPLETE"), zid, null)
-      .zrem(RedisHelper.getKey("jobs:FAILED"), zid, null)
-      .zrem(RedisHelper.getKey("jobs:DELAYED"), zid, null)
-      .zrem(RedisHelper.getKey("jobs"), zid, null)
-      .zrem(RedisHelper.getKey("jobs:" + jobType + ":INACTIVE"), zid, null)
-      .zrem(RedisHelper.getKey("jobs:" + jobType + ":ACTIVE"), zid, null)
-      .zrem(RedisHelper.getKey("jobs:" + jobType + ":COMPLETE"), zid, null)
-      .zrem(RedisHelper.getKey("jobs:" + jobType + ":FAILED"), zid, null)
-      .zrem(RedisHelper.getKey("jobs:" + jobType + ":DELAYED"), zid, null)
-      .exec(_failure(future));
-
-    // TODO: search functionality
-
-    return future;
-  }
-
+  /**
+   * Save the job
+   */
   public Future<Job> save() { // fixme: chain may block, need check
     // check
     Objects.requireNonNull(this.type, "Job type cannot be null");
@@ -343,11 +316,17 @@ public class Job {
     return future.compose(Job::update);
   }
 
+  /**
+   * Update the job update time (`updateTime`)
+   */
   public Future<Job> updateNow() {
     this.getJobMetrics().updateNow();
     return this.set("jobMetrics", this.getJobMetrics().toJson().encodePrettily());
   }
 
+  /**
+   * Update the job
+   */
   public Future<Job> update() {
     Future<Job> future = Future.future();
     this.jobMetrics.updateNow();
@@ -359,9 +338,35 @@ public class Job {
     // TODO: search
 
     return future.compose(r ->
-      this.state(this.state, noop));
+      this.state(this.state));
   }
 
+  /**
+   * Remove the job
+   */
+  public Future<Void> remove() {
+    Future<Void> future = Future.future();
+    client.transaction().multi(_failure())
+      .zrem(RedisHelper.getKey("jobs:" + this.stateName()), this.zid, _failure())
+      .zrem(RedisHelper.getKey("jobs:" + this.type + ":" + this.stateName()), this.zid, _failure())
+      .zrem(RedisHelper.getKey("jobs"), this.zid, _failure())
+      .del(RedisHelper.getKey("job:" + this.id + ":log"), _failure())
+      .del(RedisHelper.getKey("job" + this.id), _failure())
+      .exec(r -> {
+        if (r.succeeded()) {
+          // TODO: emit remove event
+          future.complete();
+        } else {
+          future.fail(r.cause());
+        }
+      });
+    return future;
+  }
+
+  /**
+   * Add on complete handler on event bus
+   * @param completeHandler complete handler
+   */
   @Fluent
   public Job onComplete(Handler<Job> completeHandler) {
     eventBus.consumer(Kue.getHandlerAddress("complete", this.type), message -> {
@@ -370,6 +375,10 @@ public class Job {
     return this;
   }
 
+  /**
+   * Add on failure handler on event bus
+   * @param failureHandler failure handler
+   */
   @Fluent
   public Job onFailure(Handler<Job> failureHandler) {
     eventBus.consumer(Kue.getHandlerAddress("failure", this.type), message -> {
@@ -378,6 +387,10 @@ public class Job {
     return this;
   }
 
+  /**
+   * Add on progress changed handler on event bus
+   * @param progressHandler progress handler
+   */
   @Fluent
   public Job onProgress(Handler<Integer> progressHandler) {
     eventBus.consumer(Kue.getHandlerAddress("progress", this.type), message -> {
@@ -386,6 +399,11 @@ public class Job {
     return this;
   }
 
+  /**
+   * Add a certain event handler on event bus
+   * @param event event type
+   * @param handler event handler
+   */
   @Fluent
   public Job on(String event, Handler handler) {
     eventBus.consumer(Kue.getHandlerAddress(event, this.type), message -> {
@@ -394,6 +412,11 @@ public class Job {
     return this;
   }
 
+  /**
+   * Send an event to event bus with some data
+   * @param event event type
+   * @param msg data
+   */
   @Fluent
   public Job emit(String event, JsonObject msg) {
     eventBus.send(Kue.getHandlerAddress(event, this.type), msg);
@@ -406,6 +429,91 @@ public class Job {
     return this;
   }
 
+  // static method, may be removed later
+
+  /**
+   * Get job from backend by id
+   *
+   * @param id job id
+   * @return async result
+   */
+  public static Future<Optional<Job>> getJob(long id) { // use `Option`?
+    return getJob(id, "");
+  }
+
+  public static Future<Optional<Job>> getJob(long id, String jobType) { // use `Option`?
+    Future<Optional<Job>> future = Future.future();
+    String zid = RedisHelper.createFIFO(id);
+    client.hgetall(RedisHelper.getKey("job:" + id), r -> {
+      if (r.succeeded()) {
+        try {
+          System.out.println(r.result());
+          if (!r.result().containsKey("id")) {
+            future.complete(Optional.empty());
+          } else {
+            Job job = new Job(r.result());
+            job.zid = zid;
+            future.complete(Optional.of(job));
+          }
+        } catch (Exception e) {
+          removeBadJob(id, jobType);
+          future.fail(e);
+        }
+      } else {
+        removeBadJob(id, jobType);
+        future.fail(r.cause());
+      }
+    });
+    return future;
+  }
+
+  /**
+   * Remove job by id
+   *
+   * @param id job id
+   * @return async result
+   */
+  public static Future<Void> removeJob(long id) {
+    return getJob(id).compose(r -> {
+      if (r.isPresent()) {
+        return r.get().remove();
+      } else {
+        return Future.succeededFuture();
+      }
+    });
+  }
+
+  /**
+   * Remove bad job by id (absolutely)
+   *
+   * @param id job id
+   * @return async result
+   */
+  public static Future<Void> removeBadJob(long id, String jobType) {
+    Future<Void> future = Future.future();
+    String zid = RedisHelper.createFIFO(id);
+    client.transaction().multi(null)
+      .del(RedisHelper.getKey("job:" + id + ":log"), null)
+      .del(RedisHelper.getKey("job:" + id), null)
+      .zrem(RedisHelper.getKey("jobs:INACTIVE"), zid, null)
+      .zrem(RedisHelper.getKey("jobs:ACTIVE"), zid, null)
+      .zrem(RedisHelper.getKey("jobs:COMPLETE"), zid, null)
+      .zrem(RedisHelper.getKey("jobs:FAILED"), zid, null)
+      .zrem(RedisHelper.getKey("jobs:DELAYED"), zid, null)
+      .zrem(RedisHelper.getKey("jobs"), zid, null)
+      .zrem(RedisHelper.getKey("jobs:" + jobType + ":INACTIVE"), zid, null)
+      .zrem(RedisHelper.getKey("jobs:" + jobType + ":ACTIVE"), zid, null)
+      .zrem(RedisHelper.getKey("jobs:" + jobType + ":COMPLETE"), zid, null)
+      .zrem(RedisHelper.getKey("jobs:" + jobType + ":FAILED"), zid, null)
+      .zrem(RedisHelper.getKey("jobs:" + jobType + ":DELAYED"), zid, null)
+      .exec(_failure(future));
+
+    // TODO: search functionality
+
+    return future;
+  }
+
+  // getter and setter
 
   public long getId() {
     return id;
@@ -485,6 +593,10 @@ public class Job {
     return state;
   }
 
+  public String stateName() {
+    return state.name();
+  }
+
   public Job setState(JobState state) {
     this.state = state;
     return this;
@@ -529,6 +641,32 @@ public class Job {
 
   private static final Handler noop = r -> {
   };
+
+  /**
+   * Basic failure handler (always throws the exception)
+   */
+  private static <T> Handler<AsyncResult<T>> _failure() {
+    return r -> {
+      if (r.failed())
+        r.cause().printStackTrace();
+    };
+  }
+
+  private static <T> Handler<AsyncResult<T>> _failure(Future future) {
+    return r -> {
+      if (r.failed())
+        future.fail(r.cause());
+    };
+  }
+
+  private static <T, R> Handler<AsyncResult<T>> _completer(Future<R> future, R result) {
+    return r -> {
+      if (r.failed())
+        future.fail(r.cause());
+      else
+        future.complete(result);
+    };
+  }
 
   @Override
   public String toString() {

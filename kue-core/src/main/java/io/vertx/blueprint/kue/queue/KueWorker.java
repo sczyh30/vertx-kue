@@ -14,6 +14,8 @@ import io.vertx.redis.RedisClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Optional;
+
 
 /**
  * Vert.x Blueprint - Job Queue
@@ -40,13 +42,16 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
   public void start() throws Exception {
     this.eventBus = vertx.eventBus();
     this.client = RedisHelper.client(vertx, config());
-    logger.debug("START-GFBE");
-    this.getJobFromBackend(jr -> {
-      logger.debug("OK-GFBE");
+
+    this.getJobFromBackend().setHandler(jr -> {
       if (jr.succeeded()) {
-        this.job = jr.result();
-        System.out.println(job);
-        process();
+        if (jr.result().isPresent()) {
+          this.job = jr.result().get();
+          System.out.println("To process:" + job);
+          process();
+        } else {
+          // NOT PRESENT?
+        }
       } else {
         jr.cause().printStackTrace(); // fast fail
       }
@@ -70,18 +75,18 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
         } else {
           //
         }
-        // fn?
       }
     });
   }
 
   private void process() {
-
-    job.active(r -> {
-      // TODO: emit event
-      this.emitJobEvent("start", this.job, null);
-      jobHandler.handle(Future.succeededFuture(job));
-      createDoneCallback().handle(Future.succeededFuture(job.getResult())); // should not do this, refactor
+    job.active().setHandler(r -> {
+      if (r.succeeded()) {
+        Job j = r.result();
+        this.emitJobEvent("start", j, null);
+        jobHandler.handle(Future.succeededFuture(j));
+        createDoneCallback().handle(Future.succeededFuture(j.getResult())); // should not do this, refactor
+      }
     });
   }
 
@@ -117,27 +122,26 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
     return future;
   }
 
-  private void getJobFromBackend(Handler<AsyncResult<Job>> handler) {
+  private Future<Optional<Job>> getJobFromBackend() {
+    Future<Optional<Job>> future = Future.future();
     client.blpop(RedisHelper.getKey(this.type + ":jobs"), 0, r1 -> {
       if (r1.failed()) {
         client.lpush(RedisHelper.getKey(this.type + ":jobs"), "1", r2 -> {
           if (r2.failed())
-            handler.handle(Future.failedFuture(r2.cause()));
+            future.fail(r2.cause());
         });
       } else {
         this.zpop(RedisHelper.getKey("jobs:" + this.type + ":INACTIVE"))
+          .compose(r -> Job.getJob(r, this.type))
           .setHandler(r -> {
-            if (r.succeeded()) {
-              long _id = r.result();
-              Job.getJob(_id, this.type)
-                .setHandler(handler);
-            } else {
-              // TODO: maybe should idle
-              r.cause().printStackTrace();
-            }
+            if (r.succeeded())
+              future.complete(r.result());
+            else
+              future.fail(r.cause());
           });
       }
     });
+    return future;
   }
 
   private Handler<AsyncResult<JsonObject>> createDoneCallback() { //TODO
@@ -157,10 +161,13 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
           .set("result", result.encodePrettily());
       }
 
-      job.complete(e -> {
-        System.out.println("KueWorker::Job::complete");
-        // eventBus.send(Kue.getHandlerAddress("complete", job.getType()), job.toJson());
-        this.emitJobEvent("complete", job, null);
+      job.complete().setHandler(r -> {
+        if (r.succeeded()) {
+          Job j = r.result();
+          System.out.println("KueWorker::Job::complete");
+          // eventBus.send(Kue.getHandlerAddress("complete", job.getType()), job.toJson());
+          this.emitJobEvent("complete", j, null);
+        }
       });
 
 
@@ -176,6 +183,7 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
    */
   private void emitJobEvent(String event, Job job, JsonObject other) {
     eventBus.send(Kue.workerAddress("job_" + event), job.toJson());
+    // emit other
   }
 
   private static <T> Handler<AsyncResult<T>> _failure() {

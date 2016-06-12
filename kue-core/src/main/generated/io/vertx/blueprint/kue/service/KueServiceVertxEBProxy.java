@@ -146,7 +146,7 @@ public class KueServiceVertxEBProxy implements KueService {
     if (list.isEmpty()) {
       return (List<T>) list;
     }
-
+     
     Object elem = list.get(0); 
     if (!(elem instanceof Map) && !(elem instanceof List)) { 
       return (List<T>) list; 

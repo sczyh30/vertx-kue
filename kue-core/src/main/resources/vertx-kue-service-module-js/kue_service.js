@@ -38,7 +38,7 @@ var KueService = function (j_val) {
    Process a job in asynchronous way
 
    @public
-   @param type {string} job type
+   @param type {string} job type 
    @param n {number} job process times 
    @param handler {function} job process handler 
    */
@@ -60,7 +60,7 @@ var KueService = function (j_val) {
 
    @public
    @param type {string} job type
-   @param n {number} job process times
+   @param n {number} job process times 
    @param handler {function} job process handler 
    */
   this.processBlocking = function (type, n, handler) {
