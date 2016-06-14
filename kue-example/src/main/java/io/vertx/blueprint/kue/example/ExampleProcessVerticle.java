@@ -21,7 +21,7 @@ public class ExampleProcessVerticle extends AbstractVerticle {
     // must first create kue
     Kue kue = Kue.createQueue(vertx, config());
 
-    Job job0 = kue.createJob("video", new JsonObject().put("id", 3009).put("intro", "great movie"))
+    Job job0 = kue.createJob("video", new JsonObject().put("id", 3009).put("intro", "great movie").put("title", "Video maker"))
       .priority(Priority.NORMAL)
       .onComplete(e -> {
         System.out.println("Video result: " + e.getResult());
@@ -46,7 +46,6 @@ public class ExampleProcessVerticle extends AbstractVerticle {
         r0.cause().printStackTrace();
       }
     });
-
-
   }
+
 }

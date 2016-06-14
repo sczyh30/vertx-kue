@@ -38,8 +38,8 @@ public class Kue implements KueService {
     this.vertx = vertx;
     this.config = config;
     this.service = KueService.createProxy(vertx, EB_KUE_ADDRESS);
-    this.client = RedisClient.create(vertx, RedisHelper.options(config));
-    Job.setVertx(vertx, client); // init static vertx instance inner job
+    this.client = RedisHelper.client(vertx, config);
+    Job.setVertx(vertx, RedisHelper.client(vertx, config)); // init static vertx instance inner job
   }
 
   /**

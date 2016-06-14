@@ -186,7 +186,7 @@ Job.prototype.updatePriority = function (n) {
  */
 
 Job.prototype.renderUpdate = function () {
-  // TODO: templates
+  // tbd: templates
   var view = this.view
     , showError = this._showError
     , showProgress = this._showProgress;

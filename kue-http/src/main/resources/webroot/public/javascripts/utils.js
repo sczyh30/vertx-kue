@@ -26,7 +26,7 @@ function relative(ms) {
   if (ms < min) return n(ms / sec, 'second');
   if (ms < hour) return n(ms / min, 'minute');
   return n(ms / hour, 'hour');
-  // TODO: larger than an hour or so, we should
+  // TBD: larger than an hour or so, we should
   // have some nice date formatting
 }
 

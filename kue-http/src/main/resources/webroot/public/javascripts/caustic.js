@@ -51,10 +51,6 @@ EventEmitter.prototype.emit = function (event) {
  * MIT Licensed
  */
 
-// TODO: `make caustic.js` should wrap in an anonymous function
-// TODO: `make caustic.min.js`
-
-// TODO: compile sub-views such as User etc based on the given
 // html, as there's no need to keep traversing each time.
 
 /**
@@ -248,8 +244,6 @@ View.prototype.visitUL = function (el, name) {
   this.children = [];
 
   this[name] = el;
-
-  // TODO: move these out
 
   /**
    * Add `val` to this list.

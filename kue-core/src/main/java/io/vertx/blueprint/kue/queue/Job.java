@@ -354,7 +354,7 @@ public class Job {
       .zrem(RedisHelper.getKey("jobs:" + this.type + ":" + this.stateName()), this.zid, _failure())
       .zrem(RedisHelper.getKey("jobs"), this.zid, _failure())
       .del(RedisHelper.getKey("job:" + this.id + ":log"), _failure())
-      .del(RedisHelper.getKey("job" + this.id), _failure())
+      .del(RedisHelper.getKey("job:" + this.id), _failure())
       .exec(r -> {
         if (r.succeeded()) {
           // TODO: emit remove event
@@ -486,13 +486,46 @@ public class Job {
     });
   }
 
-  public static Future<List<Job>> jobRange(long from, long to, String order) { // TODO: NEED REVIEW
+  /**
+   * Judge whether a job with certain id exists
+   *
+   * @param id job id
+   * @return async result
+   */
+  public static Future<Boolean> existsJob(long id) {
+    Future<Boolean> future = Future.future();
+    client.exists(RedisHelper.getKey("job:" + id), r -> {
+      if (r.succeeded()) {
+        if (r.result() == 0)
+          future.complete(false);
+        else
+          future.complete(true);
+      } else {
+        future.fail(r.cause());
+      }
+    });
+    return future;
+  }
+
+  /**
+   * Get job log by id
+   *
+   * @param id job id
+   * @return async result
+   */
+  public static Future<JsonArray> getLog(long id) {
+    Future<JsonArray> future = Future.future();
+    client.lrange(RedisHelper.getKey("job:" + id + ":log"), 0, -1, future.completer());
+    return future;
+  }
+
+  private static Future<List<Job>> rangeGeneral(String key, long from, long to, String order) {
     Future<List<Job>> future = Future.future();
     if (to < from) {
       future.fail("to can not be greater than from");
       return future;
     }
-    client.zrange(RedisHelper.getKey("jobs"), from, to, r -> {
+    client.zrange(RedisHelper.getKey(key), from, to, r -> {
       if (r.succeeded()) {
         List<Long> list = (List<Long>) r.result().getList().stream()
           .map(e -> RedisHelper.numStripFIFO((String) e))
@@ -524,6 +557,14 @@ public class Job {
       }
     });
     return future;
+  }
+
+  public static Future<List<Job>> jobRangeByState(String state, long from, long to, String order) {
+    return rangeGeneral("jobs:" + state.toUpperCase(), from, to, order);
+  }
+
+  public static Future<List<Job>> jobRange(long from, long to, String order) { // TODO: NEED REVIEW
+    return rangeGeneral("jobs", from, to, order);
   }
 
   /**

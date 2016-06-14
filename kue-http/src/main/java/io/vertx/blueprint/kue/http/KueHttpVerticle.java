@@ -25,28 +25,31 @@ import io.vertx.ext.web.templ.JadeTemplateEngine;
 public class KueHttpVerticle extends AbstractVerticle {
 
   private static final String HOST = "0.0.0.0";
-  private static final int PORT = 3000;
+  private static final int PORT = 3000; // default port
 
   // Kue REST API
-  public static final String KUE_API_JOB_SEARCH = "/job/search/:q";
-  public static final String KUE_API_STATS = "/stats";
-  public static final String KUE_API_GET_JOB = "/job/:id";
-  public static final String KUE_API_GET_INACTIVE = "/inactive/:id";
-  public static final String KUE_API_GET_JOB_TYPES = "/job/types";
-  public static final String KUE_API_JOB_RANGE = "\\/jobs\\/([0-9]*)\\.\\.([0-9]*)"; //"\\/jobs\\/([^\\/]+)\\/([^\\/]+)\\/([^\\/]?)";
-  public static final String KUE_API_JOB_RANGE_ORDER = "/jobs/:from..:to/:order"; // TODO
-  public static final String KUE_API_CREATE_JOB = "/job";
-  public static final String KUE_API_UPDATE_JOB_STATE = "/job/:id/state/:state";
-  public static final String KUE_API_DELETE_JOB = "/job/:id";
-  public static final String KUE_API_GET_JOB_LOG = "/job/:id/log";
+  private static final String KUE_API_JOB_SEARCH = "/job/search/:q";
+  private static final String KUE_API_STATS = "/stats";
+  private static final String KUE_API_TYPE_STATE_STATS = "/jobs/:type/:state/stats";
+  private static final String KUE_API_GET_JOB = "/job/:id";
+  private static final String KUE_API_GET_JOB_TYPES = "/job/types";
+  private static final String KUE_API_JOB_RANGE = "/jobs/:from/to/:to";
+  private static final String KUE_API_JOB_TYPE_RANGE = "/jobs/:type/:state/:from..:to/:order?"; // TODO
+  private static final String KUE_API_JOB_STATE_RANGE = "/jobs/:state/:from/to/:to";
+  private static final String KUE_API_JOB_RANGE_ORDER = "/jobs/:from/to/:to/:order";
+  private static final String KUE_API_CREATE_JOB = "/job";
+  private static final String KUE_API_UPDATE_JOB_STATE = "/job/:id/state/:state";
+  private static final String KUE_API_DELETE_JOB = "/job/:id";
+  private static final String KUE_API_GET_JOB_LOG = "/job/:id/log";
+  private static final String KUE_API_RESTART_JOB = "/inactive/:id";
 
   // Kue UI
-  public static final String KUE_UI_ROOT = "/";
-  public static final String KUE_UI_ACTIVE = "/active";
-  public static final String KUE_UI_INACTIVE = "/inactive";
-  public static final String KUE_UI_FAILED = "/failed";
-  public static final String KUE_UI_COMPLETE = "/complete";
-  public static final String KUE_UI_DELAYED = "/delayed";
+  private static final String KUE_UI_ROOT = "/";
+  private static final String KUE_UI_ACTIVE = "/active";
+  private static final String KUE_UI_INACTIVE = "/inactive";
+  private static final String KUE_UI_FAILED = "/failed";
+  private static final String KUE_UI_COMPLETE = "/complete";
+  private static final String KUE_UI_DELAYED = "/delayed";
 
   private Kue kue;
 
@@ -54,23 +57,34 @@ public class KueHttpVerticle extends AbstractVerticle {
   public void start(Future<Void> future) throws Exception {
     // init kue
     kue = Kue.createQueue(vertx, config());
-
+    // create route
     final Router router = Router.router(vertx);
     router.route().handler(BodyHandler.create());
     // REST API routes
     router.get(KUE_API_JOB_SEARCH).handler(this::apiSearchJob);
     router.get(KUE_API_STATS).handler(this::apiStats);
-    router.getWithRegex(KUE_API_JOB_RANGE).handler(this::apiJobRange); // \/jobs\/([0-9]*)\.\.([0-9]*)
+    router.get(KUE_API_TYPE_STATE_STATS).handler(this::apiTypeStateStats);
+    router.get(KUE_API_GET_JOB_TYPES).handler(this::apiJobTypes);
+    router.get(KUE_API_JOB_RANGE).handler(this::apiJobRange); // \/jobs\/([0-9]*)\.\.([0-9]*)(\/[^\/]+)?
+    router.get(KUE_API_JOB_TYPE_RANGE).handler(this::apiJobTypeRange);
+    router.get(KUE_API_JOB_STATE_RANGE).handler(this::apiJobStateRange);
+    router.get(KUE_API_JOB_RANGE_ORDER).handler(this::apiJobRange); // \/jobs\/([0-9]*)\.\.([0-9]*)(\/[^\/]+)?
     router.put(KUE_API_CREATE_JOB).handler(this::apiCreateJob);
-    router.put(KUE_API_UPDATE_JOB_STATE).handler(this::apiCreateJob);
+    router.put(KUE_API_UPDATE_JOB_STATE).handler(this::apiUpdateJobState);
     router.get(KUE_API_GET_JOB).handler(this::apiGetJob);
     router.get(KUE_API_GET_JOB_LOG).handler(this::apiFetchLog);
     router.delete(KUE_API_DELETE_JOB).handler(this::apiDeleteJob);
+    router.delete(KUE_API_RESTART_JOB).handler(this::apiRestartJob);
     // UI routes
     router.route(KUE_UI_ROOT).handler(this::handleUIRoot);
     router.route(KUE_UI_ACTIVE).handler(this::handleUIActive);
+    router.route(KUE_UI_INACTIVE).handler(this::handleUIInactive);
+    router.route(KUE_UI_COMPLETE).handler(this::handleUIComplete);
+    router.route(KUE_UI_FAILED).handler(this::handleUIFailed);
+    router.route(KUE_UI_DELAYED).handler(this::handleUIADelayed);
     // static resources route
     router.route().handler(StaticHandler.create());
+
     // create server
     vertx.createHttpServer()
       .requestHandler(router::accept)
@@ -85,14 +99,14 @@ public class KueHttpVerticle extends AbstractVerticle {
         });
   }
 
-  private void render(RoutingContext context, String state) {
+  private void render(RoutingContext context, String state) { // TODO: bug in `types` param
     final String uiPath = "webroot/views/job/list.jade";
     final JadeTemplateEngine engine = JadeTemplateEngine.create();
     String title = config().getString("title", "Vert.x Kue");
     kue.getAllTypes()
       .setHandler(resultHandler(context, r -> {
         context.put("state", state)
-          .put("types", new JsonArray(r))
+          .put("types", r)
           .put("title", title);
         engine.render(context, uiPath, res -> {
           if (res.succeeded()) {
@@ -108,12 +122,28 @@ public class KueHttpVerticle extends AbstractVerticle {
     handleUIActive(context); // by default active
   }
 
+  private void handleUIInactive(RoutingContext context) {
+    render(context, "inactive");
+  }
+
+  private void handleUIFailed(RoutingContext context) {
+    render(context, "failed");
+  }
+
+  private void handleUIComplete(RoutingContext context) {
+    render(context, "complete");
+  }
+
   private void handleUIActive(RoutingContext context) {
     render(context, "active");
   }
 
+  private void handleUIADelayed(RoutingContext context) {
+    render(context, "delayed");
+  }
+
   private void apiSearchJob(RoutingContext context) { // TODO: delayed to implement
-    context.response().setStatusCode(501).end(); // 501 Not Implemented
+    notImplemented(context); // 501 Not Implemented
   }
 
   private void apiStats(RoutingContext context) {
@@ -143,6 +173,28 @@ public class KueHttpVerticle extends AbstractVerticle {
     }));
   }
 
+  private void apiTypeStateStats(RoutingContext context) {
+    try {
+      String type = context.request().getParam("type");
+      JobState state = JobState.valueOf(context.request().getParam("state").toUpperCase());
+      kue.cardByType(type, state).setHandler(resultHandler(context, r -> {
+        context.response()
+          .putHeader("content-type", "application/json")
+          .end(new JsonObject().put("count", r).encodePrettily());
+      }));
+    } catch (Exception e) { // TODO: add error info
+      badRequest(context);
+    }
+  }
+
+  private void apiJobTypes(RoutingContext context) {
+    kue.getAllTypes().setHandler(resultHandler(context, r -> {
+      context.response()
+        .putHeader("content-type", "application/json")
+        .end(new JsonArray(r).encodePrettily());
+    }));
+  }
+
   private void apiCreateJob(RoutingContext context) {
     try {
       Job job = new Job(new JsonObject(context.getBodyAsString())); // TODO: support json array create
@@ -161,8 +213,27 @@ public class KueHttpVerticle extends AbstractVerticle {
 
   private void apiUpdateJobState(RoutingContext context) {
     try {
-      context.response().setStatusCode(501).end(); // 501 Not Implemented
-    } catch (Exception e) {
+      long id = Long.parseLong(context.request().getParam("id"));
+      JobState state = JobState.valueOf(context.request().getParam("state").toUpperCase());
+      Job.getJob(id)
+        .compose(j1 -> {
+          if (j1.isPresent()) {
+            return j1.get().state(state)
+              .compose(Job::save);
+          } else {
+            return Future.succeededFuture();
+          }
+        }).setHandler(resultHandler(context, job -> {
+        if (job != null) {
+          context.response().putHeader("content-type", "application/json")
+            .end(new JsonObject().put("message", "job_state_updated").encodePrettily());
+        } else {
+          context.response().setStatusCode(404)
+            .putHeader("content-type", "application/json")
+            .end(new JsonObject().put("message", "job_not_found").encodePrettily());
+        }
+      }));
+    } catch (Exception e) { // TODO: add error info
       badRequest(context);
     }
   }
@@ -186,13 +257,11 @@ public class KueHttpVerticle extends AbstractVerticle {
 
   private void apiJobRange(RoutingContext context) {
     try {
-      String order = context.request().getParam("param2");
-      if (order == null || !(order.equals("/asc") && order.equals("/desc")))
+      String order = context.request().getParam("order");
+      if (order == null || !(order.equals("asc") && order.equals("desc")))
         order = "asc";
-      else
-        order = order.substring(1);
-      Long from = Long.parseLong(context.request().getParam("param0"));
-      Long to = Long.parseLong(context.request().getParam("param1"));
+      Long from = Long.parseLong(context.request().getParam("from"));
+      Long to = Long.parseLong(context.request().getParam("to"));
       Job.jobRange(from, to, order)
         .setHandler(resultHandler(context, r -> {
           String result = new JsonArray(r).encodePrettily();
@@ -206,12 +275,62 @@ public class KueHttpVerticle extends AbstractVerticle {
     }
   }
 
-  private void apiDeleteJob(RoutingContext context) {
+  private void apiJobTypeRange(RoutingContext context) {
+    notImplemented(context); // 501 Not Implemented
+  }
 
+  private void apiJobStateRange(RoutingContext context) {
+    try {
+      String order = context.request().getParam("order");
+      if (order == null || !(order.equals("asc") && order.equals("desc")))
+        order = "asc";
+      Long from = Long.parseLong(context.request().getParam("from"));
+      Long to = Long.parseLong(context.request().getParam("to"));
+      String state = context.request().getParam("state");
+      Job.jobRangeByState(state, from, to, order)
+        .setHandler(resultHandler(context, r -> {
+          String result = new JsonArray(r).encodePrettily();
+          context.response()
+            .putHeader("content-type", "application/json")
+            .end(result);
+        }));
+    } catch (Exception e) {
+      e.printStackTrace();
+      badRequest(context);
+    }
+  }
+
+  private void apiDeleteJob(RoutingContext context) {
+    try {
+      long id = Long.parseLong(context.request().getParam("id"));
+      Job.removeJob(id).setHandler(resultHandler(context, r -> {
+        context.response().setStatusCode(204)
+          .putHeader("content-type", "application/json")
+          .end(new JsonObject().put("message", "job " + id + " removed").encodePrettily());
+      }));
+    } catch (Exception e) {
+      badRequest(context);
+    }
+  }
+
+  private void apiRestartJob(RoutingContext context) {
+    try {
+      long id = Long.parseLong(context.request().getParam("id"));
+    } catch (Exception e) {
+      badRequest(context);
+    }
   }
 
   private void apiFetchLog(RoutingContext context) {
-
+    try {
+      long id = Long.parseLong(context.request().getParam("id"));
+      Job.getLog(id).setHandler(resultHandler(context, r -> {
+        context.response().putHeader("content-type", "application/json")
+          .end(r.encodePrettily());
+      }));
+    } catch (Exception e) {
+      badRequest(context);
+    }
   }
 
   // helper methods
@@ -224,7 +343,7 @@ public class KueHttpVerticle extends AbstractVerticle {
       if (res.succeeded()) {
         handler.handle(res.result());
       } else {
-        serviceUnavailable(context);
+        serviceUnavailable(context, res.cause());
       }
     };
   }
@@ -239,6 +358,11 @@ public class KueHttpVerticle extends AbstractVerticle {
 
   private void notFound(RoutingContext context) {
     context.response().setStatusCode(404).end();
+  }
+
+  private void notImplemented(RoutingContext context) {
+    context.response().setStatusCode(501)
+      .end(new JsonObject().put("message", "not_implemented").encodePrettily());
   }
 
   private void serviceUnavailable(RoutingContext context) {

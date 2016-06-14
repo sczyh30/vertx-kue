@@ -4,10 +4,6 @@
  * MIT Licensed
  */
 
-// TODO: clean up
-// TODO: server-side config for this stuff
-// TODO: optimize! many of these jQuery objects can be cached
-
 /**
  * Active state.
  */
@@ -174,7 +170,7 @@ function pollForJobs(state, ms) {
  */
 
 function refreshJobs(state, fn) {
-  // TODO: clean this crap up
+  // TODO: fix urls
   var jobHeight = o('#jobs .job .block').outerHeight(true)
     , top = o(window).scrollTop()
     , height = window.innerHeight
@@ -182,7 +178,7 @@ function refreshJobs(state, fn) {
     , visibleTo = Math.floor((top + height) / jobHeight)
     , url = './jobs/'
     + (filter ? filter + '/' : '')
-    + state + '/0..' + to
+    + state + '/0/to/' + to
     + '/' + sort;
 
   // var color = ['blue', 'red', 'yellow', 'green', 'purple'][Math.random() * 5 | 0];
