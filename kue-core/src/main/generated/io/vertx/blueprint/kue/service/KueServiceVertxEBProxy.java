@@ -65,10 +65,10 @@ public class KueServiceVertxEBProxy implements KueService {
     }
   }
 
-  public void process(String type, int n, Handler<AsyncResult<Job>> handler) {
+  public KueService process(String type, int n, Handler<AsyncResult<Job>> handler) {
     if (closed) {
       handler.handle(Future.failedFuture(new IllegalStateException("Proxy is closed")));
-      return;
+      return this;
     }
     JsonObject _json = new JsonObject();
     _json.put("type", type);
@@ -82,12 +82,13 @@ public class KueServiceVertxEBProxy implements KueService {
         handler.handle(Future.succeededFuture(res.result().body() == null ? null : new Job(res.result().body())));
       }
     });
+    return this;
   }
 
-  public void processBlocking(String type, int n, Handler<AsyncResult<Job>> handler) {
+  public KueService processBlocking(String type, int n, Handler<AsyncResult<Job>> handler) {
     if (closed) {
       handler.handle(Future.failedFuture(new IllegalStateException("Proxy is closed")));
-      return;
+      return this;
     }
     JsonObject _json = new JsonObject();
     _json.put("type", type);
@@ -101,6 +102,7 @@ public class KueServiceVertxEBProxy implements KueService {
         handler.handle(Future.succeededFuture(res.result().body() == null ? null : new Job(res.result().body())));
       }
     });
+    return this;
   }
 
 

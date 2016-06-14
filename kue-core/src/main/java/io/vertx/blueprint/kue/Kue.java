@@ -2,9 +2,9 @@ package io.vertx.blueprint.kue;
 
 import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.blueprint.kue.queue.JobState;
+import io.vertx.blueprint.kue.service.JobService;
 import io.vertx.blueprint.kue.service.KueService;
 
-import io.vertx.codegen.annotations.Fluent;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -15,9 +15,11 @@ import io.vertx.redis.RedisClient;
 
 import io.vertx.blueprint.kue.util.RedisHelper;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static io.vertx.blueprint.kue.queue.KueVerticle.*;
 
 /**
  * Vert.x Blueprint - Job Queue
@@ -27,17 +29,17 @@ import java.util.stream.Collectors;
  */
 public class Kue implements KueService {
 
-  public static final String EB_KUE_ADDRESS = "vertx.kue.service.internal";
-
   private final JsonObject config;
   private final Vertx vertx;
-  private final KueService service;
+  private final KueService kueService;
+  private final JobService jobService;
   private final RedisClient client;
 
   public Kue(Vertx vertx, JsonObject config) {
     this.vertx = vertx;
     this.config = config;
-    this.service = KueService.createProxy(vertx, EB_KUE_ADDRESS);
+    this.kueService = KueService.createProxy(vertx, EB_KUE_SERVICE_ADDRESS);
+    this.jobService = JobService.createProxy(vertx, EB_JOB_SERVICE_ADDRESS);
     this.client = RedisHelper.client(vertx, config);
     Job.setVertx(vertx, RedisHelper.client(vertx, config)); // init static vertx instance inner job
   }
@@ -84,16 +86,104 @@ public class Kue implements KueService {
   }
 
   @Override
-  public void process(String type, int n, Handler<AsyncResult<Job>> handler) {
-    service.process(type, n, handler);
+  public Kue process(String type, int n, Handler<AsyncResult<Job>> handler) {
+    kueService.process(type, n, handler);
+    return this;
   }
 
   @Override
-  public void processBlocking(String type, int n, Handler<AsyncResult<Job>> handler) {
-    service.processBlocking(type, n, handler);
+  public Kue processBlocking(String type, int n, Handler<AsyncResult<Job>> handler) {
+    kueService.processBlocking(type, n, handler);
+    return this;
   }
 
+  // job logic
+
+  /**
+   * Get job from backend by id
+   *
+   * @param id job id
+   * @return async result
+   */
+  public Future<Optional<Job>> getJob(long id) {
+    Future<Optional<Job>> future = Future.future();
+    jobService.getJob(id, r -> {
+      if (r.succeeded()) {
+        future.complete(Optional.ofNullable(r.result()));
+      } else {
+        future.fail(r.cause());
+      }
+    });
+    return future;
+  }
+
+  /**
+   * Remove a job by id
+   *
+   * @param id job id
+   * @return async result
+   */
+  public Future<Void> removeJob(long id) {
+    return this.getJob(id).compose(r -> {
+      if (r.isPresent()) {
+        return r.get().remove();
+      } else {
+        return Future.succeededFuture();
+      }
+    });
+  }
+
+  /**
+   * Judge whether a job with certain id exists
+   *
+   * @param id job id
+   * @return async result
+   */
+  public Future<Boolean> existsJob(long id) {
+    Future<Boolean> future = Future.future();
+    jobService.existsJob(id, future.completer());
+    return future;
+  }
+
+  /**
+   * Get job log by id
+   *
+   * @param id job id
+   * @return async result
+   */
+  public Future<JsonArray> getJobLog(long id) {
+    Future<JsonArray> future = Future.future();
+    jobService.getJobLog(id, future.completer());
+    return future;
+  }
+
+  /**
+   * Get a list of job in certain state in range (from, to) with order
+   *
+   * @return async result
+   * @see JobService#jobRangeByState(String, long, long, String, Handler)
+   */
+  public Future<List<Job>> jobRangeByState(String state, long from, long to, String order) {
+    Future<List<Job>> future = Future.future();
+    jobService.jobRangeByState(state, from, to, order, future.completer());
+    return future;
+  }
+
+  /**
+   * Get a list of job in range (from, to) with order
+   *
+   * @return async result
+   * @see JobService#jobRange(long, long, String, Handler)
+   */
+  public Future<List<Job>> jobRange(long from, long to, String order) {
+    Future<List<Job>> future = Future.future();
+    jobService.jobRange(from, to, order, future.completer());
+    return future;
+  }
+
+
   // runtime cardinality metrics
+  // TODO: move to service proxy
 
   /**
    * Get cardinality by job type and state

@@ -59,9 +59,11 @@ public class KueService {
    * @param type job type
    * @param n job process times
    * @param handler job process handler
+   * @return 
    */
-  public void process(String type, int n, Handler<AsyncResult<Job>> handler) { 
+  public KueService process(String type, int n, Handler<AsyncResult<Job>> handler) { 
     delegate.process(type, n, handler);
+    return this;
   }
 
   /**
@@ -81,9 +83,11 @@ public class KueService {
    * @param type job type
    * @param n job process times
    * @param handler job process handler
+   * @return 
    */
-  public void processBlocking(String type, int n, Handler<AsyncResult<Job>> handler) { 
+  public KueService processBlocking(String type, int n, Handler<AsyncResult<Job>> handler) { 
     delegate.processBlocking(type, n, handler);
+    return this;
   }
 
   /**

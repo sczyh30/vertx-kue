@@ -1,15 +1,12 @@
 configure(allprojects) { project ->
 
   ext {
-    vertxVersion = "3.3.0.CR2"
+    vertxVersion = "3.3.0.CR1"
   }
 
   apply plugin: 'java'
 
   repositories {
-    maven { // snapshot repo, will be removed after 3.3 version released
-      url "https://oss.sonatype.org/content/repositories/iovertx-2917"
-    }
     jcenter()
   }
 
@@ -25,17 +22,6 @@ configure(allprojects) { project ->
     testCompile group: 'junit', name: 'junit', version: '4.12'
   }
 
-  task annotationProcessing(type: JavaCompile, group: 'build') {
-    source = sourceSets.main.java
-    classpath = configurations.compile
-    destinationDir = project.file('src/main/generated')
-    options.compilerArgs = [
-      "-proc:only",
-      "-processor", "io.vertx.codegen.CodeGenProcessor",
-      "-AoutputDirectory=${project.projectDir}/src/main"
-    ]
-  }
-
   sourceSets {
     main {
       java {
@@ -47,8 +33,6 @@ configure(allprojects) { project ->
   compileJava {
     targetCompatibility = 1.8
     sourceCompatibility = 1.8
-
-    dependsOn annotationProcessing
   }
 }
 
@@ -66,6 +50,24 @@ project("kue-core") {
       attributes 'Main-Class': 'io.vertx.core.Launcher'
       attributes 'Main-Verticle': 'io.vertx.blueprint.kue.queue.KueVerticle'
     }
+  }
+
+  task annotationProcessing(type: JavaCompile, group: 'build') {
+    source = sourceSets.main.java
+    classpath = configurations.compile
+    destinationDir = project.file('src/main/generated')
+    options.compilerArgs = [
+      "-proc:only",
+      "-processor", "io.vertx.codegen.CodeGenProcessor",
+      "-AoutputDirectory=${project.projectDir}/src/main"
+    ]
+  }
+
+  compileJava {
+    targetCompatibility = 1.8
+    sourceCompatibility = 1.8
+
+    dependsOn annotationProcessing
   }
 }
 

@@ -215,7 +215,7 @@ public class KueHttpVerticle extends AbstractVerticle {
     try {
       long id = Long.parseLong(context.request().getParam("id"));
       JobState state = JobState.valueOf(context.request().getParam("state").toUpperCase());
-      Job.getJob(id)
+      kue.getJob(id)
         .compose(j1 -> {
           if (j1.isPresent()) {
             return j1.get().state(state)

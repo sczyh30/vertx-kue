@@ -40,7 +40,8 @@ var KueService = function (j_val) {
    @public
    @param type {string} job type 
    @param n {number} job process times 
-   @param handler {function} job process handler 
+   @param handler {function} job process handler
+   @return {KueService}
    */
   this.process = function (type, n, handler) {
     var __args = arguments;
@@ -52,6 +53,7 @@ var KueService = function (j_val) {
           handler(null, ar.cause());
         }
       });
+      return that;
     } else throw new TypeError('function invoked with invalid arguments');
   };
 
@@ -61,7 +63,8 @@ var KueService = function (j_val) {
    @public
    @param type {string} job type 
    @param n {number} job process times 
-   @param handler {function} job process handler 
+   @param handler {function} job process handler
+   @return {KueService}
    */
   this.processBlocking = function (type, n, handler) {
     var __args = arguments;
@@ -73,6 +76,7 @@ var KueService = function (j_val) {
           handler(null, ar.cause());
         }
       });
+      return that;
     } else throw new TypeError('function invoked with invalid arguments');
   };
 

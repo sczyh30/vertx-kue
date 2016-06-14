@@ -10,8 +10,11 @@ import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.Message;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisClient;
+
+import java.util.List;
 
 /**
  * Vert.x Blueprint - Job Queue
@@ -68,12 +71,14 @@ public final class KueServiceImpl implements KueService {
   }
 
   @Override
-  public void process(String type, int n, Handler<AsyncResult<Job>> handler) {
+  public KueService process(String type, int n, Handler<AsyncResult<Job>> handler) {
     processInternal(type, n, handler, false);
+    return this;
   }
 
   @Override
-  public void processBlocking(String type, int n, Handler<AsyncResult<Job>> handler) {
+  public KueService processBlocking(String type, int n, Handler<AsyncResult<Job>> handler) {
     processInternal(type, n, handler, true);
+    return this;
   }
 }

@@ -104,7 +104,7 @@ public class Job {
    * @param newState new job state
    * @return async result of this job
    */
-  public Future<Job> state(JobState newState) { // FIXME: ESSENTIAL BUG: 16-6-11 | FIXED | NEED REVIEW
+  public Future<Job> state(JobState newState) { // FIXED: ESSENTIAL BUG: 16-6-11 | NEED REVIEW
     Future<Job> future = Future.future();
     RedisClient client = RedisHelper.client(vertx, new JsonObject());
     JobState oldState = this.state;
@@ -138,11 +138,8 @@ public class Job {
 
         client.transaction().exec(r -> {
           if (r.succeeded()) {
-            // System.out.println("STATE SUCCESS");
             future.complete(this);
           } else {
-            // System.err.println("STATE FAIL!");
-            r.cause().printStackTrace();
             future.fail(r.cause());
           }
         });
@@ -440,11 +437,11 @@ public class Job {
    * @param id job id
    * @return async result
    */
-  public static Future<Optional<Job>> getJob(long id) { // use `Option`?
+  public static Future<Optional<Job>> getJob(long id) {
     return getJob(id, "");
   }
 
-  public static Future<Optional<Job>> getJob(long id, String jobType) { // use `Option`?
+  public static Future<Optional<Job>> getJob(long id, String jobType) {
     Future<Optional<Job>> future = Future.future();
     String zid = RedisHelper.createFIFO(id);
     client.hgetall(RedisHelper.getKey("job:" + id), r -> {
@@ -722,9 +719,6 @@ public class Job {
     this.maxAttempts = maxAttempts;
     return this;
   }
-
-  private static final Handler noop = r -> {
-  };
 
   /**
    * Basic failure handler (always throws the exception)
