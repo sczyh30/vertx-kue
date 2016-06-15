@@ -27,15 +27,17 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
 
   private static Logger logger = LoggerFactory.getLogger(KueWorker.class);
 
+  private Kue kue;
   private RedisClient client; // every worker use different client
   private EventBus eventBus;
   private Job job;
   private String type;
   private Handler<AsyncResult<Job>> jobHandler;
 
-  public KueWorker(String type, Handler<AsyncResult<Job>> jobHandler) {
+  public KueWorker(String type, Handler<AsyncResult<Job>> jobHandler, Kue kue) {
     this.type = type;
     this.jobHandler = jobHandler;
+    this.kue = kue;
   }
 
   @Override
@@ -47,6 +49,7 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
       if (jr.succeeded()) {
         if (jr.result().isPresent()) {
           this.job = jr.result().get();
+          System.out.println("[LOG] Job " + job.getId() + " arrived");
           process();
         } else {
           // NOT PRESENT?
@@ -64,7 +67,7 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
 
   private void fail(Throwable ex) {
     // TODO/UNFINISHED: fail
-    job.failedAttempt(ex, r -> {
+    job.failedAttempt(ex).setHandler(r -> {
       if (r.failed()) {
         // error
       } else {
@@ -83,8 +86,14 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
       if (r.succeeded()) {
         Job j = r.result();
         this.emitJobEvent("start", j, null);
+        System.out.println("[LOG] Job " + j.getId() + " will be processing...");
         jobHandler.handle(Future.succeededFuture(j));
-        createDoneCallback().handle(Future.succeededFuture(j.getResult())); // should not do this, refactor
+        eventBus.consumer(Kue.workerAddress("done", j), msg -> {
+          createDoneCallback().handle(Future.succeededFuture(
+            ((JsonObject) msg.body()).getJsonObject("result")));
+        });
+      } else {
+        r.cause().printStackTrace();
       }
     });
   }
@@ -121,6 +130,11 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
     return future;
   }
 
+  /**
+   * Get a job from Redis backend by priority
+   *
+   * @return async result of job
+   */
   private Future<Optional<Job>> getJobFromBackend() {
     Future<Optional<Job>> future = Future.future();
     client.blpop(RedisHelper.getKey(this.type + ":jobs"), 0, r1 -> {
@@ -131,10 +145,11 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
         });
       } else {
         this.zpop(RedisHelper.getKey("jobs:" + this.type + ":INACTIVE"))
-          .compose(r -> Job.getJob(r, this.type))
+          .compose(r -> kue.getJob(r))
           .setHandler(r -> {
-            if (r.succeeded())
+            if (r.succeeded()) {
               future.complete(r.result());
+            }
             else
               future.fail(r.cause());
           });
@@ -164,7 +179,6 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
         if (r.succeeded()) {
           Job j = r.result();
           System.out.println("KueWorker::Job::complete");
-          // eventBus.send(Kue.getHandlerAddress("complete", job.getType()), job.toJson());
           this.emitJobEvent("complete", j, null);
         }
       });
@@ -181,7 +195,8 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
    * @param other extra data
    */
   private void emitJobEvent(String event, Job job, JsonObject other) {
-    eventBus.send(Kue.workerAddress("job_" + event), job.toJson());
+    eventBus.send(Kue.workerAddress("job_" + event, job), job.toJson());
+    eventBus.send(Kue.getCertainJobAddress(event, job), job.toJson());
     // emit other
   }
 

@@ -17,12 +17,9 @@
 package io.vertx.blueprint.kue.service.rxjava;
 
 import java.util.Map;
-
 import rx.Observable;
 import io.vertx.core.json.JsonArray;
-
 import java.util.List;
-
 import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -32,7 +29,7 @@ import io.vertx.core.Handler;
 /**
  * Vert.x Blueprint - Job Queue
  * Job Service Interface
- * <p>
+ *
  * <p/>
  * NOTE: This class has been automatically generated from the {@link io.vertx.blueprint.kue.service.JobService original} non RX-ified interface using Vert.x codegen.
  */
@@ -61,23 +58,21 @@ public class JobService {
 
   /**
    * Get job from backend by id
-   *
-   * @param id      job id
+   * @param id job id
    * @param handler async result handler
-   * @return
+   * @return 
    */
-  public JobService getJob(long id, Handler<AsyncResult<Job>> handler) {
+  public JobService getJob(long id, Handler<AsyncResult<Job>> handler) { 
     delegate.getJob(id, handler);
     return this;
   }
 
   /**
    * Get job from backend by id
-   *
    * @param id job id
-   * @return
+   * @return 
    */
-  public Observable<Job> getJobObservable(long id) {
+  public Observable<Job> getJobObservable(long id) { 
     io.vertx.rx.java.ObservableFuture<Job> handler = io.vertx.rx.java.RxHelper.observableFuture();
     getJob(id, handler.toHandler());
     return handler;
@@ -85,12 +80,11 @@ public class JobService {
 
   /**
    * Remove a job by id
-   *
-   * @param id      job id
+   * @param id job id
    * @param handler async result handler
-   * @return
+   * @return 
    */
-  public JobService removeJob(long id, Handler<AsyncResult<Void>> handler) {
+  public JobService removeJob(long id, Handler<AsyncResult<Void>> handler) { 
     delegate.removeJob(id, new Handler<AsyncResult<java.lang.Void>>() {
       public void handle(AsyncResult<java.lang.Void> ar) {
         if (ar.succeeded()) {
@@ -105,11 +99,10 @@ public class JobService {
 
   /**
    * Remove a job by id
-   *
    * @param id job id
-   * @return
+   * @return 
    */
-  public Observable<Void> removeJobObservable(long id) {
+  public Observable<Void> removeJobObservable(long id) { 
     io.vertx.rx.java.ObservableFuture<Void> handler = io.vertx.rx.java.RxHelper.observableFuture();
     removeJob(id, handler.toHandler());
     return handler;
@@ -117,23 +110,21 @@ public class JobService {
 
   /**
    * Judge whether a job with certain id exists
-   *
-   * @param id      job id
+   * @param id job id
    * @param handler async result handler
-   * @return
+   * @return 
    */
-  public JobService existsJob(long id, Handler<AsyncResult<Boolean>> handler) {
+  public JobService existsJob(long id, Handler<AsyncResult<Boolean>> handler) { 
     delegate.existsJob(id, handler);
     return this;
   }
 
   /**
    * Judge whether a job with certain id exists
-   *
    * @param id job id
-   * @return
+   * @return 
    */
-  public Observable<Boolean> existsJobObservable(long id) {
+  public Observable<Boolean> existsJobObservable(long id) { 
     io.vertx.rx.java.ObservableFuture<Boolean> handler = io.vertx.rx.java.RxHelper.observableFuture();
     existsJob(id, handler.toHandler());
     return handler;
@@ -141,23 +132,21 @@ public class JobService {
 
   /**
    * Get job log by id
-   *
-   * @param id      job id
+   * @param id job id
    * @param handler async result handler
-   * @return
+   * @return 
    */
-  public JobService getJobLog(long id, Handler<AsyncResult<JsonArray>> handler) {
+  public JobService getJobLog(long id, Handler<AsyncResult<JsonArray>> handler) { 
     delegate.getJobLog(id, handler);
     return this;
   }
 
   /**
    * Get job log by id
-   *
    * @param id job id
-   * @return
+   * @return 
    */
-  public Observable<JsonArray> getJobLogObservable(long id) {
+  public Observable<JsonArray> getJobLogObservable(long id) { 
     io.vertx.rx.java.ObservableFuture<JsonArray> handler = io.vertx.rx.java.RxHelper.observableFuture();
     getJobLog(id, handler.toHandler());
     return handler;
@@ -165,29 +154,27 @@ public class JobService {
 
   /**
    * Get a list of job in certain state in range (from, to) with order
-   *
-   * @param state   expected job state
-   * @param from    from
-   * @param to      to
-   * @param order   range order
+   * @param state expected job state
+   * @param from from
+   * @param to to
+   * @param order range order
    * @param handler async result handler
-   * @return
+   * @return 
    */
-  public JobService jobRangeByState(String state, long from, long to, String order, Handler<AsyncResult<List<Job>>> handler) {
+  public JobService jobRangeByState(String state, long from, long to, String order, Handler<AsyncResult<List<Job>>> handler) { 
     delegate.jobRangeByState(state, from, to, order, handler);
     return this;
   }
 
   /**
    * Get a list of job in certain state in range (from, to) with order
-   *
    * @param state expected job state
-   * @param from  from
-   * @param to    to
+   * @param from from
+   * @param to to
    * @param order range order
-   * @return
+   * @return 
    */
-  public Observable<List<Job>> jobRangeByStateObservable(String state, long from, long to, String order) {
+  public Observable<List<Job>> jobRangeByStateObservable(String state, long from, long to, String order) { 
     io.vertx.rx.java.ObservableFuture<List<Job>> handler = io.vertx.rx.java.RxHelper.observableFuture();
     jobRangeByState(state, from, to, order, handler.toHandler());
     return handler;
@@ -195,27 +182,25 @@ public class JobService {
 
   /**
    * Get a list of job in range (from, to) with order
-   *
-   * @param from    from
-   * @param to      to
-   * @param order   range order
+   * @param from from
+   * @param to to
+   * @param order range order
    * @param handler async result handler
-   * @return
+   * @return 
    */
-  public JobService jobRange(long from, long to, String order, Handler<AsyncResult<List<Job>>> handler) {
+  public JobService jobRange(long from, long to, String order, Handler<AsyncResult<List<Job>>> handler) { 
     delegate.jobRange(from, to, order, handler);
     return this;
   }
 
   /**
    * Get a list of job in range (from, to) with order
-   *
-   * @param from  from
-   * @param to    to
+   * @param from from
+   * @param to to
    * @param order range order
-   * @return
+   * @return 
    */
-  public Observable<List<Job>> jobRangeObservable(long from, long to, String order) {
+  public Observable<List<Job>> jobRangeObservable(long from, long to, String order) { 
     io.vertx.rx.java.ObservableFuture<List<Job>> handler = io.vertx.rx.java.RxHelper.observableFuture();
     jobRange(from, to, order, handler.toHandler());
     return handler;

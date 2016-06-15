@@ -66,6 +66,9 @@ public class JobConverter {
   }
 
   public static void toJson(Job obj, JsonObject json) {
+    if (obj.getAddress_id() != null) {
+      json.put("address_id", obj.getAddress_id());
+    }
     json.put("attempts", obj.getAttempts());
     if (obj.getData() != null) {
       json.put("data", obj.getData());

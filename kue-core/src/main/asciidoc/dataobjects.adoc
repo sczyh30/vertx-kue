@@ -13,6 +13,7 @@
 [frame="topbot"]
 |===
 ^|Name | Type ^| Description
+|[[address_id]]`address_id`|`String`|-
 |[[attempts]]`attempts`|`Number (int)`|-
 |[[data]]`data`|`Json object`|-
 |[[delay]]`delay`|`Number (int)`|-

@@ -55,13 +55,28 @@ public class Kue implements KueService {
   }
 
   /**
+   * Generate handler address with certain job on event bus
+   * Format: vertx.kue.handler.job.{handlerType}.{addressId}.{jobType}
+   *
+   * @return corresponding address
+   */
+  public static String getCertainJobAddress(String handlerType, Job job) {
+    return "vertx.kue.handler.job." + handlerType + "." + job.getAddress_id() + "." + job.getType();
+  }
+
+  @Deprecated
+  public static String workerAddress(String eventType) {
+    return "vertx.kue.handler.workers." + eventType;
+  }
+
+  /**
    * Generate worker address on event bus
    * Format: vertx.kue.handler.workers.{eventType}
    *
    * @return corresponding address
    */
-  public static String workerAddress(String eventType) {
-    return "vertx.kue.handler.workers." + eventType;
+  public static String workerAddress(String eventType, Job job) {
+    return "vertx.kue.handler.workers." + eventType + "." + job.getAddress_id();
   }
 
   /**

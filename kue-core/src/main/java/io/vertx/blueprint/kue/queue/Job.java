@@ -9,6 +9,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisClient;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -39,6 +41,7 @@ public class Job {
     eventBus = vertx.eventBus();
   }
 
+  private final String address_id;
   private long id = -1;
   private String type;
   private JsonObject data;
@@ -54,10 +57,12 @@ public class Job {
   private JobMetrics jobMetrics = new JobMetrics();
 
   public Job() {
+    this.address_id = UUID.randomUUID().toString();
   }
 
   public Job(JsonObject json) {
     JobConverter.fromJson(json, this);
+    this.address_id = json.getString("address_id");
     // generated converter cannot handle this
     if (this.getJobMetrics().getCreatedAt() <= 0) {
       this.setJobMetrics(new JobMetrics(json.getString("jobMetrics")));
@@ -69,15 +74,19 @@ public class Job {
   }
 
   public Job(Job other) {
+    this.id = other.id;
+    this.address_id = other.address_id; // correct?
     this.type = other.type;
-    this.data = other.data.copy();
+    this.data = other.data == null ? null : other.data.copy();
     this.priority = other.priority;
     this.state = other.state;
+    this.jobMetrics = other.jobMetrics;
   }
 
   public Job(String type, JsonObject data) {
     this.type = type;
     this.data = data;
+    this.address_id = UUID.randomUUID().toString();
   }
 
   public JsonObject toJson() {
@@ -151,8 +160,15 @@ public class Job {
     return future.compose(Job::updateNow);
   }
 
+  /**
+   * Set error to the job
+   *
+   * @param ex exception
+   */
   public Future<Job> error(Throwable ex) {
-    // TODO: emit error
+    // TO REVIEW: emit error => this.emit('error', msg)
+    this.emit("error", new JsonObject().put("id", this.id)
+      .put("message", ex.getMessage()));
     return this.set("error", ex.getMessage())
       .compose(j -> j.log("error | " + ex.getMessage()));
   }
@@ -207,22 +223,23 @@ public class Job {
 
   /**
    * Set progress
+   *
    * @param complete current value
-   * @param total total value
+   * @param total    total value
    */
-  @Fluent
-  public Job progress(int complete, int total) {
+  public Future<Job> progress(int complete, int total) {
     int n = Math.min(100, complete * 100 / total);
     this.setProgress(n)
       .updateNow();
-    // TODO: need callback? need to be async?
-    // eventBus.send(Kue.getHandlerAddress("failure", this.type), n);
-    return this;
+    this.emit("progress", n);
+    return this.setProgress(n)
+      .updateNow();
   }
 
   /**
    * Set a key with value in Redis
-   * @param key property key
+   *
+   * @param key   property key
    * @param value value
    */
   public Future<Job> set(String key, String value) {
@@ -242,7 +259,10 @@ public class Job {
     return this;
   }
 
-  private Future<Job> attempt() {
+  /**
+   * Attempt once and save attempt times to Redis
+   */
+  public Future<Job> attempt() {
     Future<Job> future = Future.future();
     String key = RedisHelper.getKey("job:" + this.id);
     if (this.attempts < this.maxAttempts) {
@@ -260,26 +280,40 @@ public class Job {
     return future;
   }
 
-  public Job failedAttempt(Throwable err, Handler<AsyncResult<Job>> handler) {
-    return this; // TODO: refactor
-    /* this.error(err)
-      .compose(j -> j.failed(v -> {
-        this.attempt().setHandler(r -> {
-          if (r.failed()) {
-            this.emit("error", new JsonObject().put("errorMsg", r.cause().getMessage())); // can we emit exception directly?
-            handler.handle(Future.failedFuture(r.cause()));
+  /**
+   * Failed attempt
+   *
+   * @param err exception
+   */
+  public Future<Job> failedAttempt(Throwable err) { // TODO: reattempt logic should implement `Failure Backoff`
+    Future<Job> future = Future.future();
+    this.error(err)
+      .compose(Job::failed)
+      .compose(Job::attempt)
+      .setHandler(r -> {
+        if (r.succeeded()) {
+          Job j = r.result();
+          int remaining = j.maxAttempts - j.attempts;
+          if (remaining > 0) {
+            // reattempt
+            j.inactive().setHandler(r1 -> {
+              if (r1.succeeded()) {
+                future.complete(r1.result());
+              } else {
+                future.fail(r1.cause());
+              }
+            });
+          } else if (remaining == 0) {
+            future.complete(r.result());
           } else {
-            int remaining = maxAttempts - attempts;
-            if (remaining > 0) {
-              // reattempt
-            } else if (remaining == 0) {
-              handler.handle(Future.succeededFuture(r.result()));
-            } else {
-              handler.handle(Future.failedFuture(new IllegalStateException("Attempts Exceeded")));
-            }
+            future.fail(new IllegalStateException("Attempts Exceeded"));
           }
-        });
-      })).setHandler(null); */
+        } else {
+          this.emit("error", new JsonObject().put("error", r.cause().getMessage()));
+          future.fail(r.cause());
+        }
+      });
+    return future;
   }
 
   /**
@@ -293,6 +327,7 @@ public class Job {
       return update();
 
     Future<Job> future = Future.future();
+
     // generate id
     client.incr(RedisHelper.getKey("ids"), res -> {
       if (res.succeeded()) {
@@ -314,6 +349,7 @@ public class Job {
         future.fail(res.cause());
       }
     });
+
     return future.compose(Job::update);
   }
 
@@ -354,7 +390,7 @@ public class Job {
       .del(RedisHelper.getKey("job:" + this.id), _failure())
       .exec(r -> {
         if (r.succeeded()) {
-          // TODO: emit remove event
+          this.emit("remove", new JsonObject().put("id", this.id));
           future.complete();
         } else {
           future.fail(r.cause());
@@ -365,11 +401,12 @@ public class Job {
 
   /**
    * Add on complete handler on event bus
+   *
    * @param completeHandler complete handler
    */
   @Fluent
   public Job onComplete(Handler<Job> completeHandler) {
-    eventBus.consumer(Kue.getHandlerAddress("complete", this.type), message -> {
+    this.on("complete", message -> {
       completeHandler.handle(new Job((JsonObject) message.body()));
     });
     return this;
@@ -377,11 +414,12 @@ public class Job {
 
   /**
    * Add on failure handler on event bus
+   *
    * @param failureHandler failure handler
    */
   @Fluent
   public Job onFailure(Handler<Job> failureHandler) {
-    eventBus.consumer(Kue.getHandlerAddress("failure", this.type), message -> {
+    this.on("failure", message -> {
       failureHandler.handle(new Job((JsonObject) message.body()));
     });
     return this;
@@ -389,11 +427,12 @@ public class Job {
 
   /**
    * Add on progress changed handler on event bus
+   *
    * @param progressHandler progress handler
    */
   @Fluent
   public Job onProgress(Handler<Integer> progressHandler) {
-    eventBus.consumer(Kue.getHandlerAddress("progress", this.type), message -> {
+    this.on("progress", message -> {
       progressHandler.handle((Integer) message.body());
     });
     return this;
@@ -401,31 +440,37 @@ public class Job {
 
   /**
    * Add a certain event handler on event bus
-   * @param event event type
+   *
+   * @param event   event type
    * @param handler event handler
    */
   @Fluent
-  public Job on(String event, Handler handler) {
-    eventBus.consumer(Kue.getHandlerAddress(event, this.type), message -> {
-      handler.handle(message.body());
-    });
+  public <T> Job on(String event, Handler<Message<T>> handler) {
+    eventBus.consumer(Kue.getCertainJobAddress(event, this), handler);
     return this;
   }
 
   /**
    * Send an event to event bus with some data
+   *
    * @param event event type
-   * @param msg data
+   * @param msg   data
    */
   @Fluent
-  public Job emit(String event, JsonObject msg) {
-    eventBus.send(Kue.getHandlerAddress(event, this.type), msg);
+  public Job emit(String event, Object msg) {
+    eventBus.send(Kue.getCertainJobAddress(event, this), msg);
+    return this;
+  }
+
+  @Fluent
+  public Job done() {
+    eventBus.send(Kue.workerAddress("done", this), this.toJson());
     return this;
   }
 
   @Fluent
   public Job removeOnComplete() {
-    eventBus.consumer(Kue.getHandlerAddress("complete", this.type)).unregister();
+    eventBus.consumer(Kue.getCertainJobAddress("complete", this)).unregister();
     return this;
   }
 
@@ -560,7 +605,7 @@ public class Job {
     return rangeGeneral("jobs:" + state.toUpperCase(), from, to, order);
   }
 
-  public static Future<List<Job>> jobRange(long from, long to, String order) { // TODO: NEED REVIEW
+  public static Future<List<Job>> jobRange(long from, long to, String order) {
     return rangeGeneral("jobs", from, to, order);
   }
 
@@ -718,6 +763,10 @@ public class Job {
   public Job setMaxAttempts(int maxAttempts) {
     this.maxAttempts = maxAttempts;
     return this;
+  }
+
+  public String getAddress_id() {
+    return address_id;
   }
 
   /**

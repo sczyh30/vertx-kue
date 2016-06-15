@@ -10,11 +10,9 @@ import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.Message;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisClient;
 
-import java.util.List;
 
 /**
  * Vert.x Blueprint - Job Queue
@@ -27,6 +25,7 @@ public final class KueServiceImpl implements KueService {
   private final Vertx vertx;
   private final JsonObject config;
   private final RedisClient redis;
+  private Kue kue;
 
   public KueServiceImpl(Vertx vertx) {
     this(vertx, new JsonObject());
@@ -36,6 +35,7 @@ public final class KueServiceImpl implements KueService {
     this.vertx = vertx;
     this.config = config;
     this.redis = RedisClient.create(vertx, RedisHelper.options(config));
+    this.kue = Kue.createQueue(vertx, config); // is this ok?
   }
 
   /**
@@ -51,7 +51,7 @@ public final class KueServiceImpl implements KueService {
       throw new IllegalStateException("The process times must be positive");
     }
     while (n-- > 0) {
-      KueWorker worker = new KueWorker(type, handler);
+      KueWorker worker = new KueWorker(type, handler, kue);
       vertx.deployVerticle(worker, new DeploymentOptions().setWorker(isWorker), r0 -> {
         if (r0.succeeded()) {
           this.on("job_complete", msg -> {

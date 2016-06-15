@@ -24,21 +24,29 @@ public class ExampleProcessVerticle extends AbstractVerticle {
     Job job0 = kue.createJob("video", new JsonObject().put("id", 3009).put("intro", "great movie").put("title", "Video maker"))
       .priority(Priority.NORMAL)
       .onComplete(e -> {
-        System.out.println("Video result: " + e.getResult());
+        System.out.println("Video result: " + e.getResult().encodePrettily());
         System.out.println("Haha");
       });
 
-    job0.save().setHandler(r0 -> {
+    Job job1 = kue.createJob("video", new JsonObject().put("type", "VR").put("number", 616161).put("title", "Video maker"))
+      .priority(Priority.NORMAL)
+      .onComplete(e -> {
+        System.out.println("Our VR trip finish!");
+        System.out.println("=> " + e.getResult().encodePrettily());
+      });
+
+    job0.save()
+      .compose(x -> job1.save())
+      .setHandler(r0 -> {
       if (r0.succeeded()) {
         // process logic start
-        kue.process("video", 3, r -> {
+        kue.process("video", 2, r -> {
           if (r.succeeded()) {
             Job job = r.result();
-            // consume 3 seconds
-            vertx.setTimer(3000, l -> {
-              job.progress(100, 100);
-              System.out.println("Video id: " + job.getId());
-            });
+            job.setResult(new JsonObject().put("res", "success"))
+              .done()
+              .progress(100, 100);
+            System.out.println("Video id: " + job.getId());
           }
         });
         // process logic end

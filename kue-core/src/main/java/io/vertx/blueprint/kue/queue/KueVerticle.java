@@ -2,7 +2,6 @@ package io.vertx.blueprint.kue.queue;
 
 import io.vertx.blueprint.kue.service.JobService;
 import io.vertx.blueprint.kue.service.KueService;
-import io.vertx.blueprint.kue.service.impl.KueServiceImpl;
 import io.vertx.blueprint.kue.util.RedisHelper;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -32,7 +31,7 @@ public class KueVerticle extends AbstractVerticle {
   public void start(Future<Void> future) throws Exception {
     this.config = config();
     this.eventBus = vertx.eventBus();
-    this.kueService = KueService.create(vertx, config);
+    this.kueService = KueService.create(vertx, config); // TODO : TO REVIEW
     this.jobService = JobService.create(vertx, config);
     // create redis client
     RedisClient redisClient = RedisClient.create(vertx, RedisHelper.options(config));

@@ -39,8 +39,8 @@ var KueService = function (j_val) {
 
    @public
    @param type {string} job type 
-   @param n {number} job process times 
-   @param handler {function} job process handler
+   @param n {number} job process times
+   @param handler {function} job process handler 
    @return {KueService}
    */
   this.process = function (type, n, handler) {
@@ -62,8 +62,8 @@ var KueService = function (j_val) {
 
    @public
    @param type {string} job type 
-   @param n {number} job process times 
-   @param handler {function} job process handler
+   @param n {number} job process times
+   @param handler {function} job process handler 
    @return {KueService}
    */
   this.processBlocking = function (type, n, handler) {
