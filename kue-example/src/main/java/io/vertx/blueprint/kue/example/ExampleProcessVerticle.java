@@ -4,7 +4,9 @@ import io.vertx.blueprint.kue.Kue;
 import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.blueprint.kue.queue.Priority;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 
@@ -31,6 +33,7 @@ public class ExampleProcessVerticle extends AbstractVerticle {
     Job job1 = kue.createJob("video", new JsonObject().put("type", "VR").put("number", 616161).put("title", "Video maker"))
       .priority(Priority.NORMAL)
       .onComplete(e -> {
+        System.out.println("===================");
         System.out.println("Our VR trip finish!");
         System.out.println("=> " + e.getResult().encodePrettily());
       });

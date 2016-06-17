@@ -207,7 +207,7 @@ public class JobServiceVertxEBProxy implements JobService {
 
   private <T> Map<String, T> convertMap(Map map) {
     if (map.isEmpty()) {
-      return (Map<String, T>) map;
+      return (Map<String, T>) map; 
     }
 
     Object elem = map.values().stream().findFirst().get();
@@ -240,7 +240,7 @@ public class JobServiceVertxEBProxy implements JobService {
       } else {
         converter = object -> (T) new JsonObject((Map) object);
       }
-      return (List<T>) list.stream().map(converter).collect(Collectors.toList());
+      return (List<T>) list.stream().map(converter).collect(Collectors.toList()); 
     } 
   }
   private <T> Set<T> convertSet(List list) {

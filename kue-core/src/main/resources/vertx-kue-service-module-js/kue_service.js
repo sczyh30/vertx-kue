@@ -39,14 +39,13 @@ var KueService = function (j_val) {
 
    @public
    @param type {string} job type 
-   @param n {number} job process times
    @param handler {function} job process handler 
    @return {KueService}
    */
-  this.process = function (type, n, handler) {
+  this.process = function (type, handler) {
     var __args = arguments;
-    if (__args.length === 3 && typeof __args[0] === 'string' && typeof __args[1] === 'number' && typeof __args[2] === 'function') {
-      j_kueService["process(java.lang.String,int,io.vertx.core.Handler)"](type, n, function (ar) {
+    if (__args.length === 2 && typeof __args[0] === 'string' && typeof __args[1] === 'function') {
+      j_kueService["process(java.lang.String,io.vertx.core.Handler)"](type, function (ar) {
         if (ar.succeeded()) {
           handler(utils.convReturnDataObject(ar.result()), null);
         } else {
@@ -62,14 +61,13 @@ var KueService = function (j_val) {
 
    @public
    @param type {string} job type 
-   @param n {number} job process times
    @param handler {function} job process handler 
    @return {KueService}
    */
-  this.processBlocking = function (type, n, handler) {
+  this.processBlocking = function (type, handler) {
     var __args = arguments;
-    if (__args.length === 3 && typeof __args[0] === 'string' && typeof __args[1] === 'number' && typeof __args[2] === 'function') {
-      j_kueService["processBlocking(java.lang.String,int,io.vertx.core.Handler)"](type, n, function (ar) {
+    if (__args.length === 2 && typeof __args[0] === 'string' && typeof __args[1] === 'function') {
+      j_kueService["processBlocking(java.lang.String,io.vertx.core.Handler)"](type, function (ar) {
         if (ar.succeeded()) {
           handler(utils.convReturnDataObject(ar.result()), null);
         } else {

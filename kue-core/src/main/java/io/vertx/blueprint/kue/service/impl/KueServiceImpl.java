@@ -42,15 +42,10 @@ public final class KueServiceImpl implements KueService {
    * Process a job with a KueWorker Verticle
    *
    * @param type     job type
-   * @param n        job process times
    * @param handler  job process handler
    * @param isWorker the flag indicates if the handler do blocking procedure
    */
-  private void processInternal(String type, int n, Handler<AsyncResult<Job>> handler, boolean isWorker) {
-    if (n <= 0) {
-      throw new IllegalStateException("The process times must be positive");
-    }
-    while (n-- > 0) {
+  private void processInternal(String type, Handler<AsyncResult<Job>> handler, boolean isWorker) {
       KueWorker worker = new KueWorker(type, handler, kue);
       vertx.deployVerticle(worker, new DeploymentOptions().setWorker(isWorker), r0 -> {
         if (r0.succeeded()) {
@@ -63,22 +58,21 @@ public final class KueServiceImpl implements KueService {
           });
         }
       });
-    }
   }
 
   private <R> void on(String eventType, Handler<Message<R>> handler) {
-    vertx.eventBus().consumer(Kue.workerAddress(eventType), handler);
+    // vertx.eventBus().consumer(Kue.workerAddress(eventType), handler);
   }
 
   @Override
-  public KueService process(String type, int n, Handler<AsyncResult<Job>> handler) {
-    processInternal(type, n, handler, false);
+  public KueService process(String type, Handler<AsyncResult<Job>> handler) {
+    processInternal(type, handler, false);
     return this;
   }
 
   @Override
-  public KueService processBlocking(String type, int n, Handler<AsyncResult<Job>> handler) {
-    processInternal(type, n, handler, true);
+  public KueService processBlocking(String type, Handler<AsyncResult<Job>> handler) {
+    processInternal(type, handler, true);
     return this;
   }
 }

@@ -35,20 +35,18 @@ public interface KueService {
    * Process a job in asynchronous way
    *
    * @param type    job type
-   * @param n       job process times
    * @param handler job process handler
    */
   @Fluent
-  KueService process(String type, int n, Handler<AsyncResult<Job>> handler);
+  KueService process(String type, Handler<AsyncResult<Job>> handler);
 
   /**
    * Process a job in synchronous and blocking way
    *
    * @param type    job type
-   * @param n       job process times
    * @param handler job process handler
    */
   @Fluent
-  KueService processBlocking(String type, int n, Handler<AsyncResult<Job>> handler);
+  KueService processBlocking(String type, Handler<AsyncResult<Job>> handler);
 
 }

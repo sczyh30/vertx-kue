@@ -126,7 +126,7 @@ public class KueServiceVertxProxyHandler extends ProxyHandler {
 
 
         case "process": {
-          service.process((java.lang.String) json.getValue("type"), json.getValue("n") == null ? null : (json.getLong("n").intValue()), res -> {
+          service.process((java.lang.String) json.getValue("type"), res -> {
             if (res.failed()) {
               if (res.cause() instanceof ServiceException) {
                 msg.reply(res.cause());
@@ -140,7 +140,7 @@ public class KueServiceVertxProxyHandler extends ProxyHandler {
           break;
         }
         case "processBlocking": {
-          service.processBlocking((java.lang.String) json.getValue("type"), json.getValue("n") == null ? null : (json.getLong("n").intValue()), res -> {
+          service.processBlocking((java.lang.String) json.getValue("type"), res -> {
             if (res.failed()) {
               if (res.cause() instanceof ServiceException) {
                 msg.reply(res.cause());

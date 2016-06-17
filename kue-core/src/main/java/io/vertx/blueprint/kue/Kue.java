@@ -27,7 +27,7 @@ import static io.vertx.blueprint.kue.queue.KueVerticle.*;
  *
  * @author Eric Zhao
  */
-public class Kue implements KueService {
+public class Kue {
 
   private final JsonObject config;
   private final Vertx vertx;
@@ -100,15 +100,37 @@ public class Kue implements KueService {
     return new Job(type, data);
   }
 
-  @Override
+  /**
+   * Process a job in asynchronous way
+   *
+   * @param type    job type
+   * @param n       job process times
+   * @param handler job process handler
+   */
   public Kue process(String type, int n, Handler<AsyncResult<Job>> handler) {
-    kueService.process(type, n, handler);
+    if (n <= 0) {
+      throw new IllegalStateException("The process times must be positive");
+    }
+    while (n-- > 0) {
+      kueService.process(type, handler);
+    }
     return this;
   }
 
-  @Override
+  /**
+   * Process a job that may be blocking
+   *
+   * @param type     job type
+   * @param n        job process times
+   * @param handler  job process handler
+   */
   public Kue processBlocking(String type, int n, Handler<AsyncResult<Job>> handler) {
-    kueService.processBlocking(type, n, handler);
+    if (n <= 0) {
+      throw new IllegalStateException("The process times must be positive");
+    }
+    while (n-- > 0) {
+      kueService.processBlocking(type, handler);
+    }
     return this;
   }
 

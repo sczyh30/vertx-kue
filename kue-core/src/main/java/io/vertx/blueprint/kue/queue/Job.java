@@ -10,17 +10,12 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisClient;
 import io.vertx.redis.RedisTransaction;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Vert.x Blueprint - Job Queue
@@ -253,10 +248,17 @@ public class Job {
     return future;
   }
 
+  /**
+   * Get a property of the job
+   *
+   * @param key property key(name)
+   * @return async result
+   */
   @Fluent
-  private Job get(String key, Handler<AsyncResult<String>> handler) {
-    client.hget(RedisHelper.getKey("job:" + this.id), key, handler);
-    return this;
+  private Future<String> get(String key) {
+    Future<String> future = Future.future();
+    client.hget(RedisHelper.getKey("job:" + this.id), key, future.completer());
+    return future;
   }
 
   /**
@@ -446,6 +448,7 @@ public class Job {
    */
   @Fluent
   public <T> Job on(String event, Handler<Message<T>> handler) {
+    System.out.println("[LOG] On: " + Kue.getCertainJobAddress(event, this));
     eventBus.consumer(Kue.getCertainJobAddress(event, this), handler);
     return this;
   }
@@ -458,6 +461,7 @@ public class Job {
    */
   @Fluent
   public Job emit(String event, Object msg) {
+    System.out.println("[LOG] Emit: " + Kue.getCertainJobAddress(event, this));
     eventBus.send(Kue.getCertainJobAddress(event, this), msg);
     return this;
   }
@@ -472,171 +476,6 @@ public class Job {
   public Job removeOnComplete() {
     eventBus.consumer(Kue.getCertainJobAddress("complete", this)).unregister();
     return this;
-  }
-
-  // static method, may be removed later
-
-  /**
-   * Get job from backend by id
-   *
-   * @param id job id
-   * @return async result
-   */
-  public static Future<Optional<Job>> getJob(long id) {
-    return getJob(id, "");
-  }
-
-  public static Future<Optional<Job>> getJob(long id, String jobType) {
-    Future<Optional<Job>> future = Future.future();
-    String zid = RedisHelper.createFIFO(id);
-    client.hgetall(RedisHelper.getKey("job:" + id), r -> {
-      if (r.succeeded()) {
-        try {
-          if (!r.result().containsKey("id")) {
-            future.complete(Optional.empty());
-          } else {
-            Job job = new Job(r.result());
-            job.id = id;
-            job.zid = zid;
-            future.complete(Optional.of(job));
-          }
-        } catch (Exception e) {
-          removeBadJob(id, jobType);
-          future.fail(e);
-        }
-      } else {
-        removeBadJob(id, jobType);
-        future.fail(r.cause());
-      }
-    });
-    return future;
-  }
-
-  /**
-   * Remove job by id
-   *
-   * @param id job id
-   * @return async result
-   */
-  public static Future<Void> removeJob(long id) {
-    return getJob(id).compose(r -> {
-      if (r.isPresent()) {
-        return r.get().remove();
-      } else {
-        return Future.succeededFuture();
-      }
-    });
-  }
-
-  /**
-   * Judge whether a job with certain id exists
-   *
-   * @param id job id
-   * @return async result
-   */
-  public static Future<Boolean> existsJob(long id) {
-    Future<Boolean> future = Future.future();
-    client.exists(RedisHelper.getKey("job:" + id), r -> {
-      if (r.succeeded()) {
-        if (r.result() == 0)
-          future.complete(false);
-        else
-          future.complete(true);
-      } else {
-        future.fail(r.cause());
-      }
-    });
-    return future;
-  }
-
-  /**
-   * Get job log by id
-   *
-   * @param id job id
-   * @return async result
-   */
-  public static Future<JsonArray> getLog(long id) {
-    Future<JsonArray> future = Future.future();
-    client.lrange(RedisHelper.getKey("job:" + id + ":log"), 0, -1, future.completer());
-    return future;
-  }
-
-  private static Future<List<Job>> rangeGeneral(String key, long from, long to, String order) {
-    Future<List<Job>> future = Future.future();
-    if (to < from) {
-      future.fail("to can not be greater than from");
-      return future;
-    }
-    client.zrange(RedisHelper.getKey(key), from, to, r -> {
-      if (r.succeeded()) {
-        List<Long> list = (List<Long>) r.result().getList().stream()
-          .map(e -> RedisHelper.numStripFIFO((String) e))
-          .collect(Collectors.toList());
-        long max = list.get(list.size() - 1);
-        List<Job> jobList = new ArrayList<>();
-        list.forEach(e -> {
-          Job.getJob(e).setHandler(jr -> {
-            if (jr.succeeded()) {
-              if (jr.result().isPresent()) {
-                jobList.add(jr.result().get());
-              }
-              if (e >= max) {
-                jobList.sort((a1, a2) -> {
-                  if (order.equals("asc"))
-                    return Long.compare(a1.id, a2.id);
-                  else
-                    return Long.compare(a2.id, a1.id);
-                });
-                future.complete(jobList);
-              }
-            } else {
-              future.fail(jr.cause());
-            }
-          });
-        });
-      } else {
-        future.fail(r.cause());
-      }
-    });
-    return future;
-  }
-
-  public static Future<List<Job>> jobRangeByState(String state, long from, long to, String order) {
-    return rangeGeneral("jobs:" + state.toUpperCase(), from, to, order);
-  }
-
-  public static Future<List<Job>> jobRange(long from, long to, String order) {
-    return rangeGeneral("jobs", from, to, order);
-  }
-
-  /**
-   * Remove bad job by id (absolutely)
-   *
-   * @param id job id
-   * @return async result
-   */
-  public static Future<Void> removeBadJob(long id, String jobType) {
-    Future<Void> future = Future.future();
-    String zid = RedisHelper.createFIFO(id);
-    client.transaction().multi(null)
-      .del(RedisHelper.getKey("job:" + id + ":log"), null)
-      .del(RedisHelper.getKey("job:" + id), null)
-      .zrem(RedisHelper.getKey("jobs:INACTIVE"), zid, null)
-      .zrem(RedisHelper.getKey("jobs:ACTIVE"), zid, null)
-      .zrem(RedisHelper.getKey("jobs:COMPLETE"), zid, null)
-      .zrem(RedisHelper.getKey("jobs:FAILED"), zid, null)
-      .zrem(RedisHelper.getKey("jobs:DELAYED"), zid, null)
-      .zrem(RedisHelper.getKey("jobs"), zid, null)
-      .zrem(RedisHelper.getKey("jobs:" + jobType + ":INACTIVE"), zid, null)
-      .zrem(RedisHelper.getKey("jobs:" + jobType + ":ACTIVE"), zid, null)
-      .zrem(RedisHelper.getKey("jobs:" + jobType + ":COMPLETE"), zid, null)
-      .zrem(RedisHelper.getKey("jobs:" + jobType + ":FAILED"), zid, null)
-      .zrem(RedisHelper.getKey("jobs:" + jobType + ":DELAYED"), zid, null)
-      .exec(_failure(future));
-
-    // TODO: search functionality
-
-    return future;
   }
 
   // getter and setter

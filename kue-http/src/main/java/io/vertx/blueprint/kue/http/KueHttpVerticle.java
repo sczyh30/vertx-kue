@@ -241,7 +241,7 @@ public class KueHttpVerticle extends AbstractVerticle {
   private void apiGetJob(RoutingContext context) {
     try {
       long id = Long.parseLong(context.request().getParam("id"));
-      Job.getJob(id).setHandler(resultHandler(context, r -> {
+      kue.getJob(id).setHandler(resultHandler(context, r -> {
         if (r.isPresent()) {
           context.response()
             .putHeader("content-type", "application/json")
@@ -262,7 +262,7 @@ public class KueHttpVerticle extends AbstractVerticle {
         order = "asc";
       Long from = Long.parseLong(context.request().getParam("from"));
       Long to = Long.parseLong(context.request().getParam("to"));
-      Job.jobRange(from, to, order)
+      kue.jobRange(from, to, order)
         .setHandler(resultHandler(context, r -> {
           String result = new JsonArray(r).encodePrettily();
           context.response()
@@ -287,7 +287,7 @@ public class KueHttpVerticle extends AbstractVerticle {
       Long from = Long.parseLong(context.request().getParam("from"));
       Long to = Long.parseLong(context.request().getParam("to"));
       String state = context.request().getParam("state");
-      Job.jobRangeByState(state, from, to, order)
+      kue.jobRangeByState(state, from, to, order)
         .setHandler(resultHandler(context, r -> {
           String result = new JsonArray(r).encodePrettily();
           context.response()
@@ -303,7 +303,7 @@ public class KueHttpVerticle extends AbstractVerticle {
   private void apiDeleteJob(RoutingContext context) {
     try {
       long id = Long.parseLong(context.request().getParam("id"));
-      Job.removeJob(id).setHandler(resultHandler(context, r -> {
+      kue.removeJob(id).setHandler(resultHandler(context, r -> {
         context.response().setStatusCode(204)
           .putHeader("content-type", "application/json")
           .end(new JsonObject().put("message", "job " + id + " removed").encodePrettily());
@@ -324,7 +324,7 @@ public class KueHttpVerticle extends AbstractVerticle {
   private void apiFetchLog(RoutingContext context) {
     try {
       long id = Long.parseLong(context.request().getParam("id"));
-      Job.getLog(id).setHandler(resultHandler(context, r -> {
+      kue.getJobLog(id).setHandler(resultHandler(context, r -> {
         context.response().putHeader("content-type", "application/json")
           .end(r.encodePrettily());
       }));
