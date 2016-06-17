@@ -52,7 +52,7 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
           this.job = jr.result().get();
           process();
         } else {
-          // NOT PRESENT?
+          startFuture.fail(new IllegalStateException("job not exist"));
         }
       } else {
         startFuture.fail(jr.cause());
@@ -60,9 +60,26 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
     });
   }
 
-  @Override
-  public void stop() throws Exception {
-    // stop hook
+  /**
+   * Process the job
+   */
+  private void process() {
+    this.job.active().setHandler(r -> {
+      if (r.succeeded()) {
+        Job j = r.result();
+        // emit start event | TODO: update startTime
+        this.emitJobEvent("start", j, null);
+        // process logic invocation
+        jobHandler.handle(Future.succeededFuture(j));
+        // subscribe the job done event
+        eventBus.consumer(Kue.workerAddress("done", j), msg -> {
+          createDoneCallback(j).handle(Future.succeededFuture(
+            ((JsonObject) msg.body()).getJsonObject("result")));
+        });
+      } else {
+        r.cause().printStackTrace();
+      }
+    });
   }
 
   private void fail(Throwable ex) {
@@ -77,22 +94,6 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
         } else {
           //
         }
-      }
-    });
-  }
-
-  private void process() {
-    this.job.active().setHandler(r -> {
-      if (r.succeeded()) {
-        Job j = r.result();
-        this.emitJobEvent("start", j, null);
-        jobHandler.handle(Future.succeededFuture(j));
-        eventBus.consumer(Kue.workerAddress("done", j), msg -> {
-          createDoneCallback(j).handle(Future.succeededFuture(
-            ((JsonObject) msg.body()).getJsonObject("result")));
-        });
-      } else {
-        r.cause().printStackTrace();
       }
     });
   }
@@ -177,13 +178,16 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
       job.complete().setHandler(r -> {
         if (r.succeeded()) {
           Job j = r.result();
-          System.out.println("KueWorker::Job::complete");
+          System.out.println("[LOG] KueWorker::Job::complete");
           this.emitJobEvent("complete", j, null);
         }
       });
-
-
     };
+  }
+
+  @Override
+  public void stop() throws Exception {
+    // stop hook
   }
 
   /**

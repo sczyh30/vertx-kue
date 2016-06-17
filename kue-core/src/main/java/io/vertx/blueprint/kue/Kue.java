@@ -354,7 +354,7 @@ public class Kue {
     Future<Long> future = Future.future();
     client.get(RedisHelper.getKey("stats:work-time"), r -> {
       if (r.succeeded()) {
-        future.complete(Long.parseLong(r.result()));
+        future.complete(Long.parseLong(r.result() == null ? "0" : r.result()));
       } else {
         future.fail(r.cause());
       }

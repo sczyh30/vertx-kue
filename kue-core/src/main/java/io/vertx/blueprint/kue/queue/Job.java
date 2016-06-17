@@ -224,11 +224,10 @@ public class Job {
    */
   public Future<Job> progress(int complete, int total) {
     int n = Math.min(100, complete * 100 / total);
-    this.setProgress(n)
-      .updateNow();
     this.emit("progress", n);
     return this.setProgress(n)
-      .updateNow();
+      .set("progress", String.valueOf(n))
+      .compose(Job::updateNow);
   }
 
   /**

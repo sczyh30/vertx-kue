@@ -100,7 +100,7 @@ project("kue-example") {
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     manifest {
       attributes 'Main-Class': 'io.vertx.core.Launcher'
-      attributes 'Main-Verticle': 'io.vertx.blueprint.kue.example.ExampleProcessVerticle'
+      attributes 'Main-Verticle': 'io.vertx.blueprint.kue.example.LearningVertxVerticle'
     }
   }
 }
