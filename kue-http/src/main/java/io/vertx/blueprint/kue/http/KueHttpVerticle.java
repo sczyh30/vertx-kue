@@ -34,8 +34,8 @@ public class KueHttpVerticle extends AbstractVerticle {
   private static final String KUE_API_GET_JOB = "/job/:id";
   private static final String KUE_API_GET_JOB_TYPES = "/job/types";
   private static final String KUE_API_JOB_RANGE = "/jobs/:from/to/:to";
-  private static final String KUE_API_JOB_TYPE_RANGE = "/jobs/:type/:state/:from..:to/:order?"; // TODO
-  private static final String KUE_API_JOB_STATE_RANGE = "/jobs/:state/:from/to/:to";
+  private static final String KUE_API_JOB_TYPE_RANGE = "/jobs/:type/:state/:from/to/:to/:order"; // TODO
+  private static final String KUE_API_JOB_STATE_RANGE = "/jobs/:state/:from/to/:to/:order";
   private static final String KUE_API_JOB_RANGE_ORDER = "/jobs/:from/to/:to/:order";
   private static final String KUE_API_CREATE_JOB = "/job";
   private static final String KUE_API_UPDATE_JOB_STATE = "/job/:id/state/:state";
@@ -142,8 +142,8 @@ public class KueHttpVerticle extends AbstractVerticle {
     render(context, "delayed");
   }
 
-  private void apiSearchJob(RoutingContext context) { // TODO: delayed to implement
-    notImplemented(context); // 501 Not Implemented
+  private void apiSearchJob(RoutingContext context) {
+    notImplemented(context); // TODO: 501 Not Implemented
   }
 
   private void apiStats(RoutingContext context) {
@@ -276,10 +276,10 @@ public class KueHttpVerticle extends AbstractVerticle {
   }
 
   private void apiJobTypeRange(RoutingContext context) {
-    notImplemented(context); // 501 Not Implemented
+    notImplemented(context); // TODO: 501 Not Implemented
   }
 
-  private void apiJobStateRange(RoutingContext context) {
+  private void apiJobStateRange(RoutingContext context) { // FIXME: 16-6-17 RESULT NOT CORRECT
     try {
       String order = context.request().getParam("order");
       if (order == null || !(order.equals("asc") && order.equals("desc")))
@@ -287,6 +287,7 @@ public class KueHttpVerticle extends AbstractVerticle {
       Long from = Long.parseLong(context.request().getParam("from"));
       Long to = Long.parseLong(context.request().getParam("to"));
       String state = context.request().getParam("state");
+      // System.out.println("from: " + from + ", to: " + to + ", state: " + state);
       kue.jobRangeByState(state, from, to, order)
         .setHandler(resultHandler(context, r -> {
           String result = new JsonArray(r).encodePrettily();

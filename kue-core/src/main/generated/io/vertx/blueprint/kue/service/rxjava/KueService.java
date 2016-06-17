@@ -60,7 +60,7 @@ public class KueService {
    * @param handler job process handler
    * @return 
    */
-  public KueService process(String type, Handler<AsyncResult<Job>> handler) {
+  public KueService process(String type, Handler<AsyncResult<Job>> handler) { 
     delegate.process(type, handler);
     return this;
   }
@@ -82,7 +82,7 @@ public class KueService {
    * @param handler job process handler
    * @return 
    */
-  public KueService processBlocking(String type, Handler<AsyncResult<Job>> handler) {
+  public KueService processBlocking(String type, Handler<AsyncResult<Job>> handler) { 
     delegate.processBlocking(type, handler);
     return this;
   }

@@ -128,31 +128,36 @@ public final class JobServiceImpl implements JobService {
     }
     client.zrange(RedisHelper.getKey(key), from, to, r -> {
       if (r.succeeded()) {
-        List<Long> list = (List<Long>) r.result().getList().stream()
-          .map(e -> RedisHelper.numStripFIFO((String) e))
-          .collect(Collectors.toList());
-        long max = list.get(list.size() - 1);
-        List<Job> jobList = new ArrayList<>();
-        list.forEach(e -> {
-          this.getJob(e, jr -> {
-            if (jr.succeeded()) {
-              if (jr.result() != null) {
-                jobList.add(jr.result());
+        if (r.result().size() == 0) { // maybe empty
+          handler.handle(Future.succeededFuture(new ArrayList<>()));
+        } else {
+          List<Long> list = (List<Long>) r.result().getList().stream()
+            .map(e -> RedisHelper.numStripFIFO((String) e))
+            .collect(Collectors.toList());
+          long max = list.get(list.size() - 1);
+          System.out.println(max);
+          List<Job> jobList = new ArrayList<>();
+          list.forEach(e -> {
+            this.getJob(e, jr -> {
+              if (jr.succeeded()) {
+                if (jr.result() != null) {
+                  jobList.add(jr.result());
+                }
+                if (e >= max) {
+                  jobList.sort((a1, a2) -> {
+                    if (order.equals("asc"))
+                      return Long.compare(a1.getId(), a2.getId());
+                    else
+                      return Long.compare(a2.getId(), a1.getId());
+                  });
+                  handler.handle(Future.succeededFuture(jobList));
+                }
+              } else {
+                handler.handle(Future.failedFuture(jr.cause()));
               }
-              if (e >= max) {
-                jobList.sort((a1, a2) -> {
-                  if (order.equals("asc"))
-                    return Long.compare(a1.getId(), a2.getId());
-                  else
-                    return Long.compare(a2.getId(), a1.getId());
-                });
-                handler.handle(Future.succeededFuture(jobList));
-              }
-            } else {
-              handler.handle(Future.failedFuture(jr.cause()));
-            }
+            });
           });
-        });
+        }
       } else {
         handler.handle(Future.failedFuture(r.cause()));
       }
