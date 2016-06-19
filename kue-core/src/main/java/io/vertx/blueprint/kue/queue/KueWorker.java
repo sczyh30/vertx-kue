@@ -86,6 +86,10 @@ public class KueWorker extends AbstractVerticle {
           createDoneCallback(j).handle(Future.succeededFuture(
             ((JsonObject) msg.body()).getJsonObject("result")));
         });
+        eventBus.consumer(Kue.workerAddress("done_fail", j), msg -> {
+          createDoneCallback(j).handle(Future.failedFuture(
+            (String) msg.body()));
+        });
       } else {
         r.cause().printStackTrace();
       }

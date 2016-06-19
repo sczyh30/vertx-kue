@@ -90,6 +90,7 @@ public class Kue {
 
   /**
    * Create a job instance
+   *
    * @param type job type
    * @param data job extra data
    * @return a new job instance
@@ -142,11 +143,23 @@ public class Kue {
   }
 
   /**
+   * Process a job in asynchronous way (once)
+   *
+   * @param type    job type
+   * @param handler job process handler
+   */
+  public Kue process(String type, Handler<AsyncResult<Job>> handler) {
+    processInternal(type, handler, false);
+    setupTimers();
+    return this;
+  }
+
+  /**
    * Process a job that may be blocking
    *
-   * @param type     job type
-   * @param n        job process times
-   * @param handler  job process handler
+   * @param type    job type
+   * @param n       job process times
+   * @param handler job process handler
    */
   public Kue processBlocking(String type, int n, Handler<AsyncResult<Job>> handler) {
     if (n <= 0) {
@@ -359,12 +372,19 @@ public class Kue {
     return future;
   }
 
+  /**
+   * Set up timers for checking job promotion and active job ttl
+   */
   private void setupTimers() {
     this.checkJobPromotion();
     this.checkActiveJobTtl();
   }
 
-  public void checkJobPromotion() { // TODO: enhance
+  /**
+   * Check job promotion
+   * Promote delayed jobs, checking every `ms`,
+   */
+  private void checkJobPromotion() { // TODO: enhance and check
     int timeout = config.getInteger("promotionTimeout", 1000);
     int limit = config.getInteger("promotionLimit", 1000);
     vertx.setTimer(timeout, l -> {
@@ -390,6 +410,9 @@ public class Kue {
     });
   }
 
+  /**
+   * Check active job ttl
+   */
   private void checkActiveJobTtl() { // TODO: add TTL support
 
   }

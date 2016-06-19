@@ -99,6 +99,11 @@ public class KueHttpVerticle extends AbstractVerticle {
         });
   }
 
+  /**
+   * Render UI by job state
+   *
+   * @param state job state
+   */
   private void render(RoutingContext context, String state) { // TODO: bug in `types` param
     final String uiPath = "webroot/views/job/list.jade";
     final JadeTemplateEngine engine = JadeTemplateEngine.create();

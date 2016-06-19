@@ -461,6 +461,19 @@ public class Job {
   }
 
   /**
+   * Add on failure attempt handler on event bus
+   *
+   * @param failureHandler failure handler
+   */
+  @Fluent
+  public Job onFailureAttempt(Handler<Job> failureHandler) {
+    this.on("failure_attempt", message -> {
+      failureHandler.handle(new Job((JsonObject) message.body()));
+    });
+    return this;
+  }
+
+  /**
    * Add on promotion handler on event bus
    *
    * @param handler failure handler
@@ -538,9 +551,23 @@ public class Job {
     return this;
   }
 
+  /**
+   * Finish a job
+   */
   @Fluent
   public Job done() {
     eventBus.send(Kue.workerAddress("done", this), this.toJson());
+    return this;
+  }
+
+  /**
+   * Fail a job
+   *
+   * @param ex exception
+   */
+  @Fluent
+  public Job done(Throwable ex) {
+    eventBus.send(Kue.workerAddress("done_fail", this), ex.getMessage());
     return this;
   }
 
