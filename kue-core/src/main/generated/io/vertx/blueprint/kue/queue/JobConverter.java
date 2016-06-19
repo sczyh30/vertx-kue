@@ -60,6 +60,9 @@ public class JobConverter {
     if (json.getValue("promote_at") instanceof Number) {
       obj.setPromote_at(((Number) json.getValue("promote_at")).longValue());
     }
+    if (json.getValue("removeOnComplete") instanceof Boolean) {
+      obj.setRemoveOnComplete((Boolean) json.getValue("removeOnComplete"));
+    }
     if (json.getValue("result") instanceof JsonObject) {
       obj.setResult(((JsonObject) json.getValue("result")).copy());
     }
@@ -99,6 +102,7 @@ public class JobConverter {
     }
     json.put("progress", obj.getProgress());
     json.put("promote_at", obj.getPromote_at());
+    json.put("removeOnComplete", obj.isRemoveOnComplete());
     if (obj.getResult() != null) {
       json.put("result", obj.getResult());
     }

@@ -23,7 +23,7 @@ import java.util.Optional;
  *
  * @author Eric Zhao
  */
-public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
+public class KueWorker extends AbstractVerticle {
 
   private static Logger logger = LoggerFactory.getLogger(KueWorker.class);
 
@@ -70,10 +70,14 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
    * Process the job
    */
   private void process() {
-    this.job.active().setHandler(r -> {
+    long curTime = System.currentTimeMillis();
+    this.job.setStarted_at(curTime)
+      .set("started_at", String.valueOf(curTime))
+      .compose(Job::active)
+      .setHandler(r -> {
       if (r.succeeded()) {
         Job j = r.result();
-        // emit start event | TODO: update startTime
+        // emit start event
         this.emitJobEvent("start", j, null);
         // process logic invocation
         jobHandler.handle(Future.succeededFuture(j));
@@ -88,18 +92,24 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
     });
   }
 
+  private void error(Throwable ex, Job job) {
+    JsonObject err = new JsonObject().put("message", ex.getMessage())
+      .put("id", job.getId());
+    eventBus.send(Kue.workerAddress("error"), err);
+  }
+
   private void fail(Throwable ex) {
-    // TODO/UNFINISHED: fail
     job.failedAttempt(ex).setHandler(r -> {
       if (r.failed()) {
-        // error
+        this.error(r.cause(), job);
       } else {
         Job res = r.result();
         if (res.hasAttempts()) {
           this.emitJobEvent("failed_attempt", job, new JsonObject().put("errorMsg", ex.getMessage())); // shouldn't include err?
         } else {
-          //
+          this.emitJobEvent("failed", job, new JsonObject().put("errorMsg", ex.getMessage()));
         }
+        prepareAndStart();
       }
     });
   }
@@ -151,7 +161,7 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
         });
       } else {
         this.zpop(RedisHelper.getKey("jobs:" + this.type + ":INACTIVE"))
-          .compose(r -> kue.getJob(r))
+          .compose(kue::getJob)
           .setHandler(r -> {
             if (r.succeeded()) {
               future.complete(r.result());
@@ -164,17 +174,19 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
     return future;
   }
 
-  private Handler<AsyncResult<JsonObject>> createDoneCallback(Job job) { //TODO
+  private Handler<AsyncResult<JsonObject>> createDoneCallback(Job job) { // TO REVIEW
     return r0 -> {
       if (job == null) {
         // maybe should warn
         return;
       }
       if (r0.failed()) {
-        // TODO: FAIL
+        this.fail(r0.cause());
         return;
       }
-      job.setDuration(System.currentTimeMillis() - job.getStarted_at());
+      long dur = System.currentTimeMillis() - job.getStarted_at();
+      job.setDuration(dur)
+        .set("duration", String.valueOf(dur));
       JsonObject result = r0.result();
       if (result != null) {
         job.setResult(result)
@@ -184,6 +196,9 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
       job.complete().setHandler(r -> {
         if (r.succeeded()) {
           Job j = r.result();
+          if (j.isRemoveOnComplete()) {
+            j.remove();
+          }
           System.out.println("[LOG] KueWorker::Job::complete");
           this.emitJobEvent("complete", j, null);
           this.prepareAndStart(); // prepare for next job
@@ -202,12 +217,13 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
    *
    * @param event event type
    * @param job   corresponding job
-   * @param other extra data
+   * @param extra extra data
    */
-  private void emitJobEvent(String event, Job job, JsonObject other) {
-    eventBus.send(Kue.workerAddress("job_" + event, job), job.toJson());
+  private void emitJobEvent(String event, Job job, JsonObject extra) {
+    JsonObject data = new JsonObject().put("job", job.toJson())
+      .put("extra", extra);
+    eventBus.send(Kue.workerAddress("job_" + event, job), data);
     eventBus.send(Kue.getCertainJobAddress(event, job), job.toJson());
-    // TODO: include extra data
   }
 
   private static <T> Handler<AsyncResult<T>> _failure() {

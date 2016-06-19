@@ -170,7 +170,6 @@ function pollForJobs(state, ms) {
  */
 
 function refreshJobs(state, fn) {
-  // TODO: fix urls
   var jobHeight = o('#jobs .job .block').outerHeight(true)
     , top = o(window).scrollTop()
     , height = window.innerHeight

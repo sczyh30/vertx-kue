@@ -56,7 +56,7 @@ Job.prototype.remove = function (fn) {
  */
 
 Job.prototype.restart = function (fn) {
-  request('GET', './inactive/' + this.id, fn);
+  request('POST', './inactive/' + this.id, fn);
   return this;
 };
 
@@ -219,7 +219,7 @@ Job.prototype.renderUpdate = function () {
   this.renderTimestamp('failed_at');
 
   // delayed
-  if ('delayed' == this.state) {
+  if ('delayed' == this.state || 'DELAYED' == this.state) {
     var delay = parseInt(this.delay, 10)
       , creation = parseInt(this.created_at, 10)
       , remaining = relative(creation + delay - Date.now());

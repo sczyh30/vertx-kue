@@ -197,7 +197,8 @@ public final class JobServiceImpl implements JobService {
         }
       });
 
-    // TODO: search functionality
+    // TODO: add search functionality
+
     return this;
   }
 

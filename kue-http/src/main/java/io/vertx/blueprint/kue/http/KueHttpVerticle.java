@@ -34,7 +34,7 @@ public class KueHttpVerticle extends AbstractVerticle {
   private static final String KUE_API_GET_JOB = "/job/:id";
   private static final String KUE_API_GET_JOB_TYPES = "/job/types";
   private static final String KUE_API_JOB_RANGE = "/jobs/:from/to/:to";
-  private static final String KUE_API_JOB_TYPE_RANGE = "/jobs/:type/:state/:from/to/:to/:order"; // TODO
+  private static final String KUE_API_JOB_TYPE_RANGE = "/jobs/:type/:state/:from/to/:to/:order";
   private static final String KUE_API_JOB_STATE_RANGE = "/jobs/:state/:from/to/:to/:order";
   private static final String KUE_API_JOB_RANGE_ORDER = "/jobs/:from/to/:to/:order";
   private static final String KUE_API_CREATE_JOB = "/job";
@@ -68,13 +68,13 @@ public class KueHttpVerticle extends AbstractVerticle {
     router.get(KUE_API_JOB_RANGE).handler(this::apiJobRange); // \/jobs\/([0-9]*)\.\.([0-9]*)(\/[^\/]+)?
     router.get(KUE_API_JOB_TYPE_RANGE).handler(this::apiJobTypeRange);
     router.get(KUE_API_JOB_STATE_RANGE).handler(this::apiJobStateRange);
-    router.get(KUE_API_JOB_RANGE_ORDER).handler(this::apiJobRange); // \/jobs\/([0-9]*)\.\.([0-9]*)(\/[^\/]+)?
+    router.get(KUE_API_JOB_RANGE_ORDER).handler(this::apiJobRange);
     router.put(KUE_API_CREATE_JOB).handler(this::apiCreateJob);
     router.put(KUE_API_UPDATE_JOB_STATE).handler(this::apiUpdateJobState);
     router.get(KUE_API_GET_JOB).handler(this::apiGetJob);
     router.get(KUE_API_GET_JOB_LOG).handler(this::apiFetchLog);
     router.delete(KUE_API_DELETE_JOB).handler(this::apiDeleteJob);
-    router.delete(KUE_API_RESTART_JOB).handler(this::apiRestartJob);
+    router.post(KUE_API_RESTART_JOB).handler(this::apiRestartJob);
     // UI routes
     router.route(KUE_UI_ROOT).handler(this::handleUIRoot);
     router.route(KUE_UI_ACTIVE).handler(this::handleUIActive);
@@ -143,7 +143,7 @@ public class KueHttpVerticle extends AbstractVerticle {
   }
 
   private void apiSearchJob(RoutingContext context) {
-    notImplemented(context); // TODO: 501 Not Implemented
+    notImplemented(context); // TODO: Not Implemented
   }
 
   private void apiStats(RoutingContext context) {
@@ -182,8 +182,8 @@ public class KueHttpVerticle extends AbstractVerticle {
           .putHeader("content-type", "application/json")
           .end(new JsonObject().put("count", r).encodePrettily());
       }));
-    } catch (Exception e) { // TODO: add error info
-      badRequest(context);
+    } catch (Exception e) {
+      badRequest(context, e);
     }
   }
 
@@ -207,7 +207,7 @@ public class KueHttpVerticle extends AbstractVerticle {
           .end(result);
       }));
     } catch (DecodeException e) {
-      badRequest(context);
+      badRequest(context, e);
     }
   }
 
@@ -233,8 +233,8 @@ public class KueHttpVerticle extends AbstractVerticle {
             .end(new JsonObject().put("message", "job_not_found").encodePrettily());
         }
       }));
-    } catch (Exception e) { // TODO: add error info
-      badRequest(context);
+    } catch (Exception e) {
+      badRequest(context, e);
     }
   }
 
@@ -251,7 +251,7 @@ public class KueHttpVerticle extends AbstractVerticle {
         }
       }));
     } catch (Exception e) {
-      badRequest(context);
+      badRequest(context, e);
     }
   }
 
@@ -271,12 +271,12 @@ public class KueHttpVerticle extends AbstractVerticle {
         }));
     } catch (Exception e) {
       e.printStackTrace();
-      badRequest(context);
+      badRequest(context, e);
     }
   }
 
   private void apiJobTypeRange(RoutingContext context) {
-    notImplemented(context); // TODO: 501 Not Implemented
+    notImplemented(context); // TODO: Not Implemented
   }
 
   private void apiJobStateRange(RoutingContext context) {
@@ -296,7 +296,7 @@ public class KueHttpVerticle extends AbstractVerticle {
         }));
     } catch (Exception e) {
       e.printStackTrace();
-      badRequest(context);
+      badRequest(context, e);
     }
   }
 
@@ -309,16 +309,27 @@ public class KueHttpVerticle extends AbstractVerticle {
           .end(new JsonObject().put("message", "job " + id + " removed").encodePrettily());
       }));
     } catch (Exception e) {
-      badRequest(context);
+      badRequest(context, e);
     }
   }
 
   private void apiRestartJob(RoutingContext context) {
     try {
       long id = Long.parseLong(context.request().getParam("id"));
+      kue.getJob(id).setHandler(resultHandler(context, r -> {
+        if (r.isPresent()) {
+          r.get().inactive().setHandler(resultHandler(context, r1 -> {
+            context.response()
+              .putHeader("content-type", "application/json")
+              .end(new JsonObject().put("message", "job " + id + " restart").encodePrettily());
+          }));
+        } else {
+          notFound(context);
+        }
+      }));
       notImplemented(context);
     } catch (Exception e) {
-      badRequest(context);
+      badRequest(context, e);
     }
   }
 
@@ -330,7 +341,7 @@ public class KueHttpVerticle extends AbstractVerticle {
           .end(r.encodePrettily());
       }));
     } catch (Exception e) {
-      badRequest(context);
+      badRequest(context, e);
     }
   }
 
@@ -353,8 +364,10 @@ public class KueHttpVerticle extends AbstractVerticle {
     context.response().setStatusCode(statusCode).end();
   }
 
-  private void badRequest(RoutingContext context) {
-    context.response().setStatusCode(400).end();
+  private void badRequest(RoutingContext context, Throwable ex) {
+    context.response().setStatusCode(400)
+      .putHeader("content-type", "application/json")
+      .end(new JsonObject().put("error", ex.getMessage()).encodePrettily());
   }
 
   private void notFound(RoutingContext context) {

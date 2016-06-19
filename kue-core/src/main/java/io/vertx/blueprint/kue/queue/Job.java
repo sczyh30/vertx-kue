@@ -36,6 +36,8 @@ public class Job {
     eventBus = vertx.eventBus();
   }
 
+  // job properties
+
   private final String address_id;
   private long id = -1;
   private String type;
@@ -45,10 +47,13 @@ public class Job {
   private JobState state = JobState.INACTIVE;
   private int attempts = 0;
   private int max_attempts = 1;
+  private boolean removeOnComplete = false;
 
   private String zid;
   private int progress = 0;
   private JsonObject result;
+
+  // job metrics
   private long created_at;
   private long promote_at;
   private long updated_at;
@@ -71,6 +76,8 @@ public class Job {
       this.updated_at = Long.parseLong(json.getString("updated_at"));
       this.started_at = Long.parseLong(json.getString("started_at"));
       this.promote_at = Long.parseLong(json.getString("promote_at"));
+      this.delay = Integer.parseInt(json.getString("delay"));
+      this.duration = Long.parseLong(json.getString("duration"));
     }
     if (this.id < 0) {
       this.setId(Long.parseLong(json.getString("id")));
@@ -79,7 +86,7 @@ public class Job {
 
   public Job(Job other) {
     this.id = other.id;
-    this.address_id = other.address_id; // correct?
+    this.address_id = other.address_id;
     this.type = other.type;
     this.data = other.data == null ? null : other.data.copy();
     this.priority = other.priority;
@@ -91,6 +98,7 @@ public class Job {
     this.failed_at = other.failed_at;
     this.started_at = other.started_at;
     this.duration = other.duration;
+    this.removeOnComplete = other.removeOnComplete;
   }
 
   public Job(String type, JsonObject data) {
@@ -118,14 +126,23 @@ public class Job {
   }
 
   /**
+   * Add one attempt time
+   */
+  @Fluent
+  public Job attemptAdd() {
+    this.attempts++;
+    return this;
+  }
+
+  /**
    * Set new job state
    *
    * @param newState new job state
    * @return async result of this job
    */
-  public Future<Job> state(JobState newState) { // FIXED: ESSENTIAL BUG: 16-6-11 | NEED REVIEW
+  public Future<Job> state(JobState newState) {
     Future<Job> future = Future.future();
-    RedisClient client = RedisHelper.client(vertx, new JsonObject());
+    RedisClient client = RedisHelper.client(vertx, new JsonObject()); // use a new client to keep transaction
     JobState oldState = this.state;
     client.transaction().multi(r0 -> {
       if (r0.succeeded()) {
@@ -137,7 +154,7 @@ public class Job {
           .zadd(RedisHelper.getKey("jobs:" + newState.name()), this.priority.getValue(), this.zid, _failure())
           .zadd(RedisHelper.getKey("jobs:" + this.type + ":" + newState.name()), this.priority.getValue(), this.zid, _failure());
 
-        switch (newState) {
+        switch (newState) { // dispatch different state
           case ACTIVE:
             client.transaction().zadd(RedisHelper.getKey("jobs:" + newState.name()),
               this.priority.getValue() < 0 ? this.priority.getValue() : -this.priority.getValue(),
@@ -263,13 +280,13 @@ public class Job {
   }
 
   /**
-   * Get a property of the job
+   * Get a property of the job from backend
    *
    * @param key property key(name)
    * @return async result
    */
   @Fluent
-  private Future<String> get(String key) {
+  public Future<String> get(String key) {
     Future<String> future = Future.future();
     client.hget(RedisHelper.getKey("job:" + this.id), key, future.completer());
     return future;
@@ -357,7 +374,7 @@ public class Job {
         RedisTransaction multi = client.transaction().multi(null);
         multi.sadd(RedisHelper.getKey("job:types"), this.type, _failure());
         this.created_at = System.currentTimeMillis();
-        this.promote_at = System.currentTimeMillis() + this.delay;
+        this.promote_at = this.created_at + this.delay;
         // save job
         multi.hmset(key, this.toJson(), _failure())
           .exec(_completer(future, this));
@@ -383,12 +400,14 @@ public class Job {
   public Future<Job> update() {
     Future<Job> future = Future.future();
     this.updated_at = System.currentTimeMillis();
+
     client.transaction().multi(_failure())
       .hmset(RedisHelper.getKey("job:" + this.id), this.toJson(), _failure())
       .zadd(RedisHelper.getKey("jobs"), this.priority.getValue(), this.zid, _failure())
       .exec(_completer(future, this));
 
-    // TODO: search
+    // TODO: add search functionality
+
     return future.compose(r ->
       this.state(this.state));
   }
@@ -442,6 +461,45 @@ public class Job {
   }
 
   /**
+   * Add on promotion handler on event bus
+   *
+   * @param handler failure handler
+   */
+  @Fluent
+  public Job onPromotion(Handler<Job> handler) {
+    this.on("promotion", message -> {
+      handler.handle(new Job((JsonObject) message.body()));
+    });
+    return this;
+  }
+
+  /**
+   * Add on start handler on event bus
+   *
+   * @param handler failure handler
+   */
+  @Fluent
+  public Job onStart(Handler<Job> handler) {
+    this.on("start", message -> {
+      handler.handle(new Job((JsonObject) message.body()));
+    });
+    return this;
+  }
+
+  /**
+   * Add on remove handler on event bus
+   *
+   * @param removeHandler failure handler
+   */
+  @Fluent
+  public Job onRemove(Handler<JsonObject> removeHandler) {
+    this.on("start", message -> {
+      removeHandler.handle((JsonObject) message.body());
+    });
+    return this;
+  }
+
+  /**
    * Add on progress changed handler on event bus
    *
    * @param progressHandler progress handler
@@ -462,7 +520,7 @@ public class Job {
    */
   @Fluent
   public <T> Job on(String event, Handler<Message<T>> handler) {
-    System.out.println("[LOG] On: " + Kue.getCertainJobAddress(event, this));
+    // System.out.println("[LOG] On: " + Kue.getCertainJobAddress(event, this));
     eventBus.consumer(Kue.getCertainJobAddress(event, this), handler);
     return this;
   }
@@ -475,7 +533,7 @@ public class Job {
    */
   @Fluent
   public Job emit(String event, Object msg) {
-    System.out.println("[LOG] Emit: " + Kue.getCertainJobAddress(event, this));
+    // System.out.println("[LOG] Emit: " + Kue.getCertainJobAddress(event, this));
     eventBus.send(Kue.getCertainJobAddress(event, this), msg);
     return this;
   }
@@ -483,12 +541,6 @@ public class Job {
   @Fluent
   public Job done() {
     eventBus.send(Kue.workerAddress("done", this), this.toJson());
-    return this;
-  }
-
-  @Fluent
-  public Job removeOnComplete() { // TODO: should be a boolean flag
-    eventBus.consumer(Kue.getCertainJobAddress("complete", this)).unregister();
     return this;
   }
 
@@ -598,16 +650,18 @@ public class Job {
     return created_at;
   }
 
-  public void setCreated_at(long created_at) {
+  public Job setCreated_at(long created_at) {
     this.created_at = created_at;
+    return this;
   }
 
   public long getPromote_at() {
     return promote_at;
   }
 
-  public void setPromote_at(long promote_at) {
+  public Job setPromote_at(long promote_at) {
     this.promote_at = promote_at;
+    return this;
   }
 
   public long getUpdated_at() {
@@ -623,16 +677,18 @@ public class Job {
     return failed_at;
   }
 
-  public void setFailed_at(long failed_at) {
+  public Job setFailed_at(long failed_at) {
     this.failed_at = failed_at;
+    return this;
   }
 
   public long getStarted_at() {
     return started_at;
   }
 
-  public void setStarted_at(long started_at) {
+  public Job setStarted_at(long started_at) {
     this.started_at = started_at;
+    return this;
   }
 
   public long getDuration() {
@@ -641,12 +697,6 @@ public class Job {
 
   public Job setDuration(long duration) {
     this.duration = duration;
-    return this;
-  }
-
-  @Fluent
-  public Job attemptAdd() {
-    this.attempts++;
     return this;
   }
 
@@ -663,6 +713,15 @@ public class Job {
     return address_id;
   }
 
+  public boolean isRemoveOnComplete() {
+    return removeOnComplete;
+  }
+
+  public Job setRemoveOnComplete(boolean removeOnComplete) {
+    this.removeOnComplete = removeOnComplete;
+    return this;
+  }
+
   /**
    * Basic failure handler (always throws the exception)
    */
@@ -670,13 +729,6 @@ public class Job {
     return r -> {
       if (r.failed())
         r.cause().printStackTrace();
-    };
-  }
-
-  private static <T> Handler<AsyncResult<T>> _failure(Future future) {
-    return r -> {
-      if (r.failed())
-        future.fail(r.cause());
     };
   }
 

@@ -25,6 +25,7 @@
 |[[priority]]`priority`|`link:enums.html#Priority[Priority]`|-
 |[[progress]]`progress`|`Number (int)`|-
 |[[promote_at]]`promote_at`|`Number (long)`|-
+|[[removeOnComplete]]`removeOnComplete`|`Boolean`|-
 |[[result]]`result`|`Json object`|-
 |[[started_at]]`started_at`|`Number (long)`|-
 |[[state]]`state`|`link:enums.html#JobState[JobState]`|-

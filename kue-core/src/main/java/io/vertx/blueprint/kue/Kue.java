@@ -4,6 +4,7 @@ import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.blueprint.kue.queue.JobState;
 import io.vertx.blueprint.kue.queue.KueWorker;
 import io.vertx.blueprint.kue.service.JobService;
+import io.vertx.blueprint.kue.util.RedisHelper;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.DeploymentOptions;
@@ -14,13 +15,12 @@ import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisClient;
-
-import io.vertx.blueprint.kue.util.RedisHelper;
+import io.vertx.redis.op.RangeLimitOptions;
 
 import java.util.List;
 import java.util.Optional;
 
-import static io.vertx.blueprint.kue.queue.KueVerticle.*;
+import static io.vertx.blueprint.kue.queue.KueVerticle.EB_JOB_SERVICE_ADDRESS;
 
 /**
  * Vert.x Blueprint - Job Queue
@@ -63,7 +63,6 @@ public class Kue {
     return "vertx.kue.handler.job." + handlerType + "." + job.getAddress_id() + "." + job.getType();
   }
 
-  @Deprecated
   public static String workerAddress(String eventType) {
     return "vertx.kue.handler.workers." + eventType;
   }
@@ -114,7 +113,13 @@ public class Kue {
     });
   }
 
-  private <R> void on(String eventType, Handler<Message<R>> handler) {
+  /**
+   * Queue-level events listener
+   *
+   * @param eventType event type
+   * @param handler   handler
+   */
+  public <R> void on(String eventType, Handler<Message<R>> handler) {
     vertx.eventBus().consumer(Kue.workerAddress(eventType), handler);
   }
 
@@ -132,6 +137,7 @@ public class Kue {
     while (n-- > 0) {
       processInternal(type, handler, false);
     }
+    setupTimers();
     return this;
   }
 
@@ -149,6 +155,7 @@ public class Kue {
     while (n-- > 0) {
       processInternal(type, handler, true);
     }
+    setupTimers();
     return this;
   }
 
@@ -350,6 +357,41 @@ public class Kue {
     Future<Long> future = Future.future();
     jobService.getWorkTime(future.completer());
     return future;
+  }
+
+  private void setupTimers() {
+    this.checkJobPromotion();
+    this.checkActiveJobTtl();
+  }
+
+  public void checkJobPromotion() { // TODO: enhance
+    int timeout = config.getInteger("promotionTimeout", 1000);
+    int limit = config.getInteger("promotionLimit", 1000);
+    vertx.setTimer(timeout, l -> {
+      client.zrangebyscore(RedisHelper.getKey("jobs:DELAYED"), String.valueOf(0), String.valueOf(System.currentTimeMillis()),
+        new RangeLimitOptions(new JsonObject().put("offset", 0).put("count", limit)), r -> {
+          if (r.succeeded()) {
+            r.result().forEach(r1 -> {
+              long id = Long.parseLong(RedisHelper.stripFIFO((String) r1));
+              this.getJob(id).compose(jr -> jr.get().inactive())
+                .setHandler(jr -> {
+                  if (jr.succeeded()) {
+                    jr.result().emit("promotion", jr.result().getId());
+                  } else {
+                    jr.cause().printStackTrace();
+                  }
+                });
+            });
+          } else {
+            r.cause().printStackTrace();
+          }
+        });
+      checkJobPromotion();
+    });
+  }
+
+  private void checkActiveJobTtl() { // TODO: add TTL support
+
   }
 
 }

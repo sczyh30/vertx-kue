@@ -34,7 +34,7 @@ public class DelayedEmailVerticle extends AbstractVerticle {
     kue.createJob("email", new JsonObject().put("title", "Account expired")
       .put("to", "qinxin@jianpo.xyz")
       .put("template", "expired-email"))
-      .setDelay(11111)
+      .setDelay(26666)
       .priority(Priority.HIGH)
       .save() // save job
       .compose(c -> email.save()) // save another job
