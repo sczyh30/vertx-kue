@@ -1,6 +1,7 @@
 package io.vertx.blueprint.kue.service;
 
 import io.vertx.blueprint.kue.queue.Job;
+import io.vertx.blueprint.kue.queue.JobState;
 import io.vertx.blueprint.kue.service.impl.JobServiceImpl;
 import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.ProxyGen;
@@ -90,5 +91,93 @@ public interface JobService {
    */
   @Fluent
   JobService jobRange(long from, long to, String order, Handler<AsyncResult<List<Job>>> handler);
+
+  // runtime cardinality metrics
+
+  /**
+   * Get cardinality by job type and state
+   *
+   * @param type    job type
+   * @param state   job state
+   * @param handler async result handler
+   */
+  @Fluent
+  JobService cardByType(String type, JobState state, Handler<AsyncResult<Long>> handler);
+
+  /**
+   * Get cardinality by job state
+   *
+   * @param state   job state
+   * @param handler async result handler
+   */
+  @Fluent
+  JobService card(JobState state, Handler<AsyncResult<Long>> handler);
+
+  /**
+   * Get cardinality of completed jobs
+   *
+   * @param type    job type; if null, then return global metrics
+   * @param handler async result handler
+   */
+  @Fluent
+  JobService completeCount(String type, Handler<AsyncResult<Long>> handler);
+
+  /**
+   * Get cardinality of failed jobs
+   *
+   * @param type job type; if null, then return global metrics
+   */
+  @Fluent
+  JobService failedCount(String type, Handler<AsyncResult<Long>> handler);
+
+  /**
+   * Get cardinality of inactive jobs
+   *
+   * @param type job type; if null, then return global metrics
+   */
+  @Fluent
+  JobService inactiveCount(String type, Handler<AsyncResult<Long>> handler);
+
+  /**
+   * Get cardinality of active jobs
+   *
+   * @param type job type; if null, then return global metrics
+   */
+  @Fluent
+  JobService activeCount(String type, Handler<AsyncResult<Long>> handler);
+
+  /**
+   * Get cardinality of delayed jobs
+   *
+   * @param type job type; if null, then return global metrics
+   */
+  @Fluent
+  JobService delayedCount(String type, Handler<AsyncResult<Long>> handler);
+
+  /**
+   * Get the job types present
+   *
+   * @param handler async result handler
+   */
+  @Fluent
+  JobService getAllTypes(Handler<AsyncResult<List<String>>> handler);
+
+  /**
+   * Return job ids with the given `state`
+   *
+   * @param state   job state
+   * @param handler async result handler
+   */
+  @Fluent
+  JobService getIdsByState(JobState state, Handler<AsyncResult<List<Long>>> handler);
+
+  /**
+   * Get queue work time in milliseconds
+   *
+   * @param handler async result handler
+   */
+  @Fluent
+  JobService getWorkTime(Handler<AsyncResult<Long>> handler);
+
 
 }

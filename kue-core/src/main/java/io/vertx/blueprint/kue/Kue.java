@@ -2,13 +2,15 @@ package io.vertx.blueprint.kue;
 
 import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.blueprint.kue.queue.JobState;
+import io.vertx.blueprint.kue.queue.KueWorker;
 import io.vertx.blueprint.kue.service.JobService;
-import io.vertx.blueprint.kue.service.KueService;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisClient;
@@ -17,7 +19,6 @@ import io.vertx.blueprint.kue.util.RedisHelper;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static io.vertx.blueprint.kue.queue.KueVerticle.*;
 
@@ -31,14 +32,12 @@ public class Kue {
 
   private final JsonObject config;
   private final Vertx vertx;
-  private final KueService kueService;
   private final JobService jobService;
   private final RedisClient client;
 
   public Kue(Vertx vertx, JsonObject config) {
     this.vertx = vertx;
     this.config = config;
-    this.kueService = KueService.createProxy(vertx, EB_KUE_SERVICE_ADDRESS);
     this.jobService = JobService.createProxy(vertx, EB_JOB_SERVICE_ADDRESS);
     this.client = RedisHelper.client(vertx, config);
     Job.setVertx(vertx, RedisHelper.client(vertx, config)); // init static vertx instance inner job
@@ -100,6 +99,25 @@ public class Kue {
     return new Job(type, data);
   }
 
+  private void processInternal(String type, Handler<AsyncResult<Job>> handler, boolean isWorker) {
+    KueWorker worker = new KueWorker(type, handler, this);
+    vertx.deployVerticle(worker, new DeploymentOptions().setWorker(isWorker), r0 -> {
+      if (r0.succeeded()) {
+        this.on("job_complete", msg -> {
+          long dur = new Job((JsonObject) msg.body()).getDuration();
+          client.incrby(RedisHelper.getKey("stats:work-time"), dur, r1 -> {
+            if (r1.failed())
+              r1.cause().printStackTrace();
+          });
+        });
+      }
+    });
+  }
+
+  private <R> void on(String eventType, Handler<Message<R>> handler) {
+    vertx.eventBus().consumer(Kue.workerAddress(eventType), handler);
+  }
+
   /**
    * Process a job in asynchronous way
    *
@@ -112,7 +130,7 @@ public class Kue {
       throw new IllegalStateException("The process times must be positive");
     }
     while (n-- > 0) {
-      kueService.process(type, handler);
+      processInternal(type, handler, false);
     }
     return this;
   }
@@ -129,7 +147,7 @@ public class Kue {
       throw new IllegalStateException("The process times must be positive");
     }
     while (n-- > 0) {
-      kueService.processBlocking(type, handler);
+      processInternal(type, handler, true);
     }
     return this;
   }
@@ -218,9 +236,7 @@ public class Kue {
     return future;
   }
 
-
   // runtime cardinality metrics
-  // TODO: move to service proxy
 
   /**
    * Get cardinality by job type and state
@@ -231,7 +247,7 @@ public class Kue {
    */
   public Future<Long> cardByType(String type, JobState state) {
     Future<Long> future = Future.future();
-    client.zcard(RedisHelper.getKey("jobs:" + type + ":" + state.name()), future.completer());
+    jobService.cardByType(type, state, future.completer());
     return future;
   }
 
@@ -243,7 +259,7 @@ public class Kue {
    */
   public Future<Long> card(JobState state) {
     Future<Long> future = Future.future();
-    client.zcard(RedisHelper.getKey("jobs:" + state.name()), future.completer());
+    jobService.card(state, future.completer());
     return future;
   }
 
@@ -253,10 +269,9 @@ public class Kue {
    * @param type job type; if null, then return global metrics
    */
   public Future<Long> completeCount(String type) {
-    if (type == null)
-      return this.card(JobState.COMPLETE);
-    else
-      return this.cardByType(type, JobState.COMPLETE);
+    Future<Long> future = Future.future();
+    jobService.completeCount(type, future.completer());
+    return future;
   }
 
   /**
@@ -265,10 +280,9 @@ public class Kue {
    * @param type job type; if null, then return global metrics
    */
   public Future<Long> failedCount(String type) {
-    if (type == null)
-      return this.card(JobState.FAILED);
-    else
-      return this.cardByType(type, JobState.FAILED);
+    Future<Long> future = Future.future();
+    jobService.failedCount(type, future.completer());
+    return future;
   }
 
   /**
@@ -277,10 +291,9 @@ public class Kue {
    * @param type job type; if null, then return global metrics
    */
   public Future<Long> inactiveCount(String type) {
-    if (type == null)
-      return this.card(JobState.INACTIVE);
-    else
-      return this.cardByType(type, JobState.INACTIVE);
+    Future<Long> future = Future.future();
+    jobService.inactiveCount(type, future.completer());
+    return future;
   }
 
   /**
@@ -289,10 +302,9 @@ public class Kue {
    * @param type job type; if null, then return global metrics
    */
   public Future<Long> activeCount(String type) {
-    if (type == null)
-      return this.card(JobState.ACTIVE);
-    else
-      return this.cardByType(type, JobState.ACTIVE);
+    Future<Long> future = Future.future();
+    jobService.activeCount(type, future.completer());
+    return future;
   }
 
   /**
@@ -301,10 +313,9 @@ public class Kue {
    * @param type job type; if null, then return global metrics
    */
   public Future<Long> delayedCount(String type) {
-    if (type == null)
-      return this.card(JobState.DELAYED);
-    else
-      return this.cardByType(type, JobState.DELAYED);
+    Future<Long> future = Future.future();
+    jobService.delayedCount(type, future.completer());
+    return future;
   }
 
   /**
@@ -314,13 +325,7 @@ public class Kue {
    */
   public Future<List<String>> getAllTypes() {
     Future<List<String>> future = Future.future();
-    client.smembers(RedisHelper.getKey("job:types"), r -> {
-      if (r.succeeded()) {
-        future.complete(r.result().getList());
-      } else {
-        future.fail(r.cause());
-      }
-    });
+    jobService.getAllTypes(future.completer());
     return future;
   }
 
@@ -332,16 +337,7 @@ public class Kue {
    */
   public Future<List<Long>> getIdsByState(JobState state) {
     Future<List<Long>> future = Future.future();
-    client.zrange(RedisHelper.getStateKey(state), 0, -1, r -> {
-      if (r.succeeded()) {
-        List<Long> list = r.result().stream()
-          .map(e -> RedisHelper.numStripFIFO((String) e))
-          .collect(Collectors.toList());
-        future.complete(list);
-      } else {
-        future.fail(r.cause());
-      }
-    });
+    jobService.getIdsByState(state, future.completer());
     return future;
   }
 
@@ -352,13 +348,7 @@ public class Kue {
    */
   public Future<Long> getWorkTime() {
     Future<Long> future = Future.future();
-    client.get(RedisHelper.getKey("stats:work-time"), r -> {
-      if (r.succeeded()) {
-        future.complete(Long.parseLong(r.result() == null ? "0" : r.result()));
-      } else {
-        future.fail(r.cause());
-      }
-    });
+    jobService.getWorkTime(future.completer());
     return future;
   }
 

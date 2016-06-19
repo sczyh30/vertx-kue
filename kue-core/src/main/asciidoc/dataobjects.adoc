@@ -15,37 +15,21 @@
 ^|Name | Type ^| Description
 |[[address_id]]`address_id`|`String`|-
 |[[attempts]]`attempts`|`Number (int)`|-
+|[[created_at]]`created_at`|`Number (long)`|-
 |[[data]]`data`|`Json object`|-
 |[[delay]]`delay`|`Number (int)`|-
+|[[duration]]`duration`|`Number (long)`|-
+|[[failed_at]]`failed_at`|`Number (long)`|-
 |[[id]]`id`|`Number (long)`|-
-|[[jobMetrics]]`jobMetrics`|`link:dataobjects.html#JobMetrics[JobMetrics]`|-
-|[[maxAttempts]]`maxAttempts`|`Number (int)`|-
+|[[max_attempts]]`max_attempts`|`Number (int)`|-
 |[[priority]]`priority`|`link:enums.html#Priority[Priority]`|-
 |[[progress]]`progress`|`Number (int)`|-
+|[[promote_at]]`promote_at`|`Number (long)`|-
 |[[result]]`result`|`Json object`|-
+|[[started_at]]`started_at`|`Number (long)`|-
 |[[state]]`state`|`link:enums.html#JobState[JobState]`|-
 |[[type]]`type`|`String`|-
+|[[updated_at]]`updated_at`|`Number (long)`|-
 |[[zid]]`zid`|`String`|-
-|===
-
-[[JobMetrics]]
-== JobMetrics
-
-++++
- Vert.x Blueprint - Job Queue
- Job Metrics Class
-++++
-'''
-
-[cols=">25%,^25%,50%"]
-[frame="topbot"]
-|===
-^|Name | Type ^| Description
-|[[createdAt]]`createdAt`|`Number (long)`|-
-|[[duration]]`duration`|`Number (long)`|-
-|[[failedAt]]`failedAt`|`Number (long)`|-
-|[[promoteAt]]`promoteAt`|`Number (long)`|-
-|[[startedAt]]`startedAt`|`Number (long)`|-
-|[[updatedAt]]`updatedAt`|`Number (long)`|-
 |===
 

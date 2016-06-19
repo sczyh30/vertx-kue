@@ -41,21 +41,27 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
   }
 
   @Override
-  public void start(Future<Void> startFuture) throws Exception {
+  public void start() throws Exception {
     this.eventBus = vertx.eventBus();
     this.client = RedisHelper.client(vertx, config());
 
+    prepareAndStart();
+  }
+
+  /**
+   * Prepare job and start processing procedure
+   */
+  private void prepareAndStart() {
     this.getJobFromBackend().setHandler(jr -> {
       if (jr.succeeded()) {
-        startFuture.complete();
         if (jr.result().isPresent()) {
           this.job = jr.result().get();
           process();
         } else {
-          startFuture.fail(new IllegalStateException("job not exist"));
+          throw new IllegalStateException("job not exist");
         }
       } else {
-        startFuture.fail(jr.cause());
+        jr.cause().printStackTrace();
       }
     });
   }
@@ -168,7 +174,7 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
         // TODO: FAIL
         return;
       }
-      job.getJobMetrics().setDuration(System.currentTimeMillis() - job.getJobMetrics().getStartedAt());
+      job.setDuration(System.currentTimeMillis() - job.getStarted_at());
       JsonObject result = r0.result();
       if (result != null) {
         job.setResult(result)
@@ -180,6 +186,7 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
           Job j = r.result();
           System.out.println("[LOG] KueWorker::Job::complete");
           this.emitJobEvent("complete", j, null);
+          this.prepareAndStart(); // prepare for next job
         }
       });
     };
@@ -200,7 +207,7 @@ public class KueWorker extends AbstractVerticle { //TODO: UNFINISHED
   private void emitJobEvent(String event, Job job, JsonObject other) {
     eventBus.send(Kue.workerAddress("job_" + event, job), job.toJson());
     eventBus.send(Kue.getCertainJobAddress(event, job), job.toJson());
-    // emit other
+    // TODO: include extra data
   }
 
   private static <T> Handler<AsyncResult<T>> _failure() {

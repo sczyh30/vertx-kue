@@ -1,6 +1,7 @@
 package io.vertx.blueprint.kue.service.impl;
 
 import io.vertx.blueprint.kue.queue.Job;
+import io.vertx.blueprint.kue.queue.JobState;
 import io.vertx.blueprint.kue.service.JobService;
 import io.vertx.blueprint.kue.util.RedisHelper;
 import io.vertx.core.AsyncResult;
@@ -53,6 +54,7 @@ public final class JobServiceImpl implements JobService {
             handler.handle(Future.succeededFuture(job));
           }
         } catch (Exception e) {
+          e.printStackTrace();
           this.removeBadJob(id, "", null);
           handler.handle(Future.failedFuture(e));
         }
@@ -134,8 +136,13 @@ public final class JobServiceImpl implements JobService {
           List<Long> list = (List<Long>) r.result().getList().stream()
             .map(e -> RedisHelper.numStripFIFO((String) e))
             .collect(Collectors.toList());
-          long max = list.get(list.size() - 1);
-          System.out.println(max);
+          list.sort((a1, a2) -> {
+            if (order.equals("asc"))
+              return Long.compare(a1, a2);
+            else
+              return Long.compare(a2, a1);
+          });
+          long max = Math.max(list.get(0), list.get(list.size() - 1));
           List<Job> jobList = new ArrayList<>();
           list.forEach(e -> {
             this.getJob(e, jr -> {
@@ -144,12 +151,6 @@ public final class JobServiceImpl implements JobService {
                   jobList.add(jr.result());
                 }
                 if (e >= max) {
-                  jobList.sort((a1, a2) -> {
-                    if (order.equals("asc"))
-                      return Long.compare(a1.getId(), a2.getId());
-                    else
-                      return Long.compare(a2.getId(), a1.getId());
-                  });
                   handler.handle(Future.succeededFuture(jobList));
                 }
               } else {
@@ -188,13 +189,106 @@ public final class JobServiceImpl implements JobService {
       .zrem(RedisHelper.getKey("jobs:" + jobType + ":FAILED"), zid, null)
       .zrem(RedisHelper.getKey("jobs:" + jobType + ":DELAYED"), zid, null)
       .exec(r -> {
-        if (r.succeeded())
-          handler.handle(Future.succeededFuture());
-        else
-          handler.handle(Future.failedFuture(r.cause()));
+        if (handler != null) {
+          if (r.succeeded())
+            handler.handle(Future.succeededFuture());
+          else
+            handler.handle(Future.failedFuture(r.cause()));
+        }
       });
 
     // TODO: search functionality
+    return this;
+  }
+
+  @Override
+  public JobService cardByType(String type, JobState state, Handler<AsyncResult<Long>> handler) {
+    client.zcard(RedisHelper.getKey("jobs:" + type + ":" + state.name()), handler);
+    return this;
+  }
+
+  @Override
+  public JobService card(JobState state, Handler<AsyncResult<Long>> handler) {
+    client.zcard(RedisHelper.getKey("jobs:" + state.name()), handler);
+    return this;
+  }
+
+  @Override
+  public JobService completeCount(String type, Handler<AsyncResult<Long>> handler) {
+    if (type == null)
+      return this.card(JobState.COMPLETE, handler);
+    else
+      return this.cardByType(type, JobState.COMPLETE, handler);
+  }
+
+  @Override
+  public JobService failedCount(String type, Handler<AsyncResult<Long>> handler) {
+    if (type == null)
+      return this.card(JobState.FAILED, handler);
+    else
+      return this.cardByType(type, JobState.FAILED, handler);
+  }
+
+  @Override
+  public JobService inactiveCount(String type, Handler<AsyncResult<Long>> handler) {
+    if (type == null)
+      return this.card(JobState.INACTIVE, handler);
+    else
+      return this.cardByType(type, JobState.INACTIVE, handler);
+  }
+
+  @Override
+  public JobService activeCount(String type, Handler<AsyncResult<Long>> handler) {
+    if (type == null)
+      return this.card(JobState.ACTIVE, handler);
+    else
+      return this.cardByType(type, JobState.ACTIVE, handler);
+  }
+
+  @Override
+  public JobService delayedCount(String type, Handler<AsyncResult<Long>> handler) {
+    if (type == null)
+      return this.card(JobState.DELAYED, handler);
+    else
+      return this.cardByType(type, JobState.DELAYED, handler);
+  }
+
+  @Override
+  public JobService getAllTypes(Handler<AsyncResult<List<String>>> handler) {
+    client.smembers(RedisHelper.getKey("job:types"), r -> {
+      if (r.succeeded()) {
+        handler.handle(Future.succeededFuture(r.result().getList()));
+      } else {
+        handler.handle(Future.failedFuture(r.cause()));
+      }
+    });
+    return this;
+  }
+
+  @Override
+  public JobService getIdsByState(JobState state, Handler<AsyncResult<List<Long>>> handler) {
+    client.zrange(RedisHelper.getStateKey(state), 0, -1, r -> {
+      if (r.succeeded()) {
+        List<Long> list = r.result().stream()
+          .map(e -> RedisHelper.numStripFIFO((String) e))
+          .collect(Collectors.toList());
+        handler.handle(Future.succeededFuture(list));
+      } else {
+        handler.handle(Future.failedFuture(r.cause()));
+      }
+    });
+    return this;
+  }
+
+  @Override
+  public JobService getWorkTime(Handler<AsyncResult<Long>> handler) {
+    client.get(RedisHelper.getKey("stats:work-time"), r -> {
+      if (r.succeeded()) {
+        handler.handle(Future.succeededFuture(Long.parseLong(r.result() == null ? "0" : r.result())));
+      } else {
+        handler.handle(Future.failedFuture(r.cause()));
+      }
+    });
     return this;
   }
 }

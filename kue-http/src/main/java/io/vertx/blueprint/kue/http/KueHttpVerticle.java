@@ -279,7 +279,7 @@ public class KueHttpVerticle extends AbstractVerticle {
     notImplemented(context); // TODO: 501 Not Implemented
   }
 
-  private void apiJobStateRange(RoutingContext context) { // FIXME: 16-6-17 RESULT NOT CORRECT
+  private void apiJobStateRange(RoutingContext context) {
     try {
       String order = context.request().getParam("order");
       if (order == null || !(order.equals("asc") && order.equals("desc")))
@@ -287,7 +287,6 @@ public class KueHttpVerticle extends AbstractVerticle {
       Long from = Long.parseLong(context.request().getParam("from"));
       Long to = Long.parseLong(context.request().getParam("to"));
       String state = context.request().getParam("state");
-      // System.out.println("from: " + from + ", to: " + to + ", state: " + state);
       kue.jobRangeByState(state, from, to, order)
         .setHandler(resultHandler(context, r -> {
           String result = new JsonArray(r).encodePrettily();
@@ -317,6 +316,7 @@ public class KueHttpVerticle extends AbstractVerticle {
   private void apiRestartJob(RoutingContext context) {
     try {
       long id = Long.parseLong(context.request().getParam("id"));
+      notImplemented(context);
     } catch (Exception e) {
       badRequest(context);
     }

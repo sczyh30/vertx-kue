@@ -39,11 +39,12 @@ import io.vertx.serviceproxy.ProxyHelper;
 import io.vertx.serviceproxy.ProxyHandler;
 import io.vertx.serviceproxy.ServiceException;
 import io.vertx.serviceproxy.ServiceExceptionMessageCodec;
+import io.vertx.blueprint.kue.service.JobService;
+import io.vertx.core.Vertx;
+import io.vertx.blueprint.kue.queue.JobState;
 import io.vertx.core.json.JsonArray;
 import java.util.List;
 import io.vertx.blueprint.kue.queue.Job;
-import io.vertx.blueprint.kue.service.JobService;
-import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -179,6 +180,46 @@ public class JobServiceVertxProxyHandler extends ProxyHandler {
               msg.reply(new JsonArray(res.result().stream().map(Job::toJson).collect(Collectors.toList())));
             }
           });
+          break;
+        }
+        case "cardByType": {
+          service.cardByType((java.lang.String) json.getValue("type"), json.getString("state") == null ? null : io.vertx.blueprint.kue.queue.JobState.valueOf(json.getString("state")), createHandler(msg));
+          break;
+        }
+        case "card": {
+          service.card(json.getString("state") == null ? null : io.vertx.blueprint.kue.queue.JobState.valueOf(json.getString("state")), createHandler(msg));
+          break;
+        }
+        case "completeCount": {
+          service.completeCount((java.lang.String) json.getValue("type"), createHandler(msg));
+          break;
+        }
+        case "failedCount": {
+          service.failedCount((java.lang.String) json.getValue("type"), createHandler(msg));
+          break;
+        }
+        case "inactiveCount": {
+          service.inactiveCount((java.lang.String) json.getValue("type"), createHandler(msg));
+          break;
+        }
+        case "activeCount": {
+          service.activeCount((java.lang.String) json.getValue("type"), createHandler(msg));
+          break;
+        }
+        case "delayedCount": {
+          service.delayedCount((java.lang.String) json.getValue("type"), createHandler(msg));
+          break;
+        }
+        case "getAllTypes": {
+          service.getAllTypes(createListHandler(msg));
+          break;
+        }
+        case "getIdsByState": {
+          service.getIdsByState(json.getString("state") == null ? null : io.vertx.blueprint.kue.queue.JobState.valueOf(json.getString("state")), createListHandler(msg));
+          break;
+        }
+        case "getWorkTime": {
+          service.getWorkTime(createHandler(msg));
           break;
         }
         default: {

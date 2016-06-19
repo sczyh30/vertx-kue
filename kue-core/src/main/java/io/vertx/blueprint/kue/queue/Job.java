@@ -44,12 +44,17 @@ public class Job {
   private int delay = 0;
   private JobState state = JobState.INACTIVE;
   private int attempts = 0;
-  private int maxAttempts = 1;
+  private int max_attempts = 1;
 
   private String zid;
   private int progress = 0;
   private JsonObject result;
-  private JobMetrics jobMetrics = new JobMetrics();
+  private long created_at;
+  private long promote_at;
+  private long updated_at;
+  private long failed_at;
+  private long started_at;
+  private long duration;
 
   public Job() {
     this.address_id = UUID.randomUUID().toString();
@@ -59,9 +64,13 @@ public class Job {
     JobConverter.fromJson(json, this);
     this.address_id = json.getString("address_id");
     // generated converter cannot handle this
-    if (this.getJobMetrics().getCreatedAt() <= 0) {
-      this.setJobMetrics(new JobMetrics(json.getString("jobMetrics")));
-      this.setData(new JsonObject(json.getString("data")));
+    if (this.data == null) {
+      this.data = new JsonObject(json.getString("data"));
+      this.progress = Integer.parseInt(json.getString("progress"));
+      this.created_at = Long.parseLong(json.getString("created_at"));
+      this.updated_at = Long.parseLong(json.getString("updated_at"));
+      this.started_at = Long.parseLong(json.getString("started_at"));
+      this.promote_at = Long.parseLong(json.getString("promote_at"));
     }
     if (this.id < 0) {
       this.setId(Long.parseLong(json.getString("id")));
@@ -75,7 +84,13 @@ public class Job {
     this.data = other.data == null ? null : other.data.copy();
     this.priority = other.priority;
     this.state = other.state;
-    this.jobMetrics = other.jobMetrics;
+    // job metrics
+    this.created_at = other.created_at;
+    this.promote_at = other.promote_at;
+    this.updated_at = other.updated_at;
+    this.failed_at = other.failed_at;
+    this.started_at = other.started_at;
+    this.duration = other.duration;
   }
 
   public Job(String type, JsonObject data) {
@@ -130,7 +145,7 @@ public class Job {
             break;
           case DELAYED:
             client.transaction().zadd(RedisHelper.getKey("jobs:" + newState.name()),
-              this.jobMetrics.getPromoteAt(), this.zid, _failure());
+              this.promote_at, this.zid, _failure());
             break;
           case INACTIVE:
             client.transaction().lpush(RedisHelper.getKey(this.type + ":jobs"), "1", _failure());
@@ -181,7 +196,7 @@ public class Job {
    * Set a job failed
    */
   public Future<Job> failed() {
-    this.getJobMetrics().setFailedAt(System.currentTimeMillis());
+    this.failed_at = System.currentTimeMillis();
     return this.updateNow()
       .compose(j -> j.state(JobState.FAILED));
   }
@@ -266,7 +281,7 @@ public class Job {
   public Future<Job> attempt() {
     Future<Job> future = Future.future();
     String key = RedisHelper.getKey("job:" + this.id);
-    if (this.attempts < this.maxAttempts) {
+    if (this.attempts < this.max_attempts) {
       client.hincrby(key, "attempts", 1, r -> {
         if (r.succeeded()) {
           this.attempts = r.result().intValue();
@@ -294,7 +309,7 @@ public class Job {
       .setHandler(r -> {
         if (r.succeeded()) {
           Job j = r.result();
-          int remaining = j.maxAttempts - j.attempts;
+          int remaining = j.max_attempts - j.attempts;
           if (remaining > 0) {
             // reattempt
             j.inactive().setHandler(r1 -> {
@@ -341,8 +356,8 @@ public class Job {
         }
         RedisTransaction multi = client.transaction().multi(null);
         multi.sadd(RedisHelper.getKey("job:types"), this.type, _failure());
-        this.jobMetrics.setCreatedAt(System.currentTimeMillis());
-        this.jobMetrics.setPromoteAt(System.currentTimeMillis() + this.delay);
+        this.created_at = System.currentTimeMillis();
+        this.promote_at = System.currentTimeMillis() + this.delay;
         // save job
         multi.hmset(key, this.toJson(), _failure())
           .exec(_completer(future, this));
@@ -358,8 +373,8 @@ public class Job {
    * Update the job update time (`updateTime`)
    */
   public Future<Job> updateNow() {
-    this.getJobMetrics().updateNow();
-    return this.set("jobMetrics", this.getJobMetrics().toJson().encodePrettily());
+    this.updated_at = System.currentTimeMillis();
+    return this.set("updated_at", String.valueOf(updated_at));
   }
 
   /**
@@ -367,7 +382,7 @@ public class Job {
    */
   public Future<Job> update() {
     Future<Job> future = Future.future();
-    this.jobMetrics.updateNow();
+    this.updated_at = System.currentTimeMillis();
     client.transaction().multi(_failure())
       .hmset(RedisHelper.getKey("job:" + this.id), this.toJson(), _failure())
       .zadd(RedisHelper.getKey("jobs"), this.priority.getValue(), this.zid, _failure())
@@ -472,7 +487,7 @@ public class Job {
   }
 
   @Fluent
-  public Job removeOnComplete() {
+  public Job removeOnComplete() { // TODO: should be a boolean flag
     eventBus.consumer(Kue.getCertainJobAddress("complete", this)).unregister();
     return this;
   }
@@ -533,15 +548,6 @@ public class Job {
     return this;
   }
 
-  public JobMetrics getJobMetrics() {
-    return jobMetrics;
-  }
-
-  public Job setJobMetrics(JobMetrics jobMetrics) {
-    this.jobMetrics = jobMetrics;
-    return this;
-  }
-
   public int getDelay() {
     return delay;
   }
@@ -576,7 +582,7 @@ public class Job {
   }
 
   public boolean hasAttempts() {
-    return this.maxAttempts - this.attempts > 0;
+    return this.max_attempts - this.attempts > 0;
   }
 
   public int getAttempts() {
@@ -588,18 +594,68 @@ public class Job {
     return this;
   }
 
+  public long getCreated_at() {
+    return created_at;
+  }
+
+  public void setCreated_at(long created_at) {
+    this.created_at = created_at;
+  }
+
+  public long getPromote_at() {
+    return promote_at;
+  }
+
+  public void setPromote_at(long promote_at) {
+    this.promote_at = promote_at;
+  }
+
+  public long getUpdated_at() {
+    return updated_at;
+  }
+
+  public Job setUpdated_at(long updated_at) {
+    this.updated_at = updated_at;
+    return this;
+  }
+
+  public long getFailed_at() {
+    return failed_at;
+  }
+
+  public void setFailed_at(long failed_at) {
+    this.failed_at = failed_at;
+  }
+
+  public long getStarted_at() {
+    return started_at;
+  }
+
+  public void setStarted_at(long started_at) {
+    this.started_at = started_at;
+  }
+
+  public long getDuration() {
+    return duration;
+  }
+
+  public Job setDuration(long duration) {
+    this.duration = duration;
+    return this;
+  }
+
   @Fluent
   public Job attemptAdd() {
     this.attempts++;
     return this;
   }
 
-  public int getMaxAttempts() {
-    return maxAttempts;
+  public int getMax_attempts() {
+    return max_attempts;
   }
 
-  public Job setMaxAttempts(int maxAttempts) {
-    this.maxAttempts = maxAttempts;
+  public Job setMax_attempts(int max_attempts) {
+    this.max_attempts = max_attempts;
     return this;
   }
 
