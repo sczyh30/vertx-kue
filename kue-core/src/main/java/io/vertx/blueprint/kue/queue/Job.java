@@ -193,8 +193,8 @@ public class Job {
    * @param ex exception
    */
   public Future<Job> error(Throwable ex) {
-    // TO REVIEW: emit error => this.emit('error', msg)
-    this.emit("error", new JsonObject().put("id", this.id)
+    // send this on worker address in order to consume it with `Kue#on` method
+    eventBus.send(Kue.workerAddress("error"), new JsonObject().put("id", this.id)
       .put("message", ex.getMessage()));
     return this.set("error", ex.getMessage())
       .compose(j -> j.log("error | " + ex.getMessage()));

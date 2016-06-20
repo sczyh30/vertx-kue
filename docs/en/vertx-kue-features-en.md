@@ -136,15 +136,20 @@ Job email = kue.createJob("email", data)
   .priority(Priority.HIGH);
 ```
 
-Vert.x Kue will check the delayed jobs with a timer, promoting them if the scheduled delay has been exceeded, defaulting to a check of top 1000 jobs every second.
+Vert.x Kue will check the delayed jobs(`checkJobPromotion`) with a timer, promoting them if the scheduled delay has been exceeded, defaulting to a check of top 1000 jobs every second.
 
 ## Processing Jobs
+
+It's very simple to process jobs in Vert.x Kue. We can use `kue.process(jobType, n, handler)` to process jobs concurrently. The first parameter refers to the type of job and the second parameter refers to the maximum active job count, while the third parameter refers to the handler that process the job.
+
+In the following example we are going to process jobs in `email` type. We process 3 jobs at the same time. In the handler, we could invoke `done()` method to finish the job. If we encountered error, we could call `done(err)` to fail the job:
 
 ```java
 kue.process("email", 3, r -> {
     Job job = r.result();
     if (job.getData().getString("address") == null) {
         job.done(new IllegalStateException("invalid address")) // fail
+        return;
     }
 
     // process logic...
@@ -155,10 +160,118 @@ kue.process("email", 3, r -> {
 
 ## Error Handling
 
-## Queue Maintenance
+Error events will send on the worker address and we could add listener on it using `Kue#on(error, handler)`:
+
+```java
+kue.on("error", event -> {
+      // process error
+});
+```
+
+## Queue Metrics
+
+`Kue` object has two type of methods to tell us about the number of jobs in each state:
+
+```java
+kue.inactiveCount(null)
+  .setHandler(r -> {
+    if (r.succeeded()) {
+      if (r.result() > 1000)
+        System.out.println("It's too bad!");
+    }
+  });
+```
+
+It also supports query on a specific job type:
+
+```java
+kue.failedCount("my-job")
+  .setHandler(r -> {
+    if (r.succeeded()) {
+      if (r.result() > 1000)
+        System.out.println("It's too bad!");
+    }
+  });
+```
+
+and iterating over job ids:
+
+```java
+kue.getIdsByState(JobState.ACTIVE)
+  .setHandler(r -> {
+    // ...
+  });
+```
 
 ## Redis Connection Settings
 
+In Vert.x Kue, we use Vert.x Redis Client as the redis component so we can refer to [Vert.x-redis document](http://vertx.io/docs/vertx-redis-client/java/). We recommend to use a json config file like this:
+
+```json
+{
+    "redis.host": "127.0.0.1",
+    "redis.port": 6379
+}
+```
+
+Then we can pass the config file to Vert.x Launcher when we deploy our verticles.
+
 ## User-Interface
 
+The UI of Vert.x Kue is from the original [Automattic/kue](https://github.com/Automattic/kue). Thanks to Automattic/kue and the open-source community!
+
 ## Vert.x Kue REST API
+
+### GET /stats
+
+```json
+{
+  "workTime" : 0,
+  "inactiveCount" : 0,
+  "completeCount" : 404,
+  "activeCount" : 13,
+  "failedCount" : 0,
+  "delayedCount" : 0
+}
+```
+
+### GET /job/:id
+
+```json
+{
+  "address_id" : "a245319e-341d-49f9-b6bb-371247a6a358",
+  "attempts" : 0,
+  "created_at" : 1466348210024,
+  "data" : {
+    "title" : "Account renewal required",
+    "template" : "renewal-email",
+    "to" : "qinxin@jianpo.xyz"
+  },
+  "delay" : 8888,
+  "duration" : 2027,
+  "failed_at" : 0,
+  "id" : 403,
+  "max_attempts" : 1,
+  "priority" : "HIGH",
+  "progress" : 100,
+  "promote_at" : 1466348218912,
+  "removeOnComplete" : false,
+  "started_at" : 1466348219067,
+  "state" : "COMPLETE",
+  "type" : "email",
+  "updated_at" : 1466348221099,
+  "zid" : "03|403"
+}
+```
+
+### GET /job/:id/log
+
+### GET /jobs/:from/to/:to/:order?
+
+### GET /jobs/:state/:from/to/:to/:order?
+
+### GET /jobs/:type/:state/:from/to/:to/:order?
+
+### DELETE /job/:id
+
+### PUT /job
