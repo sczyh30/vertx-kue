@@ -22,6 +22,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -29,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.function.Function;
+
 import io.vertx.serviceproxy.ProxyHelper;
 import io.vertx.serviceproxy.ServiceException;
 import io.vertx.serviceproxy.ServiceExceptionMessageCodec;
@@ -36,7 +38,9 @@ import io.vertx.blueprint.kue.service.JobService;
 import io.vertx.core.Vertx;
 import io.vertx.blueprint.kue.queue.JobState;
 import io.vertx.core.json.JsonArray;
+
 import java.util.List;
+
 import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.AsyncResult;
@@ -396,8 +400,8 @@ public class JobServiceVertxEBProxy implements JobService {
   }
 
   private <T> Map<String, T> convertMap(Map map) {
-    if (map.isEmpty()) { 
-      return (Map<String, T>) map; 
+    if (map.isEmpty()) {
+      return (Map<String, T>) map;
     }
 
     Object elem = map.values().stream().findFirst().get();
@@ -413,8 +417,9 @@ public class JobServiceVertxEBProxy implements JobService {
       return ((Map<String, T>) map).entrySet()
         .stream()
         .collect(Collectors.toMap(Map.Entry::getKey, converter::apply));
-    } 
+    }
   }
+
   private <T> List<T> convertList(List list) {
     if (list.isEmpty()) {
       return (List<T>) list;
@@ -426,13 +431,14 @@ public class JobServiceVertxEBProxy implements JobService {
     } else {
       Function<Object, T> converter;
       if (elem instanceof List) {
-        converter = object -> (T) new JsonArray((List) object); 
-      } else { 
-        converter = object -> (T) new JsonObject((Map) object); 
-      } 
-      return (List<T>) list.stream().map(converter).collect(Collectors.toList()); 
-    } 
+        converter = object -> (T) new JsonArray((List) object);
+      } else {
+        converter = object -> (T) new JsonObject((Map) object);
+      }
+      return (List<T>) list.stream().map(converter).collect(Collectors.toList());
+    }
   }
+
   private <T> Set<T> convertSet(List list) {
     return new HashSet<T>(convertList(list));
   }

@@ -39,7 +39,7 @@ var JobService = function (j_val) {
 
    @public
    @param id {number} job id
-   @param handler {function} async result handler 
+   @param handler {function} async result handler
    @return {JobService}
    */
   this.getJob = function (id, handler) {
@@ -61,7 +61,7 @@ var JobService = function (j_val) {
 
    @public
    @param id {number} job id
-   @param handler {function} async result handler 
+   @param handler {function} async result handler
    @return {JobService}
    */
   this.removeJob = function (id, handler) {
@@ -83,7 +83,7 @@ var JobService = function (j_val) {
 
    @public
    @param id {number} job id
-   @param handler {function} async result handler 
+   @param handler {function} async result handler
    @return {JobService}
    */
   this.existsJob = function (id, handler) {
@@ -105,7 +105,7 @@ var JobService = function (j_val) {
 
    @public
    @param id {number} job id
-   @param handler {function} async result handler 
+   @param handler {function} async result handler
    @return {JobService}
    */
   this.getJobLog = function (id, handler) {
@@ -130,7 +130,7 @@ var JobService = function (j_val) {
    @param from {number} from
    @param to {number} to
    @param order {string} range order
-   @param handler {function} async result handler 
+   @param handler {function} async result handler
    @return {JobService}
    */
   this.jobRangeByState = function (state, from, to, order, handler) {
@@ -154,7 +154,7 @@ var JobService = function (j_val) {
    @param from {number} from
    @param to {number} to
    @param order {string} range order
-   @param handler {function} async result handler 
+   @param handler {function} async result handler
    @return {JobService}
    */
   this.jobRange = function (from, to, order, handler) {
@@ -177,7 +177,7 @@ var JobService = function (j_val) {
    @public
    @param type {string} job type
    @param state {Object} job state
-   @param handler {function} async result handler 
+   @param handler {function} async result handler
    @return {JobService}
    */
   this.cardByType = function (type, state, handler) {
@@ -199,7 +199,7 @@ var JobService = function (j_val) {
 
    @public
    @param state {Object} job state
-   @param handler {function} async result handler 
+   @param handler {function} async result handler
    @return {JobService}
    */
   this.card = function (state, handler) {
@@ -221,7 +221,7 @@ var JobService = function (j_val) {
 
    @public
    @param type {string} job type; if null, then return global metrics
-   @param handler {function} async result handler 
+   @param handler {function} async result handler
    @return {JobService}
    */
   this.completeCount = function (type, handler) {
@@ -243,7 +243,7 @@ var JobService = function (j_val) {
 
    @public
    @param type {string} job type; if null, then return global metrics
-   @param handler {function} 
+   @param handler {function}
    @return {JobService}
    */
   this.failedCount = function (type, handler) {
@@ -265,7 +265,7 @@ var JobService = function (j_val) {
 
    @public
    @param type {string} job type; if null, then return global metrics
-   @param handler {function} 
+   @param handler {function}
    @return {JobService}
    */
   this.inactiveCount = function (type, handler) {
@@ -287,7 +287,7 @@ var JobService = function (j_val) {
 
    @public
    @param type {string} job type; if null, then return global metrics
-   @param handler {function} 
+   @param handler {function}
    @return {JobService}
    */
   this.activeCount = function (type, handler) {
@@ -309,7 +309,7 @@ var JobService = function (j_val) {
 
    @public
    @param type {string} job type; if null, then return global metrics
-   @param handler {function} 
+   @param handler {function}
    @return {JobService}
    */
   this.delayedCount = function (type, handler) {
@@ -330,7 +330,7 @@ var JobService = function (j_val) {
    Get the job types present
 
    @public
-   @param handler {function} async result handler 
+   @param handler {function} async result handler
    @return {JobService}
    */
   this.getAllTypes = function (handler) {
@@ -352,7 +352,7 @@ var JobService = function (j_val) {
 
    @public
    @param state {Object} job state
-   @param handler {function} async result handler 
+   @param handler {function} async result handler
    @return {JobService}
    */
   this.getIdsByState = function (state, handler) {
@@ -373,7 +373,7 @@ var JobService = function (j_val) {
    Get queue work time in milliseconds
 
    @public
-   @param handler {function} async result handler 
+   @param handler {function} async result handler
    @return {JobService}
    */
   this.getWorkTime = function (handler) {
@@ -400,7 +400,7 @@ var JobService = function (j_val) {
 
  @memberof module:vertx-kue-service-module-js/job_service
  @param vertx {Vertx}
- @param config {Object} 
+ @param config {Object}
  @return {JobService}
  */
 JobService.create = function (vertx, config) {
@@ -414,7 +414,7 @@ JobService.create = function (vertx, config) {
 
  @memberof module:vertx-kue-service-module-js/job_service
  @param vertx {Vertx}
- @param address {string} 
+ @param address {string}
  @return {JobService}
  */
 JobService.createProxy = function (vertx, address) {

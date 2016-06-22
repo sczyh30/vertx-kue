@@ -5,10 +5,10 @@ import io.vertx.blueprint.kue.util.RedisHelper;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import io.vertx.redis.RedisClient;
 import io.vertx.serviceproxy.ProxyHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
  */
 public class KueVerticle extends AbstractVerticle {
 
-  private static Logger logger = LoggerFactory.getLogger(KueVerticle.class);
+  private static Logger logger = LoggerFactory.getLogger(Job.class);
 
   public static final String EB_KUE_SERVICE_ADDRESS = "vertx.kue.service.internal"; // no use
   public static final String EB_JOB_SERVICE_ADDRESS = "vertx.kue.service.job.internal";
@@ -42,7 +42,7 @@ public class KueVerticle extends AbstractVerticle {
 
         future.complete();
       } else {
-        logger.error("[ERROR] Redis service is not running!");
+        logger.error("oops!", pr.cause());
         future.fail(pr.cause());
       }
     });

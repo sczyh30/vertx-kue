@@ -10,9 +10,9 @@ import io.vertx.core.Handler;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import io.vertx.redis.RedisClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
@@ -25,7 +25,7 @@ import java.util.Optional;
  */
 public class KueWorker extends AbstractVerticle {
 
-  private static Logger logger = LoggerFactory.getLogger(KueWorker.class);
+  private static Logger logger = LoggerFactory.getLogger(Job.class);
 
   private final Kue kue;
   private RedisClient client; // every worker use different client

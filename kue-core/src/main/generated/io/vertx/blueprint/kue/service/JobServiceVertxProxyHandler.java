@@ -27,6 +27,7 @@ import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.ReplyException;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
+
 import java.util.Collection;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -35,6 +36,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
 import io.vertx.serviceproxy.ProxyHelper;
 import io.vertx.serviceproxy.ProxyHandler;
 import io.vertx.serviceproxy.ServiceException;
@@ -43,7 +45,9 @@ import io.vertx.blueprint.kue.service.JobService;
 import io.vertx.core.Vertx;
 import io.vertx.blueprint.kue.queue.JobState;
 import io.vertx.core.json.JsonArray;
+
 import java.util.List;
+
 import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.AsyncResult;
