@@ -71,7 +71,7 @@ public enum Priority {
 
 ### Job Logs
 
-Job-specific logs enable you to expose information to the UI at any point in the job's life-time. To do so we can simply invoke `jog.log(str)` method, which accepts a message string:
+Job-specific logs enable you to expose information to the UI at any point in the job's life-time. To do so we can simply invoke `job.log(str)` method, which accepts a message string:
 
 ```java
 job.log("job ttl failed");

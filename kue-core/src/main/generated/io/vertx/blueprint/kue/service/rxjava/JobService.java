@@ -278,7 +278,7 @@ public class JobService {
   /**
    * Get cardinality of failed jobs
    * @param type job type; if null, then return global metrics
-   * @param handler
+   * @param handler 
    * @return 
    */
   public JobService failedCount(String type, Handler<AsyncResult<Long>> handler) { 
@@ -300,7 +300,7 @@ public class JobService {
   /**
    * Get cardinality of inactive jobs
    * @param type job type; if null, then return global metrics
-   * @param handler
+   * @param handler 
    * @return 
    */
   public JobService inactiveCount(String type, Handler<AsyncResult<Long>> handler) { 
@@ -322,7 +322,7 @@ public class JobService {
   /**
    * Get cardinality of active jobs
    * @param type job type; if null, then return global metrics
-   * @param handler
+   * @param handler 
    * @return 
    */
   public JobService activeCount(String type, Handler<AsyncResult<Long>> handler) { 
@@ -344,7 +344,7 @@ public class JobService {
   /**
    * Get cardinality of delayed jobs
    * @param type job type; if null, then return global metrics
-   * @param handler
+   * @param handler 
    * @return 
    */
   public JobService delayedCount(String type, Handler<AsyncResult<Long>> handler) { 

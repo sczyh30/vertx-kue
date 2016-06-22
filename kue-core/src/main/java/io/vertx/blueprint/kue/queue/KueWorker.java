@@ -203,7 +203,6 @@ public class KueWorker extends AbstractVerticle {
           if (j.isRemoveOnComplete()) {
             j.remove();
           }
-          System.out.println("[LOG] KueWorker::Job::complete");
           this.emitJobEvent("complete", j, null);
           this.prepareAndStart(); // prepare for next job
         }

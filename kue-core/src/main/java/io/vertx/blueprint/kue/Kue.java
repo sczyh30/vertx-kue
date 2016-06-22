@@ -23,7 +23,7 @@ import java.util.Optional;
 import static io.vertx.blueprint.kue.queue.KueVerticle.EB_JOB_SERVICE_ADDRESS;
 
 /**
- * Vert.x Blueprint - Job Queue
+ * Vert.x Blueprint - Job Queue (Vert.x Kue)
  * Kue class
  *
  * @author Eric Zhao
@@ -89,6 +89,14 @@ public class Kue {
   }
 
   /**
+   * Get the JobService
+   * Notice: only available in package scope
+   */
+  JobService getJobService() {
+    return this.jobService;
+  }
+
+  /**
    * Create a job instance
    *
    * @param type job type
@@ -120,8 +128,9 @@ public class Kue {
    * @param eventType event type
    * @param handler   handler
    */
-  public <R> void on(String eventType, Handler<Message<R>> handler) {
+  public <R> Kue on(String eventType, Handler<Message<R>> handler) {
     vertx.eventBus().consumer(Kue.workerAddress(eventType), handler);
+    return this;
   }
 
   /**

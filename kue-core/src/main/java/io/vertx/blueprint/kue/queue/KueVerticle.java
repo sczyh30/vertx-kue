@@ -7,6 +7,8 @@ import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisClient;
 import io.vertx.serviceproxy.ProxyHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -16,6 +18,8 @@ import io.vertx.serviceproxy.ProxyHelper;
  * @author Eric Zhao
  */
 public class KueVerticle extends AbstractVerticle {
+
+  private static Logger logger = LoggerFactory.getLogger(KueVerticle.class);
 
   public static final String EB_KUE_SERVICE_ADDRESS = "vertx.kue.service.internal"; // no use
   public static final String EB_JOB_SERVICE_ADDRESS = "vertx.kue.service.job.internal";
@@ -38,7 +42,7 @@ public class KueVerticle extends AbstractVerticle {
 
         future.complete();
       } else {
-        System.err.println("[ERROR] Redis service is noe running!");
+        logger.error("[ERROR] Redis service is not running!");
         future.fail(pr.cause());
       }
     });

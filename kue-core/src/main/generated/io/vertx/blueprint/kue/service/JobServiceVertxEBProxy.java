@@ -426,7 +426,7 @@ public class JobServiceVertxEBProxy implements JobService {
     } else {
       Function<Object, T> converter;
       if (elem instanceof List) {
-        converter = object -> (T) new JsonArray((List) object);
+        converter = object -> (T) new JsonArray((List) object); 
       } else { 
         converter = object -> (T) new JsonObject((Map) object); 
       } 

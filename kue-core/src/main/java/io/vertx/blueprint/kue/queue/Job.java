@@ -13,6 +13,8 @@ import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.RedisClient;
 import io.vertx.redis.RedisTransaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -25,6 +27,8 @@ import java.util.UUID;
  */
 @DataObject(generateConverter = true)
 public class Job {
+
+  private static Logger logger = LoggerFactory.getLogger(Job.class);
 
   private static Vertx vertx;
   private static RedisClient client;
@@ -533,7 +537,7 @@ public class Job {
    */
   @Fluent
   public <T> Job on(String event, Handler<Message<T>> handler) {
-    // System.out.println("[LOG] On: " + Kue.getCertainJobAddress(event, this));
+    logger.debug("[LOG] On: " + Kue.getCertainJobAddress(event, this));
     eventBus.consumer(Kue.getCertainJobAddress(event, this), handler);
     return this;
   }
@@ -546,7 +550,7 @@ public class Job {
    */
   @Fluent
   public Job emit(String event, Object msg) {
-    // System.out.println("[LOG] Emit: " + Kue.getCertainJobAddress(event, this));
+    logger.debug("[LOG] Emit: " + Kue.getCertainJobAddress(event, this));
     eventBus.send(Kue.getCertainJobAddress(event, this), msg);
     return this;
   }

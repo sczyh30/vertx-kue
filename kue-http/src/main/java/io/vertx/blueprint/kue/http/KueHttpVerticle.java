@@ -25,7 +25,7 @@ import io.vertx.ext.web.templ.JadeTemplateEngine;
 public class KueHttpVerticle extends AbstractVerticle {
 
   private static final String HOST = "0.0.0.0";
-  private static final int PORT = 3000; // default port
+  private static final int PORT = 8080; // default port
 
   // Kue REST API
   private static final String KUE_API_JOB_SEARCH = "/job/search/:q";
@@ -52,11 +52,13 @@ public class KueHttpVerticle extends AbstractVerticle {
   private static final String KUE_UI_DELAYED = "/delayed";
 
   private Kue kue;
+  private JadeTemplateEngine engine;
 
   @Override
   public void start(Future<Void> future) throws Exception {
     // init kue
     kue = Kue.createQueue(vertx, config());
+    engine = JadeTemplateEngine.create();
     // create route
     final Router router = Router.router(vertx);
     router.route().handler(BodyHandler.create());
@@ -106,7 +108,6 @@ public class KueHttpVerticle extends AbstractVerticle {
    */
   private void render(RoutingContext context, String state) { // TODO: bug in `types` param
     final String uiPath = "webroot/views/job/list.jade";
-    final JadeTemplateEngine engine = JadeTemplateEngine.create();
     String title = config().getString("title", "Vert.x Kue");
     kue.getAllTypes()
       .setHandler(resultHandler(context, r -> {
@@ -115,7 +116,9 @@ public class KueHttpVerticle extends AbstractVerticle {
           .put("title", title);
         engine.render(context, uiPath, res -> {
           if (res.succeeded()) {
-            context.response().end(res.result());
+            context.response()
+              .putHeader("content-type", "text/html")
+              .end(res.result());
           } else {
             context.fail(res.cause());
           }
