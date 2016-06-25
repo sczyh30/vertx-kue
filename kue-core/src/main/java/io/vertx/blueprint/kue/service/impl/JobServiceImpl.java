@@ -109,6 +109,11 @@ public final class JobServiceImpl implements JobService {
   }
 
   @Override
+  public JobService jobRangeByType(String type, String state, long from, long to, String order, Handler<AsyncResult<List<Job>>> handler) {
+    return rangeGeneral("jobs:" + type + ":" + state.toUpperCase(), from, to, order, handler);
+  }
+
+  @Override
   public JobService jobRange(long from, long to, String order, Handler<AsyncResult<List<Job>>> handler) {
     return rangeGeneral("jobs", from, to, order, handler);
   }

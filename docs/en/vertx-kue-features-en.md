@@ -142,14 +142,13 @@ Vert.x Kue will check the delayed jobs(`checkJobPromotion`) with a timer, promot
 
 It's very simple to process jobs in Vert.x Kue. We can use `kue.process(jobType, n, handler)` to process jobs concurrently. The first parameter refers to the type of job and the second parameter refers to the maximum active job count, while the third parameter refers to the handler that process the job.
 
-In the following example we are going to process jobs in `email` type. We process 3 jobs at the same time. In the handler, we could invoke `done()` method to finish the job. If we encountered error, we could call `done(err)` to fail the job:
+In the following example we are going to process jobs in `email` type. We process 3 jobs at the same time. In the handler, we could invoke `done()` method to finish the job. If we encountered error, the job will automatically fail:
 
 ```java
 kue.process("email", 3, r -> {
     Job job = r.result();
     if (job.getData().getString("address") == null) {
-        job.done(new IllegalStateException("invalid address")) // fail
-        return;
+        throw new IllegalStateException("invalid address"); // fail
     }
 
     // process logic...

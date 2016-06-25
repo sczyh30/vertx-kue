@@ -44,16 +44,6 @@ public class Kue {
   }
 
   /**
-   * Generate handler address on event bus
-   * Format: vertx.kue.handler.job.{handlerType}.{jobType}
-   *
-   * @return corresponding address
-   */
-  public static String getHandlerAddress(String handlerType, String jobType) {
-    return "vertx.kue.handler.job." + handlerType + "." + jobType;
-  }
-
-  /**
    * Generate handler address with certain job on event bus
    * Format: vertx.kue.handler.job.{handlerType}.{addressId}.{jobType}
    *
@@ -250,6 +240,18 @@ public class Kue {
   public Future<List<Job>> jobRangeByState(String state, long from, long to, String order) {
     Future<List<Job>> future = Future.future();
     jobService.jobRangeByState(state, from, to, order, future.completer());
+    return future;
+  }
+
+  /**
+   * Get a list of job in certain state and type in range (from, to) with order
+   *
+   * @return async result
+   * @see JobService#jobRangeByType(String, String, long, long, String, Handler)
+   */
+  public Future<List<Job>> jobRangeByType(String type, String state, long from, long to, String order) {
+    Future<List<Job>> future = Future.future();
+    jobService.jobRangeByType(type, state, from, to, order, future.completer());
     return future;
   }
 

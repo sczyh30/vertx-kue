@@ -14,7 +14,7 @@ import io.vertx.core.json.JsonObject;
 /**
  * Vert.x Blueprint - Job Queue
  * Callback-based Kue Interface
- * For Vert.x Codegen
+ * For Vert.x Codegen to support polyglot languages
  *
  * @author Eric Zhao
  */
@@ -34,7 +34,13 @@ public interface CallbackKue extends JobService {
   CallbackKue saveJob(Job job, Handler<AsyncResult<Job>> handler);
 
   @Fluent
+  CallbackKue jobProgress(Job job, int complete, int total, Handler<AsyncResult<Job>> handler);
+
+  @Fluent
   CallbackKue jobDone(Job job);
+
+  @Fluent
+  CallbackKue jobDoneFail(Job job, Throwable ex);
 
   @Fluent
   CallbackKue process(String type, int n, Handler<AsyncResult<Job>> handler);

@@ -17,7 +17,6 @@
 package io.vertx.blueprint.kue.rxjava;
 
 import java.util.Map;
-
 import rx.Observable;
 import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.blueprint.kue.service.rxjava.JobService;
@@ -30,8 +29,8 @@ import io.vertx.core.Handler;
 /**
  * Vert.x Blueprint - Job Queue
  * Callback-based Kue Interface
- * For Vert.x Codegen
- * <p>
+ * For Vert.x Codegen to support polyglot languages
+ *
  * <p/>
  * NOTE: This class has been automatically generated from the {@link io.vertx.blueprint.kue.CallbackKue original} non RX-ified interface using Vert.x codegen.
  */
@@ -54,12 +53,12 @@ public class CallbackKue extends JobService {
     return ret;
   }
 
-  public Job createJob(String type, JsonObject data) {
+  public Job createJob(String type, JsonObject data) { 
     Job ret = delegate.createJob(type, data);
     return ret;
   }
 
-  public <R> CallbackKue on(String eventType, Handler<Message<R>> handler) {
+  public <R> CallbackKue on(String eventType, Handler<Message<R>> handler) { 
     delegate.on(eventType, new Handler<io.vertx.core.eventbus.Message<R>>() {
       public void handle(io.vertx.core.eventbus.Message<R> event) {
         handler.handle(Message.newInstance(event));
@@ -68,39 +67,55 @@ public class CallbackKue extends JobService {
     return this;
   }
 
-  public CallbackKue saveJob(Job job, Handler<AsyncResult<Job>> handler) {
+  public CallbackKue saveJob(Job job, Handler<AsyncResult<Job>> handler) { 
     delegate.saveJob(job, handler);
     return this;
   }
 
-  public Observable<Job> saveJobObservable(Job job) {
+  public Observable<Job> saveJobObservable(Job job) { 
     io.vertx.rx.java.ObservableFuture<Job> handler = io.vertx.rx.java.RxHelper.observableFuture();
     saveJob(job, handler.toHandler());
     return handler;
   }
 
-  public CallbackKue jobDone(Job job) {
+  public CallbackKue jobProgress(Job job, int complete, int total, Handler<AsyncResult<Job>> handler) {
+    delegate.jobProgress(job, complete, total, handler);
+    return this;
+  }
+
+  public Observable<Job> jobProgressObservable(Job job, int complete, int total) {
+    io.vertx.rx.java.ObservableFuture<Job> handler = io.vertx.rx.java.RxHelper.observableFuture();
+    jobProgress(job, complete, total, handler.toHandler());
+    return handler;
+  }
+
+  public CallbackKue jobDone(Job job) { 
     delegate.jobDone(job);
     return this;
   }
 
-  public CallbackKue process(String type, int n, Handler<AsyncResult<Job>> handler) {
+  public CallbackKue jobDoneFail(Job job, Throwable ex) {
+    delegate.jobDoneFail(job, ex);
+    return this;
+  }
+
+  public CallbackKue process(String type, int n, Handler<AsyncResult<Job>> handler) { 
     delegate.process(type, n, handler);
     return this;
   }
 
-  public Observable<Job> processObservable(String type, int n) {
+  public Observable<Job> processObservable(String type, int n) { 
     io.vertx.rx.java.ObservableFuture<Job> handler = io.vertx.rx.java.RxHelper.observableFuture();
     process(type, n, handler.toHandler());
     return handler;
   }
 
-  public CallbackKue processBlocking(String type, int n, Handler<AsyncResult<Job>> handler) {
+  public CallbackKue processBlocking(String type, int n, Handler<AsyncResult<Job>> handler) { 
     delegate.processBlocking(type, n, handler);
     return this;
   }
 
-  public Observable<Job> processBlockingObservable(String type, int n) {
+  public Observable<Job> processBlockingObservable(String type, int n) { 
     io.vertx.rx.java.ObservableFuture<Job> handler = io.vertx.rx.java.RxHelper.observableFuture();
     processBlocking(type, n, handler.toHandler());
     return handler;

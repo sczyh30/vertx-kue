@@ -82,6 +82,19 @@ public interface JobService {
   JobService jobRangeByState(String state, long from, long to, String order, Handler<AsyncResult<List<Job>>> handler);
 
   /**
+   * Get a list of job in certain state and type in range (from, to) with order
+   *
+   * @param type    expected job type
+   * @param state   expected job state
+   * @param from    from
+   * @param to      to
+   * @param order   range order
+   * @param handler async result handler
+   */
+  @Fluent
+  JobService jobRangeByType(String type, String state, long from, long to, String order, Handler<AsyncResult<List<Job>>> handler);
+
+  /**
    * Get a list of job in range (from, to) with order
    *
    * @param from    from

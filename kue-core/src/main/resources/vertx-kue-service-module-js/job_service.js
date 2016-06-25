@@ -39,7 +39,7 @@ var JobService = function (j_val) {
 
    @public
    @param id {number} job id
-   @param handler {function} async result handler
+   @param handler {function} async result handler 
    @return {JobService}
    */
   this.getJob = function (id, handler) {
@@ -61,7 +61,7 @@ var JobService = function (j_val) {
 
    @public
    @param id {number} job id
-   @param handler {function} async result handler
+   @param handler {function} async result handler 
    @return {JobService}
    */
   this.removeJob = function (id, handler) {
@@ -83,7 +83,7 @@ var JobService = function (j_val) {
 
    @public
    @param id {number} job id
-   @param handler {function} async result handler
+   @param handler {function} async result handler 
    @return {JobService}
    */
   this.existsJob = function (id, handler) {
@@ -105,7 +105,7 @@ var JobService = function (j_val) {
 
    @public
    @param id {number} job id
-   @param handler {function} async result handler
+   @param handler {function} async result handler 
    @return {JobService}
    */
   this.getJobLog = function (id, handler) {
@@ -130,13 +130,39 @@ var JobService = function (j_val) {
    @param from {number} from
    @param to {number} to
    @param order {string} range order
-   @param handler {function} async result handler
+   @param handler {function} async result handler 
    @return {JobService}
    */
   this.jobRangeByState = function (state, from, to, order, handler) {
     var __args = arguments;
     if (__args.length === 5 && typeof __args[0] === 'string' && typeof __args[1] === 'number' && typeof __args[2] === 'number' && typeof __args[3] === 'string' && typeof __args[4] === 'function') {
       j_jobService["jobRangeByState(java.lang.String,long,long,java.lang.String,io.vertx.core.Handler)"](state, from, to, order, function (ar) {
+        if (ar.succeeded()) {
+          handler(utils.convReturnListSetDataObject(ar.result()), null);
+        } else {
+          handler(null, ar.cause());
+        }
+      });
+      return that;
+    } else throw new TypeError('function invoked with invalid arguments');
+  };
+
+  /**
+   Get a list of job in certain state and type in range (from, to) with order
+
+   @public
+   @param type {string} expected job type
+   @param state {string} expected job state
+   @param from {number} from
+   @param to {number} to
+   @param order {string} range order
+   @param handler {function} async result handler
+   @return {JobService}
+   */
+  this.jobRangeByType = function (type, state, from, to, order, handler) {
+    var __args = arguments;
+    if (__args.length === 6 && typeof __args[0] === 'string' && typeof __args[1] === 'string' && typeof __args[2] === 'number' && typeof __args[3] === 'number' && typeof __args[4] === 'string' && typeof __args[5] === 'function') {
+      j_jobService["jobRangeByType(java.lang.String,java.lang.String,long,long,java.lang.String,io.vertx.core.Handler)"](type, state, from, to, order, function (ar) {
         if (ar.succeeded()) {
           handler(utils.convReturnListSetDataObject(ar.result()), null);
         } else {
@@ -177,7 +203,7 @@ var JobService = function (j_val) {
    @public
    @param type {string} job type
    @param state {Object} job state
-   @param handler {function} async result handler
+   @param handler {function} async result handler 
    @return {JobService}
    */
   this.cardByType = function (type, state, handler) {
@@ -185,7 +211,7 @@ var JobService = function (j_val) {
     if (__args.length === 3 && typeof __args[0] === 'string' && typeof __args[1] === 'string' && typeof __args[2] === 'function') {
       j_jobService["cardByType(java.lang.String,io.vertx.blueprint.kue.queue.JobState,io.vertx.core.Handler)"](type, io.vertx.blueprint.kue.queue.JobState.valueOf(state), function (ar) {
         if (ar.succeeded()) {
-          handler(ar.result(), null);
+          handler(utils.convReturnLong(ar.result()), null);
         } else {
           handler(null, ar.cause());
         }
@@ -199,7 +225,7 @@ var JobService = function (j_val) {
 
    @public
    @param state {Object} job state
-   @param handler {function} async result handler
+   @param handler {function} async result handler 
    @return {JobService}
    */
   this.card = function (state, handler) {
@@ -207,7 +233,7 @@ var JobService = function (j_val) {
     if (__args.length === 2 && typeof __args[0] === 'string' && typeof __args[1] === 'function') {
       j_jobService["card(io.vertx.blueprint.kue.queue.JobState,io.vertx.core.Handler)"](io.vertx.blueprint.kue.queue.JobState.valueOf(state), function (ar) {
         if (ar.succeeded()) {
-          handler(ar.result(), null);
+          handler(utils.convReturnLong(ar.result()), null);
         } else {
           handler(null, ar.cause());
         }
@@ -221,7 +247,7 @@ var JobService = function (j_val) {
 
    @public
    @param type {string} job type; if null, then return global metrics
-   @param handler {function} async result handler
+   @param handler {function} async result handler 
    @return {JobService}
    */
   this.completeCount = function (type, handler) {
@@ -229,7 +255,7 @@ var JobService = function (j_val) {
     if (__args.length === 2 && typeof __args[0] === 'string' && typeof __args[1] === 'function') {
       j_jobService["completeCount(java.lang.String,io.vertx.core.Handler)"](type, function (ar) {
         if (ar.succeeded()) {
-          handler(ar.result(), null);
+          handler(utils.convReturnLong(ar.result()), null);
         } else {
           handler(null, ar.cause());
         }
@@ -243,7 +269,7 @@ var JobService = function (j_val) {
 
    @public
    @param type {string} job type; if null, then return global metrics
-   @param handler {function}
+   @param handler {function} 
    @return {JobService}
    */
   this.failedCount = function (type, handler) {
@@ -251,7 +277,7 @@ var JobService = function (j_val) {
     if (__args.length === 2 && typeof __args[0] === 'string' && typeof __args[1] === 'function') {
       j_jobService["failedCount(java.lang.String,io.vertx.core.Handler)"](type, function (ar) {
         if (ar.succeeded()) {
-          handler(ar.result(), null);
+          handler(utils.convReturnLong(ar.result()), null);
         } else {
           handler(null, ar.cause());
         }
@@ -265,7 +291,7 @@ var JobService = function (j_val) {
 
    @public
    @param type {string} job type; if null, then return global metrics
-   @param handler {function}
+   @param handler {function} 
    @return {JobService}
    */
   this.inactiveCount = function (type, handler) {
@@ -273,7 +299,7 @@ var JobService = function (j_val) {
     if (__args.length === 2 && typeof __args[0] === 'string' && typeof __args[1] === 'function') {
       j_jobService["inactiveCount(java.lang.String,io.vertx.core.Handler)"](type, function (ar) {
         if (ar.succeeded()) {
-          handler(ar.result(), null);
+          handler(utils.convReturnLong(ar.result()), null);
         } else {
           handler(null, ar.cause());
         }
@@ -287,7 +313,7 @@ var JobService = function (j_val) {
 
    @public
    @param type {string} job type; if null, then return global metrics
-   @param handler {function}
+   @param handler {function} 
    @return {JobService}
    */
   this.activeCount = function (type, handler) {
@@ -295,7 +321,7 @@ var JobService = function (j_val) {
     if (__args.length === 2 && typeof __args[0] === 'string' && typeof __args[1] === 'function') {
       j_jobService["activeCount(java.lang.String,io.vertx.core.Handler)"](type, function (ar) {
         if (ar.succeeded()) {
-          handler(ar.result(), null);
+          handler(utils.convReturnLong(ar.result()), null);
         } else {
           handler(null, ar.cause());
         }
@@ -309,7 +335,7 @@ var JobService = function (j_val) {
 
    @public
    @param type {string} job type; if null, then return global metrics
-   @param handler {function}
+   @param handler {function} 
    @return {JobService}
    */
   this.delayedCount = function (type, handler) {
@@ -317,7 +343,7 @@ var JobService = function (j_val) {
     if (__args.length === 2 && typeof __args[0] === 'string' && typeof __args[1] === 'function') {
       j_jobService["delayedCount(java.lang.String,io.vertx.core.Handler)"](type, function (ar) {
         if (ar.succeeded()) {
-          handler(ar.result(), null);
+          handler(utils.convReturnLong(ar.result()), null);
         } else {
           handler(null, ar.cause());
         }
@@ -330,7 +356,7 @@ var JobService = function (j_val) {
    Get the job types present
 
    @public
-   @param handler {function} async result handler
+   @param handler {function} async result handler 
    @return {JobService}
    */
   this.getAllTypes = function (handler) {
@@ -352,7 +378,7 @@ var JobService = function (j_val) {
 
    @public
    @param state {Object} job state
-   @param handler {function} async result handler
+   @param handler {function} async result handler 
    @return {JobService}
    */
   this.getIdsByState = function (state, handler) {
@@ -360,7 +386,7 @@ var JobService = function (j_val) {
     if (__args.length === 2 && typeof __args[0] === 'string' && typeof __args[1] === 'function') {
       j_jobService["getIdsByState(io.vertx.blueprint.kue.queue.JobState,io.vertx.core.Handler)"](io.vertx.blueprint.kue.queue.JobState.valueOf(state), function (ar) {
         if (ar.succeeded()) {
-          handler(ar.result(), null);
+          handler(utils.convReturnListSetLong(ar.result()), null);
         } else {
           handler(null, ar.cause());
         }
@@ -373,7 +399,7 @@ var JobService = function (j_val) {
    Get queue work time in milliseconds
 
    @public
-   @param handler {function} async result handler
+   @param handler {function} async result handler 
    @return {JobService}
    */
   this.getWorkTime = function (handler) {
@@ -381,7 +407,7 @@ var JobService = function (j_val) {
     if (__args.length === 1 && typeof __args[0] === 'function') {
       j_jobService["getWorkTime(io.vertx.core.Handler)"](function (ar) {
         if (ar.succeeded()) {
-          handler(ar.result(), null);
+          handler(utils.convReturnLong(ar.result()), null);
         } else {
           handler(null, ar.cause());
         }
@@ -400,7 +426,7 @@ var JobService = function (j_val) {
 
  @memberof module:vertx-kue-service-module-js/job_service
  @param vertx {Vertx}
- @param config {Object}
+ @param config {Object} 
  @return {JobService}
  */
 JobService.create = function (vertx, config) {
@@ -414,7 +440,7 @@ JobService.create = function (vertx, config) {
 
  @memberof module:vertx-kue-service-module-js/job_service
  @param vertx {Vertx}
- @param address {string}
+ @param address {string} 
  @return {JobService}
  */
 JobService.createProxy = function (vertx, address) {

@@ -28,7 +28,7 @@ var Job = io.vertx.blueprint.kue.queue.Job;
 /**
  Vert.x Blueprint - Job Queue
  Callback-based Kue Interface
- For Vert.x Codegen
+ For Vert.x Codegen to support polyglot languages
 
  @class
  */
@@ -42,7 +42,7 @@ var CallbackKue = function (j_val) {
 
    @public
    @param type {string}
-   @param data {Object}
+   @param data {Object} 
    @return {Object}
    */
   this.createJob = function (type, data) {
@@ -56,7 +56,7 @@ var CallbackKue = function (j_val) {
 
    @public
    @param eventType {string}
-   @param handler {function}
+   @param handler {function} 
    @return {CallbackKue}
    */
   this.on = function (eventType, handler) {
@@ -73,13 +73,36 @@ var CallbackKue = function (j_val) {
 
    @public
    @param job {Object}
-   @param handler {function}
+   @param handler {function} 
    @return {CallbackKue}
    */
   this.saveJob = function (job, handler) {
     var __args = arguments;
     if (__args.length === 2 && (typeof __args[0] === 'object' && __args[0] != null) && typeof __args[1] === 'function') {
       j_callbackKue["saveJob(io.vertx.blueprint.kue.queue.Job,io.vertx.core.Handler)"](job != null ? new Job(new JsonObject(JSON.stringify(job))) : null, function (ar) {
+        if (ar.succeeded()) {
+          handler(utils.convReturnDataObject(ar.result()), null);
+        } else {
+          handler(null, ar.cause());
+        }
+      });
+      return that;
+    } else throw new TypeError('function invoked with invalid arguments');
+  };
+
+  /**
+
+   @public
+   @param job {Object}
+   @param complete {number}
+   @param total {number}
+   @param handler {function} 
+   @return {CallbackKue}
+   */
+  this.jobProgress = function (job, complete, total, handler) {
+    var __args = arguments;
+    if (__args.length === 4 && (typeof __args[0] === 'object' && __args[0] != null) && typeof __args[1] === 'number' && typeof __args[2] === 'number' && typeof __args[3] === 'function') {
+      j_callbackKue["jobProgress(io.vertx.blueprint.kue.queue.Job,int,int,io.vertx.core.Handler)"](job != null ? new Job(new JsonObject(JSON.stringify(job))) : null, complete, total, function (ar) {
         if (ar.succeeded()) {
           handler(utils.convReturnDataObject(ar.result()), null);
         } else {
@@ -107,9 +130,24 @@ var CallbackKue = function (j_val) {
   /**
 
    @public
+   @param job {Object}
+   @param ex {todo}
+   @return {CallbackKue}
+   */
+  this.jobDoneFail = function (job, ex) {
+    var __args = arguments;
+    if (__args.length === 2 && (typeof __args[0] === 'object' && __args[0] != null) && typeof __args[1] === 'object') {
+      j_callbackKue["jobDoneFail(io.vertx.blueprint.kue.queue.Job,java.lang.Throwable)"](job != null ? new Job(new JsonObject(JSON.stringify(job))) : null, utils.convParamThrowable(ex));
+      return that;
+    } else throw new TypeError('function invoked with invalid arguments');
+  };
+
+  /**
+
+   @public
    @param type {string}
    @param n {number}
-   @param handler {function}
+   @param handler {function} 
    @return {CallbackKue}
    */
   this.process = function (type, n, handler) {
@@ -158,7 +196,7 @@ var CallbackKue = function (j_val) {
 
  @memberof module:vertx-kue-root-module-js/callback_kue
  @param vertx {Vertx}
- @param config {Object}
+ @param config {Object} 
  @return {CallbackKue}
  */
 CallbackKue.createKue = function (vertx, config) {

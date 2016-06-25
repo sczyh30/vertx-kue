@@ -1,4 +1,4 @@
-# Tutorial: Vert.x Blueprint - Vert.x Kue
+# Tutorial: Vert.x Blueprint - Vert.x Kue (Core)
 
 ## Table of contents
 
@@ -14,7 +14,7 @@
 
 Hi, welcome back to the Vert.x Blueprint tutorial series~ In this tutorial, we are going to use Vert.x
 to develop a message based application - Vert.x Kue (the name is from the Node.js version Kue). 
-Vert.x Kue priority job queue backed by *Redis*.
+Vert.x Kue is a priority job queue backed by *Redis*.
 
 ## Message system in Vert.x
 

@@ -27,7 +27,6 @@ import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.ReplyException;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
-
 import java.util.Collection;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -36,7 +35,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
 import io.vertx.serviceproxy.ProxyHelper;
 import io.vertx.serviceproxy.ProxyHandler;
 import io.vertx.serviceproxy.ServiceException;
@@ -45,9 +43,7 @@ import io.vertx.blueprint.kue.service.JobService;
 import io.vertx.core.Vertx;
 import io.vertx.blueprint.kue.queue.JobState;
 import io.vertx.core.json.JsonArray;
-
 import java.util.List;
-
 import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.AsyncResult;
@@ -160,6 +156,20 @@ public class JobServiceVertxProxyHandler extends ProxyHandler {
         }
         case "jobRangeByState": {
           service.jobRangeByState((java.lang.String) json.getValue("state"), json.getValue("from") == null ? null : (json.getLong("from").longValue()), json.getValue("to") == null ? null : (json.getLong("to").longValue()), (java.lang.String) json.getValue("order"), res -> {
+            if (res.failed()) {
+              if (res.cause() instanceof ServiceException) {
+                msg.reply(res.cause());
+              } else {
+                msg.reply(new ServiceException(-1, res.cause().getMessage()));
+              }
+            } else {
+              msg.reply(new JsonArray(res.result().stream().map(Job::toJson).collect(Collectors.toList())));
+            }
+          });
+          break;
+        }
+        case "jobRangeByType": {
+          service.jobRangeByType((java.lang.String) json.getValue("type"), (java.lang.String) json.getValue("state"), json.getValue("from") == null ? null : (json.getLong("from").longValue()), json.getValue("to") == null ? null : (json.getLong("to").longValue()), (java.lang.String) json.getValue("order"), res -> {
             if (res.failed()) {
               if (res.cause() instanceof ServiceException) {
                 msg.reply(res.cause());

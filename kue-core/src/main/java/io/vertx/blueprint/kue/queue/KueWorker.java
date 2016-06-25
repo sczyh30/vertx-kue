@@ -80,7 +80,11 @@ public class KueWorker extends AbstractVerticle {
         // emit start event
         this.emitJobEvent("start", j, null);
         // process logic invocation
-        jobHandler.handle(Future.succeededFuture(j));
+        try {
+          jobHandler.handle(Future.succeededFuture(j));
+        } catch (Exception ex) {
+          eventBus.send(Kue.workerAddress("done_fail", j), ex.getMessage());
+        }
         // subscribe the job done event
         eventBus.consumer(Kue.workerAddress("done", j), msg -> {
           createDoneCallback(j).handle(Future.succeededFuture(
@@ -109,9 +113,9 @@ public class KueWorker extends AbstractVerticle {
       } else {
         Job res = r.result();
         if (res.hasAttempts()) {
-          this.emitJobEvent("failed_attempt", job, new JsonObject().put("errorMsg", ex.getMessage())); // shouldn't include err?
+          this.emitJobEvent("failed_attempt", job, new JsonObject().put("message", ex.getMessage())); // shouldn't include err?
         } else {
-          this.emitJobEvent("failed", job, new JsonObject().put("errorMsg", ex.getMessage()));
+          this.emitJobEvent("failed", job, new JsonObject().put("message", ex.getMessage()));
         }
         prepareAndStart();
       }
@@ -226,7 +230,11 @@ public class KueWorker extends AbstractVerticle {
     JsonObject data = new JsonObject().put("job", job.toJson())
       .put("extra", extra);
     eventBus.send(Kue.workerAddress("job_" + event, job), data);
-    eventBus.send(Kue.getCertainJobAddress(event, job), job.toJson());
+    if (event.equals("failed") || event.equals("failed_attempt")) {
+      eventBus.send(Kue.getCertainJobAddress(event, job), data);
+    } else {
+      eventBus.send(Kue.getCertainJobAddress(event, job), job.toJson());
+    }
   }
 
   private static <T> Handler<AsyncResult<T>> _failure() {

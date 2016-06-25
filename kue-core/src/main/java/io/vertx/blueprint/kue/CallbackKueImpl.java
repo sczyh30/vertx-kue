@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Vert.x Blueprint - Job Queue
  * Callback-based Kue Implementation
- * For Vert.x Codegen
+ * For Vert.x Codegen to support polyglot languages
  *
  * @author Eric Zhao
  */
@@ -38,6 +38,18 @@ public class CallbackKueImpl implements CallbackKue {
   @Override
   public CallbackKue saveJob(Job job, Handler<AsyncResult<Job>> handler) {
     job.save().setHandler(handler);
+    return this;
+  }
+
+  @Override
+  public CallbackKue jobProgress(Job job, int complete, int total, Handler<AsyncResult<Job>> handler) {
+    job.progress(complete, total).setHandler(handler);
+    return this;
+  }
+
+  @Override
+  public CallbackKue jobDoneFail(Job job, Throwable ex) {
+    job.done(ex);
     return this;
   }
 
@@ -92,6 +104,12 @@ public class CallbackKueImpl implements CallbackKue {
   @Override
   public CallbackKue jobRangeByState(String state, long from, long to, String order, Handler<AsyncResult<List<Job>>> handler) {
     jobService.jobRangeByState(state, from, to, order, handler);
+    return this;
+  }
+
+  @Override
+  public JobService jobRangeByType(String type, String state, long from, long to, String order, Handler<AsyncResult<List<Job>>> handler) {
+    jobService.jobRangeByType(type, state, from, to, order, handler);
     return this;
   }
 

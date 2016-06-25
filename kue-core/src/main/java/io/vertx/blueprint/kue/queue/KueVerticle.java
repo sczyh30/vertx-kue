@@ -35,7 +35,7 @@ public class KueVerticle extends AbstractVerticle {
     RedisClient redisClient = RedisClient.create(vertx, RedisHelper.options(config));
     redisClient.ping(pr -> { // test connection
       if (pr.succeeded()) {
-        System.out.println("Kue Verticle is running...");
+        logger.info("Kue Verticle is running...");
 
         // register job service
         ProxyHelper.registerService(JobService.class, vertx, jobService, EB_JOB_SERVICE_ADDRESS);

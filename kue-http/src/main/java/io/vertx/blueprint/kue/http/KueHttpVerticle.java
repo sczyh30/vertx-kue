@@ -335,7 +335,6 @@ public class KueHttpVerticle extends AbstractVerticle {
           notFound(context);
         }
       }));
-      notImplemented(context);
     } catch (Exception e) {
       badRequest(context, e);
     }

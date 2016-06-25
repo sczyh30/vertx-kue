@@ -67,6 +67,7 @@ public class Job {
 
   public Job() {
     this.address_id = UUID.randomUUID().toString();
+    _checkStatic();
   }
 
   public Job(JsonObject json) {
@@ -86,6 +87,7 @@ public class Job {
     if (this.id < 0) {
       this.setId(Long.parseLong(json.getString("id")));
     }
+    _checkStatic();
   }
 
   public Job(Job other) {
@@ -103,18 +105,26 @@ public class Job {
     this.started_at = other.started_at;
     this.duration = other.duration;
     this.removeOnComplete = other.removeOnComplete;
+    _checkStatic();
   }
 
   public Job(String type, JsonObject data) {
     this.type = type;
     this.data = data;
     this.address_id = UUID.randomUUID().toString();
+    _checkStatic();
   }
 
   public JsonObject toJson() {
     JsonObject json = new JsonObject();
     JobConverter.toJson(this, json);
     return json;
+  }
+
+  private void _checkStatic() {
+    if (vertx == null) {
+      logger.warn("static Vertx instance in Job class is not initialized!");
+    }
   }
 
   /**
@@ -219,6 +229,7 @@ public class Job {
   public Future<Job> failed() {
     this.failed_at = System.currentTimeMillis();
     return this.updateNow()
+      .compose(j -> j.set("failed_at", String.valueOf(j.failed_at)))
       .compose(j -> j.state(JobState.FAILED));
   }
 
@@ -299,7 +310,7 @@ public class Job {
   /**
    * Attempt once and save attempt times to Redis
    */
-  public Future<Job> attempt() {
+  Future<Job> attempt() {
     Future<Job> future = Future.future();
     String key = RedisHelper.getKey("job:" + this.id);
     if (this.attempts < this.max_attempts) {
@@ -322,7 +333,7 @@ public class Job {
    *
    * @param err exception
    */
-  public Future<Job> failedAttempt(Throwable err) { // TODO: reattempt logic should implement `Failure Backoff`
+  Future<Job> failedAttempt(Throwable err) { // TODO: reattempt logic should implement `Failure Backoff`
     Future<Job> future = Future.future();
     this.error(err)
       .compose(Job::failed)
@@ -393,7 +404,7 @@ public class Job {
   /**
    * Update the job update time (`updateTime`)
    */
-  public Future<Job> updateNow() {
+  Future<Job> updateNow() {
     this.updated_at = System.currentTimeMillis();
     return this.set("updated_at", String.valueOf(updated_at));
   }
@@ -401,7 +412,7 @@ public class Job {
   /**
    * Update the job
    */
-  public Future<Job> update() {
+  Future<Job> update() {
     Future<Job> future = Future.future();
     this.updated_at = System.currentTimeMillis();
 
@@ -457,9 +468,9 @@ public class Job {
    * @param failureHandler failure handler
    */
   @Fluent
-  public Job onFailure(Handler<Job> failureHandler) {
-    this.on("failure", message -> {
-      failureHandler.handle(new Job((JsonObject) message.body()));
+  public Job onFailure(Handler<JsonObject> failureHandler) {
+    this.on("failed", message -> {
+      failureHandler.handle((JsonObject) message.body());
     });
     return this;
   }
@@ -470,9 +481,9 @@ public class Job {
    * @param failureHandler failure handler
    */
   @Fluent
-  public Job onFailureAttempt(Handler<Job> failureHandler) {
-    this.on("failure_attempt", message -> {
-      failureHandler.handle(new Job((JsonObject) message.body()));
+  public Job onFailureAttempt(Handler<JsonObject> failureHandler) {
+    this.on("failed_attempt", message -> {
+      failureHandler.handle((JsonObject) message.body());
     });
     return this;
   }
@@ -556,22 +567,20 @@ public class Job {
   }
 
   /**
+   * Fail a job
+   */
+  @Fluent
+  public Job done(Throwable ex) {
+    eventBus.send(Kue.workerAddress("done_fail", this), ex.getMessage());
+    return this;
+  }
+
+  /**
    * Finish a job
    */
   @Fluent
   public Job done() {
     eventBus.send(Kue.workerAddress("done", this), this.toJson());
-    return this;
-  }
-
-  /**
-   * Fail a job
-   *
-   * @param ex exception
-   */
-  @Fluent
-  public Job done(Throwable ex) {
-    eventBus.send(Kue.workerAddress("done_fail", this), ex.getMessage());
     return this;
   }
 
@@ -770,6 +779,27 @@ public class Job {
       else
         future.complete(result);
     };
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    Job job = (Job) o;
+
+    if (id != job.id) return false;
+    if (!address_id.equals(job.address_id)) return false;
+    return type.equals(job.type);
+
+  }
+
+  @Override
+  public int hashCode() {
+    int result = address_id.hashCode();
+    result = 31 * result + (int) (id ^ (id >>> 32));
+    result = 31 * result + type.hashCode();
+    return result;
   }
 
   @Override
