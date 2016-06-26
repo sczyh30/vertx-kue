@@ -24,7 +24,7 @@ Kue kue = Kue.createQueue(vertx, config());
 ```
 
 Then we could call `kue.createJob()` to create a job, with a specific job type and arbitrary job data.
-After that, e could save a `Job` into Redis backend with a default priority level of "normal" using `Job#save` method.
+After that, we could save a `Job` into Redis backend with a default priority level of "normal" using `Job#save` method.
 The `save` method is a `Future` based asynchronous method so we could attach a `Handler` on it and once the save operation is successful or failed,
 the logic in attached `Handler` will be called.
 
@@ -142,13 +142,12 @@ Vert.x Kue will check the delayed jobs(`checkJobPromotion`) with a timer, promot
 
 It's very simple to process jobs in Vert.x Kue. We can use `kue.process(jobType, n, handler)` to process jobs concurrently. The first parameter refers to the type of job and the second parameter refers to the maximum active job count, while the third parameter refers to the handler that process the job.
 
-In the following example we are going to process jobs in `email` type. We process 3 jobs at the same time. In the handler, we could invoke `done()` method to finish the job. If we encountered error, the job will automatically fail:
+In the following example we are going to process jobs in `email` type. We process 3 jobs at the same time. In the handler, we could invoke `done()` method to finish the job. If we encountered error, we could invoke `done(err)` to fail the job:
 
 ```java
-kue.process("email", 3, r -> {
-    Job job = r.result();
+kue.process("email", 3, job -> {
     if (job.getData().getString("address") == null) {
-        throw new IllegalStateException("invalid address"); // fail
+        job.done(new IllegalStateException("invalid address")); // fail
     }
 
     // process logic...
@@ -225,7 +224,7 @@ The UI of Vert.x Kue is from the original [Automattic/kue](https://github.com/Au
 
 ```json
 {
-  "workTime" : 0,
+  "workTime" : 699960,
   "inactiveCount" : 0,
   "completeCount" : 404,
   "activeCount" : 13,
