@@ -144,12 +144,12 @@ Job email = kue.createJob("email", data)
 ```java
 kue.process("email", 3, job -> {
     if (job.getData().getString("address") == null) {
-        job.done(new IllegalStateException("invalid address")); // fail
+        job.done(new IllegalStateException("invalid address")); // 失败
     }
 
-    // process logic...
+    // 任务处理逻辑
 
-    job.done(); // finish
+    job.done(); // 任务完成
 });
 ```
 
@@ -159,7 +159,7 @@ kue.process("email", 3, job -> {
 
 ```java
 kue.on("error", event -> {
-      // process error
+      // 处理错误
 });
 ```
 
@@ -218,7 +218,7 @@ kue.jobRangeByType("moha", "complete", 0, 10, "asc")
 
 ## Redis连接设置
 
-Vert.x Kue使用了Vert.x Redis Client作为Redis通信组件，因此我们可以参考[Vert.x-redis document](http://vertx.io/docs/vertx-redis-client/java/)查看配置信息。我们推荐使用JSON格式的配置文件：
+Vert.x Kue使用了Vert.x Redis Client作为Redis通信组件，因此我们可以参考[Vert.x-Redis 官方文档](http://vertx.io/docs/vertx-redis-client/java/)查看配置信息。我们推荐使用JSON格式的配置文件：
 
 ```json
 {
@@ -231,7 +231,7 @@ Vert.x Kue使用了Vert.x Redis Client作为Redis通信组件，因此我们可�
 
 ## 用户界面
 
-Vert.x Kue的用户界面复用了[Automattic/kue](https://github.com/Automattic/kue)的用户界面，仅更改了一小部分代码。感谢Automattic以及整个开源社区！
+Vert.x Kue的用户界面复用了 [Automattic/kue](https://github.com/Automattic/kue) 的用户界面，仅更改了一小部分代码。感谢Automattic以及整个开源社区！
 
 ![](../images/vertx_kue_ui_1.png)
 

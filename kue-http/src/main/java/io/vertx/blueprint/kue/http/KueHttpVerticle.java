@@ -253,7 +253,7 @@ public class KueHttpVerticle extends AbstractVerticle {
         if (r.isPresent()) {
           context.response()
             .putHeader("content-type", "application/json")
-            .end(r.toString());
+            .end(r.get().toString());
         } else {
           notFound(context);
         }

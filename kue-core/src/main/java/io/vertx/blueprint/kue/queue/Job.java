@@ -85,18 +85,21 @@ public class Job {
       this.duration = Long.parseLong(json.getString("duration"));
     }
     if (this.id < 0) {
-      this.setId(Long.parseLong(json.getString("id")));
+      if ((json.getValue("id")) instanceof CharSequence)
+        this.setId(Long.parseLong(json.getString("id")));
     }
     _checkStatic();
   }
 
   public Job(Job other) {
     this.id = other.id;
+    this.zid = other.zid;
     this.address_id = other.address_id;
     this.type = other.type;
     this.data = other.data == null ? null : other.data.copy();
     this.priority = other.priority;
     this.state = other.state;
+    this.delay = other.delay;
     // job metrics
     this.created_at = other.created_at;
     this.promote_at = other.promote_at;
@@ -104,6 +107,8 @@ public class Job {
     this.failed_at = other.failed_at;
     this.started_at = other.started_at;
     this.duration = other.duration;
+    this.attempts = other.attempts;
+    this.max_attempts = other.max_attempts;
     this.removeOnComplete = other.removeOnComplete;
     _checkStatic();
   }
