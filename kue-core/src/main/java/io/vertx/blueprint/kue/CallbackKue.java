@@ -43,9 +43,9 @@ public interface CallbackKue extends JobService {
   CallbackKue jobDoneFail(Job job, Throwable ex);
 
   @Fluent
-  CallbackKue process(String type, int n, Handler<AsyncResult<Job>> handler);
+  CallbackKue process(String type, int n, Handler<Job> handler);
 
   @Fluent
-  CallbackKue processBlocking(String type, int n, Handler<AsyncResult<Job>> handler);
+  CallbackKue processBlocking(String type, int n, Handler<Job> handler);
 
 }

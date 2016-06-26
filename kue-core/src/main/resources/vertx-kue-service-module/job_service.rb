@@ -10,7 +10,6 @@ module VertxKueServiceModule
     def initialize(j_del)
       @j_del = j_del
     end
-
     # @private
     # @return [::VertxKueServiceModule::JobService] the underlying java delegate
     def j_del
@@ -36,7 +35,6 @@ module VertxKueServiceModule
       end
       raise ArgumentError, "Invalid arguments when calling create_proxy(vertx,address)"
     end
-
     #  Get job from backend by id
     # @param [Fixnum] id job id
     # @yield async result handler
@@ -48,7 +46,6 @@ module VertxKueServiceModule
       end
       raise ArgumentError, "Invalid arguments when calling get_job(id)"
     end
-
     #  Remove a job by id
     # @param [Fixnum] id job id
     # @yield async result handler
@@ -60,7 +57,6 @@ module VertxKueServiceModule
       end
       raise ArgumentError, "Invalid arguments when calling remove_job(id)"
     end
-
     #  Judge whether a job with certain id exists
     # @param [Fixnum] id job id
     # @yield async result handler
@@ -72,7 +68,6 @@ module VertxKueServiceModule
       end
       raise ArgumentError, "Invalid arguments when calling exists_job(id)"
     end
-
     #  Get job log by id
     # @param [Fixnum] id job id
     # @yield async result handler
@@ -84,7 +79,6 @@ module VertxKueServiceModule
       end
       raise ArgumentError, "Invalid arguments when calling get_job_log(id)"
     end
-
     #  Get a list of job in certain state in range (from, to) with order
     # @param [String] state expected job state
     # @param [Fixnum] from from
@@ -99,7 +93,6 @@ module VertxKueServiceModule
       end
       raise ArgumentError, "Invalid arguments when calling job_range_by_state(state,from,to,order)"
     end
-
     #  Get a list of job in certain state and type in range (from, to) with order
     # @param [String] type expected job type
     # @param [String] state expected job state
@@ -115,7 +108,6 @@ module VertxKueServiceModule
       end
       raise ArgumentError, "Invalid arguments when calling job_range_by_type(type,state,from,to,order)"
     end
-
     #  Get a list of job in range (from, to) with order
     # @param [Fixnum] from from
     # @param [Fixnum] to to
@@ -129,7 +121,6 @@ module VertxKueServiceModule
       end
       raise ArgumentError, "Invalid arguments when calling job_range(from,to,order)"
     end
-
     #  Get cardinality by job type and state
     # @param [String] type job type
     # @param [:INACTIVE,:ACTIVE,:COMPLETE,:FAILED,:DELAYED] state job state
@@ -142,7 +133,6 @@ module VertxKueServiceModule
       end
       raise ArgumentError, "Invalid arguments when calling card_by_type(type,state)"
     end
-
     #  Get cardinality by job state
     # @param [:INACTIVE,:ACTIVE,:COMPLETE,:FAILED,:DELAYED] state job state
     # @yield async result handler
@@ -154,7 +144,6 @@ module VertxKueServiceModule
       end
       raise ArgumentError, "Invalid arguments when calling card(state)"
     end
-
     #  Get cardinality of completed jobs
     # @param [String] type job type; if null, then return global metrics
     # @yield async result handler
@@ -166,7 +155,6 @@ module VertxKueServiceModule
       end
       raise ArgumentError, "Invalid arguments when calling complete_count(type)"
     end
-
     #  Get cardinality of failed jobs
     # @param [String] type job type; if null, then return global metrics
     # @yield 
@@ -178,7 +166,6 @@ module VertxKueServiceModule
       end
       raise ArgumentError, "Invalid arguments when calling failed_count(type)"
     end
-
     #  Get cardinality of inactive jobs
     # @param [String] type job type; if null, then return global metrics
     # @yield 
@@ -190,7 +177,6 @@ module VertxKueServiceModule
       end
       raise ArgumentError, "Invalid arguments when calling inactive_count(type)"
     end
-
     #  Get cardinality of active jobs
     # @param [String] type job type; if null, then return global metrics
     # @yield 
@@ -202,7 +188,6 @@ module VertxKueServiceModule
       end
       raise ArgumentError, "Invalid arguments when calling active_count(type)"
     end
-
     #  Get cardinality of delayed jobs
     # @param [String] type job type; if null, then return global metrics
     # @yield 
@@ -214,7 +199,6 @@ module VertxKueServiceModule
       end
       raise ArgumentError, "Invalid arguments when calling delayed_count(type)"
     end
-
     #  Get the job types present
     # @yield async result handler
     # @return [self]
@@ -225,7 +209,6 @@ module VertxKueServiceModule
       end
       raise ArgumentError, "Invalid arguments when calling get_all_types()"
     end
-
     #  Return job ids with the given `state`
     # @param [:INACTIVE,:ACTIVE,:COMPLETE,:FAILED,:DELAYED] state job state
     # @yield async result handler
@@ -237,7 +220,6 @@ module VertxKueServiceModule
       end
       raise ArgumentError, "Invalid arguments when calling get_ids_by_state(state)"
     end
-
     #  Get queue work time in milliseconds
     # @yield async result handler
     # @return [self]

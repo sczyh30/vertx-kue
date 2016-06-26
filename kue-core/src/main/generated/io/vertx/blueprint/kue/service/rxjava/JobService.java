@@ -85,7 +85,7 @@ public class JobService {
    * @param handler async result handler
    * @return 
    */
-  public JobService removeJob(long id, Handler<AsyncResult<Void>> handler) {
+  public JobService removeJob(long id, Handler<AsyncResult<Void>> handler) { 
     delegate.removeJob(id, handler);
     return this;
   }
@@ -165,9 +165,9 @@ public class JobService {
    * @param from from
    * @param to to
    * @param order range order
-   * @return
+   * @return 
    */
-  public Observable<List<Job>> jobRangeByStateObservable(String state, long from, long to, String order) {
+  public Observable<List<Job>> jobRangeByStateObservable(String state, long from, long to, String order) { 
     io.vertx.rx.java.ObservableFuture<List<Job>> handler = io.vertx.rx.java.RxHelper.observableFuture();
     jobRangeByState(state, from, to, order, handler.toHandler());
     return handler;
@@ -175,31 +175,29 @@ public class JobService {
 
   /**
    * Get a list of job in certain state and type in range (from, to) with order
-   *
-   * @param type    expected job type
-   * @param state   expected job state
-   * @param from    from
-   * @param to      to
-   * @param order   range order
+   * @param type expected job type
+   * @param state expected job state
+   * @param from from
+   * @param to to
+   * @param order range order
    * @param handler async result handler
-   * @return
+   * @return 
    */
-  public JobService jobRangeByType(String type, String state, long from, long to, String order, Handler<AsyncResult<List<Job>>> handler) {
+  public JobService jobRangeByType(String type, String state, long from, long to, String order, Handler<AsyncResult<List<Job>>> handler) { 
     delegate.jobRangeByType(type, state, from, to, order, handler);
     return this;
   }
 
   /**
    * Get a list of job in certain state and type in range (from, to) with order
-   *
-   * @param type  expected job type
+   * @param type expected job type
    * @param state expected job state
-   * @param from  from
-   * @param to    to
+   * @param from from
+   * @param to to
    * @param order range order
-   * @return
+   * @return 
    */
-  public Observable<List<Job>> jobRangeByTypeObservable(String type, String state, long from, long to, String order) {
+  public Observable<List<Job>> jobRangeByTypeObservable(String type, String state, long from, long to, String order) { 
     io.vertx.rx.java.ObservableFuture<List<Job>> handler = io.vertx.rx.java.RxHelper.observableFuture();
     jobRangeByType(type, state, from, to, order, handler.toHandler());
     return handler;
@@ -211,7 +209,7 @@ public class JobService {
    * @param to to
    * @param order range order
    * @param handler async result handler
-   * @return
+   * @return 
    */
   public JobService jobRange(long from, long to, String order, Handler<AsyncResult<List<Job>>> handler) { 
     delegate.jobRange(from, to, order, handler);
@@ -223,7 +221,7 @@ public class JobService {
    * @param from from
    * @param to to
    * @param order range order
-   * @return
+   * @return 
    */
   public Observable<List<Job>> jobRangeObservable(long from, long to, String order) { 
     io.vertx.rx.java.ObservableFuture<List<Job>> handler = io.vertx.rx.java.RxHelper.observableFuture();
@@ -236,7 +234,7 @@ public class JobService {
    * @param type job type
    * @param state job state
    * @param handler async result handler
-   * @return
+   * @return 
    */
   public JobService cardByType(String type, JobState state, Handler<AsyncResult<Long>> handler) { 
     delegate.cardByType(type, state, handler);
@@ -247,7 +245,7 @@ public class JobService {
    * Get cardinality by job type and state
    * @param type job type
    * @param state job state
-   * @return
+   * @return 
    */
   public Observable<Long> cardByTypeObservable(String type, JobState state) { 
     io.vertx.rx.java.ObservableFuture<Long> handler = io.vertx.rx.java.RxHelper.observableFuture();
@@ -259,7 +257,7 @@ public class JobService {
    * Get cardinality by job state
    * @param state job state
    * @param handler async result handler
-   * @return
+   * @return 
    */
   public JobService card(JobState state, Handler<AsyncResult<Long>> handler) { 
     delegate.card(state, handler);
@@ -269,7 +267,7 @@ public class JobService {
   /**
    * Get cardinality by job state
    * @param state job state
-   * @return
+   * @return 
    */
   public Observable<Long> cardObservable(JobState state) { 
     io.vertx.rx.java.ObservableFuture<Long> handler = io.vertx.rx.java.RxHelper.observableFuture();
@@ -281,7 +279,7 @@ public class JobService {
    * Get cardinality of completed jobs
    * @param type job type; if null, then return global metrics
    * @param handler async result handler
-   * @return
+   * @return 
    */
   public JobService completeCount(String type, Handler<AsyncResult<Long>> handler) { 
     delegate.completeCount(type, handler);
@@ -291,7 +289,7 @@ public class JobService {
   /**
    * Get cardinality of completed jobs
    * @param type job type; if null, then return global metrics
-   * @return
+   * @return 
    */
   public Observable<Long> completeCountObservable(String type) { 
     io.vertx.rx.java.ObservableFuture<Long> handler = io.vertx.rx.java.RxHelper.observableFuture();
@@ -303,7 +301,7 @@ public class JobService {
    * Get cardinality of failed jobs
    * @param type job type; if null, then return global metrics
    * @param handler
-   * @return
+   * @return 
    */
   public JobService failedCount(String type, Handler<AsyncResult<Long>> handler) { 
     delegate.failedCount(type, handler);
@@ -313,7 +311,7 @@ public class JobService {
   /**
    * Get cardinality of failed jobs
    * @param type job type; if null, then return global metrics
-   * @return
+   * @return 
    */
   public Observable<Long> failedCountObservable(String type) { 
     io.vertx.rx.java.ObservableFuture<Long> handler = io.vertx.rx.java.RxHelper.observableFuture();
@@ -325,7 +323,7 @@ public class JobService {
    * Get cardinality of inactive jobs
    * @param type job type; if null, then return global metrics
    * @param handler
-   * @return
+   * @return 
    */
   public JobService inactiveCount(String type, Handler<AsyncResult<Long>> handler) { 
     delegate.inactiveCount(type, handler);
@@ -335,7 +333,7 @@ public class JobService {
   /**
    * Get cardinality of inactive jobs
    * @param type job type; if null, then return global metrics
-   * @return
+   * @return 
    */
   public Observable<Long> inactiveCountObservable(String type) { 
     io.vertx.rx.java.ObservableFuture<Long> handler = io.vertx.rx.java.RxHelper.observableFuture();
@@ -347,7 +345,7 @@ public class JobService {
    * Get cardinality of active jobs
    * @param type job type; if null, then return global metrics
    * @param handler
-   * @return
+   * @return 
    */
   public JobService activeCount(String type, Handler<AsyncResult<Long>> handler) { 
     delegate.activeCount(type, handler);
@@ -357,7 +355,7 @@ public class JobService {
   /**
    * Get cardinality of active jobs
    * @param type job type; if null, then return global metrics
-   * @return
+   * @return 
    */
   public Observable<Long> activeCountObservable(String type) { 
     io.vertx.rx.java.ObservableFuture<Long> handler = io.vertx.rx.java.RxHelper.observableFuture();
@@ -369,7 +367,7 @@ public class JobService {
    * Get cardinality of delayed jobs
    * @param type job type; if null, then return global metrics
    * @param handler
-   * @return
+   * @return 
    */
   public JobService delayedCount(String type, Handler<AsyncResult<Long>> handler) { 
     delegate.delayedCount(type, handler);
@@ -379,7 +377,7 @@ public class JobService {
   /**
    * Get cardinality of delayed jobs
    * @param type job type; if null, then return global metrics
-   * @return
+   * @return 
    */
   public Observable<Long> delayedCountObservable(String type) { 
     io.vertx.rx.java.ObservableFuture<Long> handler = io.vertx.rx.java.RxHelper.observableFuture();
@@ -390,7 +388,7 @@ public class JobService {
   /**
    * Get the job types present
    * @param handler async result handler
-   * @return
+   * @return 
    */
   public JobService getAllTypes(Handler<AsyncResult<List<String>>> handler) { 
     delegate.getAllTypes(handler);
@@ -399,7 +397,7 @@ public class JobService {
 
   /**
    * Get the job types present
-   * @return
+   * @return 
    */
   public Observable<List<String>> getAllTypesObservable() { 
     io.vertx.rx.java.ObservableFuture<List<String>> handler = io.vertx.rx.java.RxHelper.observableFuture();
@@ -411,7 +409,7 @@ public class JobService {
    * Return job ids with the given `state`
    * @param state job state
    * @param handler async result handler
-   * @return
+   * @return 
    */
   public JobService getIdsByState(JobState state, Handler<AsyncResult<List<Long>>> handler) { 
     delegate.getIdsByState(state, handler);
@@ -421,7 +419,7 @@ public class JobService {
   /**
    * Return job ids with the given `state`
    * @param state job state
-   * @return
+   * @return 
    */
   public Observable<List<Long>> getIdsByStateObservable(JobState state) { 
     io.vertx.rx.java.ObservableFuture<List<Long>> handler = io.vertx.rx.java.RxHelper.observableFuture();
@@ -432,7 +430,7 @@ public class JobService {
   /**
    * Get queue work time in milliseconds
    * @param handler async result handler
-   * @return
+   * @return 
    */
   public JobService getWorkTime(Handler<AsyncResult<Long>> handler) { 
     delegate.getWorkTime(handler);
@@ -441,7 +439,7 @@ public class JobService {
 
   /**
    * Get queue work time in milliseconds
-   * @return
+   * @return 
    */
   public Observable<Long> getWorkTimeObservable() { 
     io.vertx.rx.java.ObservableFuture<Long> handler = io.vertx.rx.java.RxHelper.observableFuture();

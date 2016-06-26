@@ -34,12 +34,9 @@ public class VideoProcessVerticle extends AbstractVerticle {
     job0.save().setHandler(r0 -> {
       if (r0.succeeded()) {
         // process logic start (3 at a time)
-        kue.process("video conversion", 3, r -> {
-          if (r.succeeded()) {
-            Job job = r.result();
-            int frames = job.getData().getInteger("frames", 100);
-            next(0, frames, job);
-          }
+        kue.process("video conversion", 3, job -> {
+          int frames = job.getData().getInteger("frames", 100);
+          next(0, frames, job);
         });
         // process logic end
       } else {

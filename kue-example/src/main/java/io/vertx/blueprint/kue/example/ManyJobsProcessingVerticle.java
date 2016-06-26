@@ -25,12 +25,9 @@ public class ManyJobsProcessingVerticle extends AbstractVerticle {
     create().setHandler(r0 -> {
       if (r0.succeeded()) {
         // process logic start (6 at a time)
-        kue.process("video conversion", 6, r -> {
-          if (r.succeeded()) {
-            Job job = r.result();
-            int frames = job.getData().getInteger("frames", 100);
-            next(0, frames, job);
-          }
+        kue.process("video conversion", 6, job -> {
+          int frames = job.getData().getInteger("frames", 100);
+          next(0, frames, job);
         });
         // process logic end
       } else {

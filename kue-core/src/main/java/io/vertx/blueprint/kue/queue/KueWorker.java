@@ -32,9 +32,9 @@ public class KueWorker extends AbstractVerticle {
   private EventBus eventBus;
   private Job job;
   private final String type;
-  private final Handler<AsyncResult<Job>> jobHandler;
+  private final Handler<Job> jobHandler;
 
-  public KueWorker(String type, Handler<AsyncResult<Job>> jobHandler, Kue kue) {
+  public KueWorker(String type, Handler<Job> jobHandler, Kue kue) {
     this.type = type;
     this.jobHandler = jobHandler;
     this.kue = kue;
@@ -81,7 +81,7 @@ public class KueWorker extends AbstractVerticle {
         this.emitJobEvent("start", j, null);
         // process logic invocation
         try {
-          jobHandler.handle(Future.succeededFuture(j));
+          jobHandler.handle(j);
         } catch (Exception ex) {
           eventBus.send(Kue.workerAddress("done_fail", j), ex.getMessage());
         }

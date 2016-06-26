@@ -14,7 +14,6 @@ module VertxKueRootModule
       super(j_del)
       @j_del = j_del
     end
-
     # @private
     # @return [::VertxKueRootModule::CallbackKue] the underlying java delegate
     def j_del
@@ -103,7 +102,7 @@ module VertxKueRootModule
     # @return [self]
     def process(type=nil, n=nil)
       if type.class == String && n.class == Fixnum && block_given?
-        @j_del.java_method(:process, [Java::java.lang.String.java_class, Java::int.java_class, Java::IoVertxCore::Handler.java_class]).call(type, n, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
+        @j_del.java_method(:process, [Java::java.lang.String.java_class, Java::int.java_class, Java::IoVertxCore::Handler.java_class]).call(type, n, (Proc.new { |event| yield(event != nil ? JSON.parse(event.toJson.encode) : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling process(type,n)"
@@ -115,7 +114,7 @@ module VertxKueRootModule
     # @return [self]
     def process_blocking(type=nil, n=nil)
       if type.class == String && n.class == Fixnum && block_given?
-        @j_del.java_method(:processBlocking, [Java::java.lang.String.java_class, Java::int.java_class, Java::IoVertxCore::Handler.java_class]).call(type, n, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
+        @j_del.java_method(:processBlocking, [Java::java.lang.String.java_class, Java::int.java_class, Java::IoVertxCore::Handler.java_class]).call(type, n, (Proc.new { |event| yield(event != nil ? JSON.parse(event.toJson.encode) : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling process_blocking(type,n)"

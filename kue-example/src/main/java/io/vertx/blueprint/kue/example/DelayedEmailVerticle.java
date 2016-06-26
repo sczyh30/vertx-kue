@@ -41,11 +41,8 @@ public class DelayedEmailVerticle extends AbstractVerticle {
       .setHandler(sr -> {
         if (sr.succeeded()) {
           // process emails
-          kue.processBlocking("email", 10, r -> {
-            if (r.succeeded()) {
-              Job job = r.result();
-              vertx.setTimer(2016, l -> job.done()); // cost 2s to process
-            }
+          kue.processBlocking("email", 10, job -> {
+            vertx.setTimer(2016, l -> job.done()); // cost 2s to process
           });
         } else {
           sr.cause().printStackTrace();

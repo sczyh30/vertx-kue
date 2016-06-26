@@ -78,12 +78,12 @@ public class CallbackKue extends JobService {
     return handler;
   }
 
-  public CallbackKue jobProgress(Job job, int complete, int total, Handler<AsyncResult<Job>> handler) {
+  public CallbackKue jobProgress(Job job, int complete, int total, Handler<AsyncResult<Job>> handler) { 
     delegate.jobProgress(job, complete, total, handler);
     return this;
   }
 
-  public Observable<Job> jobProgressObservable(Job job, int complete, int total) {
+  public Observable<Job> jobProgressObservable(Job job, int complete, int total) { 
     io.vertx.rx.java.ObservableFuture<Job> handler = io.vertx.rx.java.RxHelper.observableFuture();
     jobProgress(job, complete, total, handler.toHandler());
     return handler;
@@ -94,31 +94,19 @@ public class CallbackKue extends JobService {
     return this;
   }
 
-  public CallbackKue jobDoneFail(Job job, Throwable ex) {
+  public CallbackKue jobDoneFail(Job job, Throwable ex) { 
     delegate.jobDoneFail(job, ex);
     return this;
   }
 
-  public CallbackKue process(String type, int n, Handler<AsyncResult<Job>> handler) { 
+  public CallbackKue process(String type, int n, Handler<Job> handler) { 
     delegate.process(type, n, handler);
     return this;
   }
 
-  public Observable<Job> processObservable(String type, int n) { 
-    io.vertx.rx.java.ObservableFuture<Job> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    process(type, n, handler.toHandler());
-    return handler;
-  }
-
-  public CallbackKue processBlocking(String type, int n, Handler<AsyncResult<Job>> handler) { 
+  public CallbackKue processBlocking(String type, int n, Handler<Job> handler) { 
     delegate.processBlocking(type, n, handler);
     return this;
-  }
-
-  public Observable<Job> processBlockingObservable(String type, int n) { 
-    io.vertx.rx.java.ObservableFuture<Job> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    processBlocking(type, n, handler.toHandler());
-    return handler;
   }
 
 

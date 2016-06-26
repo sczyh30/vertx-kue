@@ -66,13 +66,13 @@ public class CallbackKueImpl implements CallbackKue {
   }
 
   @Override
-  public CallbackKue process(String type, int n, Handler<AsyncResult<Job>> handler) {
+  public CallbackKue process(String type, int n, Handler<Job> handler) {
     kue.process(type, n, handler);
     return this;
   }
 
   @Override
-  public CallbackKue processBlocking(String type, int n, Handler<AsyncResult<Job>> handler) {
+  public CallbackKue processBlocking(String type, int n, Handler<Job> handler) {
     kue.processBlocking(type, n, handler);
     return this;
   }

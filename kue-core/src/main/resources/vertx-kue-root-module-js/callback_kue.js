@@ -41,7 +41,7 @@ var CallbackKue = function (j_val) {
   /**
 
    @public
-   @param type {string}
+   @param type {string} 
    @param data {Object} 
    @return {Object}
    */
@@ -55,7 +55,7 @@ var CallbackKue = function (j_val) {
   /**
 
    @public
-   @param eventType {string}
+   @param eventType {string} 
    @param handler {function} 
    @return {CallbackKue}
    */
@@ -72,7 +72,7 @@ var CallbackKue = function (j_val) {
   /**
 
    @public
-   @param job {Object}
+   @param job {Object} 
    @param handler {function} 
    @return {CallbackKue}
    */
@@ -95,7 +95,7 @@ var CallbackKue = function (j_val) {
    @public
    @param job {Object}
    @param complete {number}
-   @param total {number}
+   @param total {number} 
    @param handler {function} 
    @return {CallbackKue}
    */
@@ -116,7 +116,7 @@ var CallbackKue = function (j_val) {
   /**
 
    @public
-   @param job {Object}
+   @param job {Object} 
    @return {CallbackKue}
    */
   this.jobDone = function (job) {
@@ -131,7 +131,7 @@ var CallbackKue = function (j_val) {
 
    @public
    @param job {Object}
-   @param ex {todo}
+   @param ex {todo} 
    @return {CallbackKue}
    */
   this.jobDoneFail = function (job, ex) {
@@ -146,19 +146,15 @@ var CallbackKue = function (j_val) {
 
    @public
    @param type {string}
-   @param n {number}
+   @param n {number} 
    @param handler {function} 
    @return {CallbackKue}
    */
   this.process = function (type, n, handler) {
     var __args = arguments;
     if (__args.length === 3 && typeof __args[0] === 'string' && typeof __args[1] === 'number' && typeof __args[2] === 'function') {
-      j_callbackKue["process(java.lang.String,int,io.vertx.core.Handler)"](type, n, function (ar) {
-        if (ar.succeeded()) {
-          handler(utils.convReturnDataObject(ar.result()), null);
-        } else {
-          handler(null, ar.cause());
-        }
+      j_callbackKue["process(java.lang.String,int,io.vertx.core.Handler)"](type, n, function (jVal) {
+        handler(utils.convReturnDataObject(jVal));
       });
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
@@ -169,18 +165,14 @@ var CallbackKue = function (j_val) {
    @public
    @param type {string}
    @param n {number}
-   @param handler {function}
+   @param handler {function} 
    @return {CallbackKue}
    */
   this.processBlocking = function (type, n, handler) {
     var __args = arguments;
     if (__args.length === 3 && typeof __args[0] === 'string' && typeof __args[1] === 'number' && typeof __args[2] === 'function') {
-      j_callbackKue["processBlocking(java.lang.String,int,io.vertx.core.Handler)"](type, n, function (ar) {
-        if (ar.succeeded()) {
-          handler(utils.convReturnDataObject(ar.result()), null);
-        } else {
-          handler(null, ar.cause());
-        }
+      j_callbackKue["processBlocking(java.lang.String,int,io.vertx.core.Handler)"](type, n, function (jVal) {
+        handler(utils.convReturnDataObject(jVal));
       });
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
@@ -195,7 +187,7 @@ var CallbackKue = function (j_val) {
 /**
 
  @memberof module:vertx-kue-root-module-js/callback_kue
- @param vertx {Vertx}
+ @param vertx {Vertx} 
  @param config {Object} 
  @return {CallbackKue}
  */

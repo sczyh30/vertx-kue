@@ -97,7 +97,7 @@ public class Kue {
     return new Job(type, data);
   }
 
-  private void processInternal(String type, Handler<AsyncResult<Job>> handler, boolean isWorker) {
+  private void processInternal(String type, Handler<Job> handler, boolean isWorker) {
     KueWorker worker = new KueWorker(type, handler, this);
     vertx.deployVerticle(worker, new DeploymentOptions().setWorker(isWorker), r0 -> {
       if (r0.succeeded()) {
@@ -130,7 +130,7 @@ public class Kue {
    * @param n       job process times
    * @param handler job process handler
    */
-  public Kue process(String type, int n, Handler<AsyncResult<Job>> handler) {
+  public Kue process(String type, int n, Handler<Job> handler) {
     if (n <= 0) {
       throw new IllegalStateException("The process times must be positive");
     }
@@ -147,7 +147,7 @@ public class Kue {
    * @param type    job type
    * @param handler job process handler
    */
-  public Kue process(String type, Handler<AsyncResult<Job>> handler) {
+  public Kue process(String type, Handler<Job> handler) {
     processInternal(type, handler, false);
     setupTimers();
     return this;
@@ -160,7 +160,7 @@ public class Kue {
    * @param n       job process times
    * @param handler job process handler
    */
-  public Kue processBlocking(String type, int n, Handler<AsyncResult<Job>> handler) {
+  public Kue processBlocking(String type, int n, Handler<Job> handler) {
     if (n <= 0) {
       throw new IllegalStateException("The process times must be positive");
     }

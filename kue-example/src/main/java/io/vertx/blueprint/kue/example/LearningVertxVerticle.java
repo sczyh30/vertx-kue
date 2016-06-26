@@ -39,16 +39,13 @@ public class LearningVertxVerticle extends AbstractVerticle {
     j.save().setHandler(r0 -> {
       if (r0.succeeded()) {
         // start learning!
-        kue.processBlocking("learn vertx", 1, r -> {
-          if (r.succeeded()) {
-            Job job = r.result();
-            job.progress(10, 100);
-            // aha...spend 3 seconds to learn!
-            vertx.setTimer(3000, r1 -> {
-              job.setResult(new JsonObject().put("feeling", "amazing and wonderful!")) // set a result to the job
-                .done(); // finish learning!
-            });
-          }
+        kue.processBlocking("learn vertx", 1, job -> {
+          job.progress(10, 100);
+          // aha...spend 3 seconds to learn!
+          vertx.setTimer(3000, r1 -> {
+            job.setResult(new JsonObject().put("feeling", "amazing and wonderful!")) // set a result to the job
+              .done(); // finish learning!
+          });
         });
       } else {
         System.err.println("Wow, something happened: " + r0.cause().getMessage());
