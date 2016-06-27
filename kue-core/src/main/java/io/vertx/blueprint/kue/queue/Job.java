@@ -8,6 +8,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
@@ -166,7 +167,7 @@ public class Job {
     client.transaction().multi(r0 -> {
       if (r0.succeeded()) {
         if (oldState != null && !oldState.equals(newState)) {
-          client.transaction().zrem(RedisHelper.getKey("jobs:" + oldState.name()), this.zid, _failure())
+          client.transaction().zrem(RedisHelper.getStateKey(oldState), this.zid, _failure())
             .zrem(RedisHelper.getKey("jobs:" + this.type + ":" + oldState.name()), this.zid, _failure());
         }
         client.transaction().hset(RedisHelper.getKey("job:" + this.id), "state", newState.name(), _failure())
@@ -199,7 +200,7 @@ public class Job {
           }
         });
       } else {
-        r0.cause().printStackTrace();
+        future.fail(r0.cause());
       }
     });
 
@@ -391,13 +392,11 @@ public class Job {
         if (this.delay > 0) {
           this.state = JobState.DELAYED;
         }
-        RedisTransaction multi = client.transaction().multi(null);
-        multi.sadd(RedisHelper.getKey("job:types"), this.type, _failure());
+        client.sadd(RedisHelper.getKey("job:types"), this.type, _failure());
         this.created_at = System.currentTimeMillis();
         this.promote_at = this.created_at + this.delay;
         // save job
-        multi.hmset(key, this.toJson(), _failure())
-          .exec(_completer(future, this));
+        client.hmset(key, this.toJson(), _completer(future, this));
       } else {
         future.fail(res.cause());
       }
@@ -422,7 +421,7 @@ public class Job {
     this.updated_at = System.currentTimeMillis();
 
     client.transaction().multi(_failure())
-      .hmset(RedisHelper.getKey("job:" + this.id), this.toJson(), _failure())
+      .hset(RedisHelper.getKey("job:" + this.id), "updated_at", String.valueOf(this.updated_at), _failure())
       .zadd(RedisHelper.getKey("jobs"), this.priority.getValue(), this.zid, _failure())
       .exec(_completer(future, this));
 
@@ -576,7 +575,8 @@ public class Job {
    */
   @Fluent
   public Job done(Throwable ex) {
-    eventBus.send(Kue.workerAddress("done_fail", this), ex.getMessage());
+    eventBus.publish(Kue.workerAddress("done_fail"), ex.getMessage(),
+      new DeliveryOptions().addHeader("id", String.valueOf(id)));
     return this;
   }
 
@@ -585,7 +585,8 @@ public class Job {
    */
   @Fluent
   public Job done() {
-    eventBus.send(Kue.workerAddress("done", this), this.toJson());
+    eventBus.publish(Kue.workerAddress("done"), this.toJson(),
+      new DeliveryOptions().addHeader("id", String.valueOf(id)));
     return this;
   }
 

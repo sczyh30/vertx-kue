@@ -53,18 +53,14 @@ public class Kue {
     return "vertx.kue.handler.job." + handlerType + "." + job.getAddress_id() + "." + job.getType();
   }
 
-  public static String workerAddress(String eventType) {
-    return "vertx.kue.handler.workers." + eventType;
-  }
-
   /**
    * Generate worker address on event bus
    * Format: vertx.kue.handler.workers.{eventType}
    *
    * @return corresponding address
    */
-  public static String workerAddress(String eventType, Job job) {
-    return "vertx.kue.handler.workers." + eventType + "." + job.getAddress_id();
+  public static String workerAddress(String eventType) {
+    return "vertx.kue.handler.workers." + eventType;
   }
 
   /**
@@ -102,7 +98,7 @@ public class Kue {
     vertx.deployVerticle(worker, new DeploymentOptions().setWorker(isWorker), r0 -> {
       if (r0.succeeded()) {
         this.on("job_complete", msg -> {
-          long dur = new Job((JsonObject) msg.body()).getDuration();
+          long dur = new Job(((JsonObject) msg.body()).getJsonObject("job")).getDuration();
           client.incrby(RedisHelper.getKey("stats:work-time"), dur, r1 -> {
             if (r1.failed())
               r1.cause().printStackTrace();

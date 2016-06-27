@@ -83,16 +83,20 @@ public class KueWorker extends AbstractVerticle {
         try {
           jobHandler.handle(j);
         } catch (Exception ex) {
-          eventBus.send(Kue.workerAddress("done_fail", j), ex.getMessage());
+          j.done(ex);
         }
         // subscribe the job done event
-        eventBus.consumer(Kue.workerAddress("done", j), msg -> {
-          createDoneCallback(j).handle(Future.succeededFuture(
-            ((JsonObject) msg.body()).getJsonObject("result")));
+        eventBus.consumer(Kue.workerAddress("done"), msg -> {
+          if (msg.headers().get("id").equals(String.valueOf(j.getId()))) {
+            createDoneCallback(j).handle(Future.succeededFuture(
+              ((JsonObject) msg.body()).getJsonObject("result")));
+          }
         });
-        eventBus.consumer(Kue.workerAddress("done_fail", j), msg -> {
-          createDoneCallback(j).handle(Future.failedFuture(
-            (String) msg.body()));
+        eventBus.consumer(Kue.workerAddress("done_fail"), msg -> {
+          if (msg.headers().get("id").equals(String.valueOf(j.getId()))) {
+            createDoneCallback(j).handle(Future.failedFuture(
+              (String) msg.body()));
+          }
         });
       } else {
         r.cause().printStackTrace();
@@ -182,7 +186,7 @@ public class KueWorker extends AbstractVerticle {
     return future;
   }
 
-  private Handler<AsyncResult<JsonObject>> createDoneCallback(Job job) { // TO REVIEW
+  private Handler<AsyncResult<JsonObject>> createDoneCallback(Job job) {
     return r0 -> {
       if (job == null) {
         // maybe should warn
@@ -229,7 +233,7 @@ public class KueWorker extends AbstractVerticle {
   private void emitJobEvent(String event, Job job, JsonObject extra) {
     JsonObject data = new JsonObject().put("job", job.toJson())
       .put("extra", extra);
-    eventBus.send(Kue.workerAddress("job_" + event, job), data);
+    eventBus.send(Kue.workerAddress("job_" + event), data);
     if (event.equals("failed") || event.equals("failed_attempt")) {
       eventBus.send(Kue.getCertainJobAddress(event, job), data);
     } else {
