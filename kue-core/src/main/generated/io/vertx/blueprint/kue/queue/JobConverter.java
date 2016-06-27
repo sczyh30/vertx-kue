@@ -30,6 +30,9 @@ public class JobConverter {
     if (json.getValue("attempts") instanceof Number) {
       obj.setAttempts(((Number) json.getValue("attempts")).intValue());
     }
+    if (json.getValue("backoff") instanceof JsonObject) {
+      obj.setBackoff(((JsonObject) json.getValue("backoff")).copy());
+    }
     if (json.getValue("created_at") instanceof Number) {
       obj.setCreated_at(((Number) json.getValue("created_at")).longValue());
     }
@@ -37,7 +40,7 @@ public class JobConverter {
       obj.setData(((JsonObject) json.getValue("data")).copy());
     }
     if (json.getValue("delay") instanceof Number) {
-      obj.setDelay(((Number) json.getValue("delay")).intValue());
+      obj.setDelay(((Number) json.getValue("delay")).longValue());
     }
     if (json.getValue("duration") instanceof Number) {
       obj.setDuration(((Number) json.getValue("duration")).longValue());
@@ -72,6 +75,9 @@ public class JobConverter {
     if (json.getValue("state") instanceof String) {
       obj.setState(io.vertx.blueprint.kue.queue.JobState.valueOf((String) json.getValue("state")));
     }
+    if (json.getValue("ttl") instanceof Number) {
+      obj.setTtl(((Number) json.getValue("ttl")).intValue());
+    }
     if (json.getValue("type") instanceof String) {
       obj.setType((String) json.getValue("type"));
     }
@@ -88,6 +94,9 @@ public class JobConverter {
       json.put("address_id", obj.getAddress_id());
     }
     json.put("attempts", obj.getAttempts());
+    if (obj.getBackoff() != null) {
+      json.put("backoff", obj.getBackoff());
+    }
     json.put("created_at", obj.getCreated_at());
     if (obj.getData() != null) {
       json.put("data", obj.getData());
@@ -110,6 +119,7 @@ public class JobConverter {
     if (obj.getState() != null) {
       json.put("state", obj.getState().name());
     }
+    json.put("ttl", obj.getTtl());
     if (obj.getType() != null) {
       json.put("type", obj.getType());
     }

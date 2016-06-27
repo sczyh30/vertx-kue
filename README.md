@@ -18,6 +18,7 @@ Detailed documents and tutorials:
 - Delayed jobs
 - Process many jobs simultaneously
 - Job and queue event
+- Optional retries with backoff
 - RESTful JSON API
 - Rich integrated UI (with the help of Automattic/kue's UI)
 - UI progress indication

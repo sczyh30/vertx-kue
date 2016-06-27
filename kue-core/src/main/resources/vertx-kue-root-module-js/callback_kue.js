@@ -94,7 +94,7 @@ var CallbackKue = function (j_val) {
 
    @public
    @param job {Object}
-   @param complete {number}
+   @param complete {number} 
    @param total {number} 
    @param handler {function} 
    @return {CallbackKue}
@@ -130,7 +130,7 @@ var CallbackKue = function (j_val) {
   /**
 
    @public
-   @param job {Object}
+   @param job {Object} 
    @param ex {todo} 
    @return {CallbackKue}
    */
@@ -145,7 +145,7 @@ var CallbackKue = function (j_val) {
   /**
 
    @public
-   @param type {string}
+   @param type {string} 
    @param n {number} 
    @param handler {function} 
    @return {CallbackKue}
@@ -164,7 +164,7 @@ var CallbackKue = function (j_val) {
 
    @public
    @param type {string}
-   @param n {number}
+   @param n {number} 
    @param handler {function} 
    @return {CallbackKue}
    */

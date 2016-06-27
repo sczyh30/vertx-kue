@@ -128,7 +128,7 @@ var JobService = function (j_val) {
    @public
    @param state {string} expected job state
    @param from {number} from
-   @param to {number} to
+   @param to {number} to 
    @param order {string} range order 
    @param handler {function} async result handler 
    @return {JobService}
@@ -155,7 +155,7 @@ var JobService = function (j_val) {
    @param state {string} expected job state
    @param from {number} from
    @param to {number} to
-   @param order {string} range order
+   @param order {string} range order 
    @param handler {function} async result handler 
    @return {JobService}
    */
@@ -179,7 +179,7 @@ var JobService = function (j_val) {
    @public
    @param from {number} from
    @param to {number} to
-   @param order {string} range order
+   @param order {string} range order 
    @param handler {function} async result handler 
    @return {JobService}
    */
@@ -201,7 +201,7 @@ var JobService = function (j_val) {
    Get cardinality by job type and state
 
    @public
-   @param type {string} job type
+   @param type {string} job type 
    @param state {Object} job state 
    @param handler {function} async result handler 
    @return {JobService}

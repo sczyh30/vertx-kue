@@ -15,9 +15,10 @@
 ^|Name | Type ^| Description
 |[[address_id]]`address_id`|`String`|-
 |[[attempts]]`attempts`|`Number (int)`|-
+|[[backoff]]`backoff`|`Json object`|-
 |[[created_at]]`created_at`|`Number (long)`|-
 |[[data]]`data`|`Json object`|-
-|[[delay]]`delay`|`Number (int)`|-
+|[[delay]]`delay`|`Number (long)`|-
 |[[duration]]`duration`|`Number (long)`|-
 |[[failed_at]]`failed_at`|`Number (long)`|-
 |[[id]]`id`|`Number (long)`|-
@@ -29,6 +30,7 @@
 |[[result]]`result`|`Json object`|-
 |[[started_at]]`started_at`|`Number (long)`|-
 |[[state]]`state`|`link:enums.html#JobState[JobState]`|-
+|[[ttl]]`ttl`|`Number (int)`|-
 |[[type]]`type`|`String`|-
 |[[updated_at]]`updated_at`|`Number (long)`|-
 |[[zid]]`zid`|`String`|-

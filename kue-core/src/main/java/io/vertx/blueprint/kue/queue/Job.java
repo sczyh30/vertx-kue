@@ -15,10 +15,10 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.redis.RedisClient;
-import io.vertx.redis.RedisTransaction;
 
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
 
 /**
  * Vert.x Blueprint - Job Queue
@@ -45,16 +45,18 @@ public class Job {
 
   private final String address_id;
   private long id = -1;
+  private String zid;
   private String type;
   private JsonObject data;
   private Priority priority = Priority.NORMAL;
-  private int delay = 0;
   private JobState state = JobState.INACTIVE;
-  private int attempts = 0;
+  private long delay = 0;
   private int max_attempts = 1;
   private boolean removeOnComplete = false;
+  private int ttl = 0;
+  private JsonObject backoff;
 
-  private String zid;
+  private int attempts = 0;
   private int progress = 0;
   private JsonObject result;
 
@@ -77,12 +79,17 @@ public class Job {
     // generated converter cannot handle this
     if (this.data == null) {
       this.data = new JsonObject(json.getString("data"));
+      if (json.getValue("backoff") != null) {
+        this.backoff = new JsonObject(json.getString("backoff"));
+      }
       this.progress = Integer.parseInt(json.getString("progress"));
+      this.attempts = Integer.parseInt(json.getString("attempts"));
+      this.max_attempts = Integer.parseInt(json.getString("max_attempts"));
       this.created_at = Long.parseLong(json.getString("created_at"));
       this.updated_at = Long.parseLong(json.getString("updated_at"));
       this.started_at = Long.parseLong(json.getString("started_at"));
       this.promote_at = Long.parseLong(json.getString("promote_at"));
-      this.delay = Integer.parseInt(json.getString("delay"));
+      this.delay = Long.parseLong(json.getString("delay"));
       this.duration = Long.parseLong(json.getString("duration"));
     }
     if (this.id < 0) {
@@ -146,15 +153,6 @@ public class Job {
   }
 
   /**
-   * Add one attempt time
-   */
-  @Fluent
-  public Job attemptAdd() {
-    this.attempts++;
-    return this;
-  }
-
-  /**
    * Set new job state
    *
    * @param newState new job state
@@ -214,9 +212,8 @@ public class Job {
    */
   public Future<Job> error(Throwable ex) {
     // send this on worker address in order to consume it with `Kue#on` method
-    eventBus.send(Kue.workerAddress("error"), new JsonObject().put("id", this.id)
-      .put("message", ex.getMessage()));
-    return this.set("error", ex.getMessage())
+    return this.emitError(ex)
+      .set("error", ex.getMessage())
       .compose(j -> j.log("error | " + ex.getMessage()));
   }
 
@@ -313,10 +310,45 @@ public class Job {
     return future;
   }
 
+  // TODO: integrate with Circuit Breaker
+
   /**
-   * Attempt once and save attempt times to Redis
+   * Get job attempt backoff strategy implementation
+   * Current we support two types: `exponential` and `fixed`
+   *
+   * @return the corresponding function
    */
-  Future<Job> attempt() {
+  private Function<Integer, Long> getBackoffImpl() {
+    String type = this.backoff.getString("type", "fixed"); // by default `fixed` type
+    long _delay = this.backoff.getLong("delay", this.delay);
+    switch (type) {
+      case "exponential":
+        return attempts -> Math.round(_delay * 0.5 * (Math.pow(2, attempts) - 1));
+      case "fixed":
+      default:
+        return attempts -> _delay;
+    }
+  }
+
+  /**
+   * Try to reattempt the job
+   */
+  private Future<Job> reattempt() {
+    if (this.backoff != null) {
+      long delay = this.getBackoffImpl().apply(attempts); // calc delay time
+      return this.setDelay(delay)
+        .setPromote_at(System.currentTimeMillis() + delay)
+        .update()
+        .compose(Job::delayed);
+    } else {
+      return this.inactive(); // only restart the job
+    }
+  }
+
+  /**
+   * Attempt once and save attemptAdd times to Redis
+   */
+  private Future<Job> attemptAdd() {
     Future<Job> future = Future.future();
     String key = RedisHelper.getKey("job:" + this.id);
     if (this.attempts < this.max_attempts) {
@@ -325,6 +357,7 @@ public class Job {
           this.attempts = r.result().intValue();
           future.complete(this);
         } else {
+          this.emitError(r.cause());
           future.fail(r.cause());
         }
       });
@@ -334,39 +367,43 @@ public class Job {
     return future;
   }
 
+  private Future<Job> attemptInternal() {
+    int remaining = this.max_attempts - this.attempts;
+    if (remaining > 0) {
+      return this.attemptAdd()
+        .compose(Job::reattempt)
+        .setHandler(r -> {
+          if (r.failed()) {
+            this.emitError(r.cause());
+          }
+        });
+    } else if (remaining == 0) {
+      return Future.failedFuture("No more attempts");
+    } else {
+      return Future.failedFuture(new IllegalStateException("Attempts Exceeded"));
+    }
+  }
+
   /**
    * Failed attempt
    *
    * @param err exception
    */
-  Future<Job> failedAttempt(Throwable err) { // TODO: reattempt logic should implement `Failure Backoff`
-    Future<Job> future = Future.future();
-    this.error(err)
+  Future<Job> failedAttempt(Throwable err) {
+    return this.error(err)
       .compose(Job::failed)
-      .compose(Job::attempt)
-      .setHandler(r -> {
-        if (r.succeeded()) {
-          Job j = r.result();
-          int remaining = j.max_attempts - j.attempts;
-          if (remaining > 0) {
-            // reattempt
-            j.inactive().setHandler(r1 -> {
-              if (r1.succeeded()) {
-                future.complete(r1.result());
-              } else {
-                future.fail(r1.cause());
-              }
-            });
-          } else if (remaining == 0) {
-            future.complete(r.result());
-          } else {
-            future.fail(new IllegalStateException("Attempts Exceeded"));
-          }
-        } else {
-          this.emit("error", new JsonObject().put("error", r.cause().getMessage()));
-          future.fail(r.cause());
-        }
-      });
+      .compose(Job::attemptInternal);
+  }
+
+  /**
+   * Refresh ttl
+   */
+  Future<Job> refreshTtl() {
+    Future<Job> future = Future.future();
+    if (this.state == JobState.ACTIVE && this.ttl > 0) {
+      client.zadd(RedisHelper.getStateKey(this.state), System.currentTimeMillis() + ttl,
+        this.zid, _completer(future, this));
+    }
     return future;
   }
 
@@ -421,7 +458,7 @@ public class Job {
     this.updated_at = System.currentTimeMillis();
 
     client.transaction().multi(_failure())
-      .hset(RedisHelper.getKey("job:" + this.id), "updated_at", String.valueOf(this.updated_at), _failure())
+      .hmset(RedisHelper.getKey("job:" + this.id), this.toJson(), _failure())
       .zadd(RedisHelper.getKey("jobs"), this.priority.getValue(), this.zid, _failure())
       .exec(_completer(future, this));
 
@@ -480,7 +517,7 @@ public class Job {
   }
 
   /**
-   * Add on failure attempt handler on event bus
+   * Add on failure attemptAdd handler on event bus
    *
    * @param failureHandler failure handler
    */
@@ -570,13 +607,21 @@ public class Job {
     return this;
   }
 
+  @Fluent
+  public Job emitError(Throwable ex) {
+    JsonObject errorMessage = new JsonObject().put("id", this.id)
+      .put("message", ex.getMessage());
+    eventBus.send(Kue.workerAddress("error"), errorMessage);
+    eventBus.send(Kue.getCertainJobAddress("error", this), errorMessage);
+    return this;
+  }
+
   /**
    * Fail a job
    */
   @Fluent
   public Job done(Throwable ex) {
-    eventBus.publish(Kue.workerAddress("done_fail"), ex.getMessage(),
-      new DeliveryOptions().addHeader("id", String.valueOf(id)));
+    eventBus.send(Kue.workerAddress("done_fail", this), ex.getMessage());
     return this;
   }
 
@@ -585,8 +630,7 @@ public class Job {
    */
   @Fluent
   public Job done() {
-    eventBus.publish(Kue.workerAddress("done"), this.toJson(),
-      new DeliveryOptions().addHeader("id", String.valueOf(id)));
+    eventBus.send(Kue.workerAddress("done", this), this.toJson());
     return this;
   }
 
@@ -646,11 +690,11 @@ public class Job {
     return this;
   }
 
-  public int getDelay() {
+  public long getDelay() {
     return delay;
   }
 
-  public Job setDelay(int delay) {
+  public Job setDelay(long delay) {
     if (delay > 0) {
       this.delay = delay;
     }
@@ -765,6 +809,24 @@ public class Job {
 
   public Job setRemoveOnComplete(boolean removeOnComplete) {
     this.removeOnComplete = removeOnComplete;
+    return this;
+  }
+
+  public JsonObject getBackoff() {
+    return backoff;
+  }
+
+  public Job setBackoff(JsonObject backoff) {
+    this.backoff = backoff;
+    return this;
+  }
+
+  public int getTtl() {
+    return ttl;
+  }
+
+  public Job setTtl(int ttl) {
+    this.ttl = ttl;
     return this;
   }
 

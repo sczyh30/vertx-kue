@@ -419,7 +419,7 @@ public class JobServiceVertxEBProxy implements JobService {
   }
 
   private <T> Map<String, T> convertMap(Map map) {
-    if (map.isEmpty()) {
+    if (map.isEmpty()) { 
       return (Map<String, T>) map; 
     }
 
@@ -452,7 +452,7 @@ public class JobServiceVertxEBProxy implements JobService {
         converter = object -> (T) new JsonArray((List) object);
       } else {
         converter = object -> (T) new JsonObject((Map) object);
-      }
+      } 
       return (List<T>) list.stream().map(converter).collect(Collectors.toList()); 
     } 
   }

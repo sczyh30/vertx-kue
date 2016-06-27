@@ -64,6 +64,16 @@ public class Kue {
   }
 
   /**
+   * Generate worker address on event bus
+   * Format: vertx.kue.handler.workers.{eventType}.{addressId}
+   *
+   * @return corresponding address
+   */
+  public static String workerAddress(String eventType, Job job) {
+    return "vertx.kue.handler.workers." + eventType + "." + job.getAddress_id();
+  }
+
+  /**
    * Create a Kue instance
    *
    * @param vertx  vertx instance

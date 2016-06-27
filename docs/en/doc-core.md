@@ -104,10 +104,11 @@ In our Vert.x Kue, most of the asynchronous methods are `Future` based. In Vert.
 
 ### Events in Vert.x Kue
 
-As we mentioned in the [feature document](vertx-kue-features-en.md), Vert.x Kue support two kinds of events: **job events** and **queue events**. All events are sent and consumed on the clustered event bus. In Vert.x Kue we designed two kinds of address:
+As we mentioned in the [feature document](vertx-kue-features-en.md), Vert.x Kue support two kinds of events: **job events** and **queue events**. All events are sent and consumed on the clustered event bus. In Vert.x Kue we designed three kinds of address:
 
 - `vertx.kue.handler.job.{handlerType}.{addressId}.{jobType}`: job event address for a certain job
 - `vertx.kue.handler.workers.{eventType}`: queue event address
+- `vertx.kue.handler.workers.{eventType}.{addressId}`: queue event address for a certain job
 
 In the [feature document](vertx-kue-features-en.md), we've mentioned several types of events:
 
@@ -123,9 +124,7 @@ Queue events are similar, but add a prefix `job_` like `job_complete`. These eve
 Every job has it own address so that it can receive the corresponding event.
 
 Specially, We also have two types of internal queue events: `done` referring to a job's finish and `done_fail` referring to a job's fail.
-These two events are published on the event bus with `publish` method. To indicate which job it is, we added an item `id` in the message header.
-In `KueWorker`, we subscribe on the address of two events and once an event arrived, we'll first inspect if the `id` header is correct.
-If it is correct, we'll then do some actions to complete (or fail) the job.
+These two events use the third address.
 
 ### Job state
 
@@ -338,16 +337,18 @@ public class Job {
 
     private final String address_id;
     private long id = -1;
+    private String zid;
     private String type;
     private JsonObject data;
     private Priority priority = Priority.NORMAL;
-    private int delay = 0;
     private JobState state = JobState.INACTIVE;
-    private int attempts = 0;
+    private long delay = 0;
     private int max_attempts = 1;
     private boolean removeOnComplete = false;
+    private int ttl = 0;
+    private JsonObject backoff;
 
-    private String zid;
+    private int attempts = 0;
     private int progress = 0;
     private JsonObject result;
 
@@ -358,6 +359,7 @@ public class Job {
     private long failed_at;
     private long started_at;
     private long duration;
+
 
     // ...
 }
@@ -376,6 +378,8 @@ Wow, so many properties! Let's explain these properties:
 - `max_attempts`: max attempt times threshold
 - `removeOnComplete`: a flag that indicates whether the job will be removed as soon as it is completed
 - `zid`: an id for the `zset` operation to preserve FIFO order
+- `ttl`: time to live
+- `backoff`: retry backoff settings, in `JsonObject` format
 - `progress`: the progress of a job
 - `result`: the process result of a job, in `JsonObject` format
 
@@ -826,6 +830,18 @@ public Future<Job> progress(int complete, int total) {
 ```
 
 The `progress` method takes two parameters, one is current value, other is total value. We first calculate the complete rate (1) and then send `progress` event to event bus (2). Finally we save `progress` to Redis, composing `updateNow` method, then return `Future` result.
+
+### Job failure, error and attempt
+
+When a job failed and has remaining attempt times, it can be restarted. Let's see the implementation of `failedAttempt` method:
+
+```java
+Future<Job> failedAttempt(Throwable err) {
+  return this.error(err)
+    .compose(Job::failed)
+    .compose(Job::attemptInternal);
+}
+```
 
 ### Job failure and error
 

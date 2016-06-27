@@ -52,6 +52,7 @@ public class KueWorker extends AbstractVerticle {
    * Prepare job and start processing procedure
    */
   private void prepareAndStart() {
+    cleanup();
     this.getJobFromBackend().setHandler(jr -> {
       if (jr.succeeded()) {
         if (jr.result().isPresent()) {
@@ -75,33 +76,41 @@ public class KueWorker extends AbstractVerticle {
       .set("started_at", String.valueOf(curTime))
       .compose(Job::active)
       .setHandler(r -> {
-      if (r.succeeded()) {
-        Job j = r.result();
-        // emit start event
-        this.emitJobEvent("start", j, null);
-        // process logic invocation
-        try {
-          jobHandler.handle(j);
-        } catch (Exception ex) {
-          j.done(ex);
-        }
-        // subscribe the job done event
-        eventBus.consumer(Kue.workerAddress("done"), msg -> {
-          if (msg.headers().get("id").equals(String.valueOf(j.getId()))) {
+        if (r.succeeded()) {
+          Job j = r.result();
+          // emit start event
+          this.emitJobEvent("start", j, null);
+          // process logic invocation
+          try {
+            jobHandler.handle(j);
+          } catch (Exception ex) {
+            j.done(ex);
+          }
+          // subscribe the job done event
+          eventBus.consumer(Kue.workerAddress("done"), msg -> {
+            if (msg.headers().get("id").equals(String.valueOf(j.getId()))) {
+              createDoneCallback(j).handle(Future.succeededFuture(
+                ((JsonObject) msg.body()).getJsonObject("result")));
+            }
+          });
+
+          eventBus.consumer(Kue.workerAddress("done", j), msg -> {
             createDoneCallback(j).handle(Future.succeededFuture(
               ((JsonObject) msg.body()).getJsonObject("result")));
-          }
-        });
-        eventBus.consumer(Kue.workerAddress("done_fail"), msg -> {
-          if (msg.headers().get("id").equals(String.valueOf(j.getId()))) {
+          });
+          eventBus.consumer(Kue.workerAddress("done_fail", j), msg -> {
             createDoneCallback(j).handle(Future.failedFuture(
               (String) msg.body()));
-          }
-        });
-      } else {
-        r.cause().printStackTrace();
-      }
-    });
+          });
+        } else {
+          r.cause().printStackTrace();
+        }
+      });
+  }
+
+  private void cleanup() {
+    eventBus.consumer(Kue.workerAddress("done")).unregister();
+    eventBus.consumer(Kue.workerAddress("done_fail")).unregister();
   }
 
   private void error(Throwable ex, Job job) {
@@ -177,8 +186,7 @@ public class KueWorker extends AbstractVerticle {
           .setHandler(r -> {
             if (r.succeeded()) {
               future.complete(r.result());
-            }
-            else
+            } else
               future.fail(r.cause());
           });
       }
@@ -193,6 +201,7 @@ public class KueWorker extends AbstractVerticle {
         return;
       }
       if (r0.failed()) {
+        cleanup();
         this.fail(r0.cause());
         return;
       }
@@ -212,6 +221,7 @@ public class KueWorker extends AbstractVerticle {
             j.remove();
           }
           this.emitJobEvent("complete", j, null);
+
           this.prepareAndStart(); // prepare for next job
         }
       });
