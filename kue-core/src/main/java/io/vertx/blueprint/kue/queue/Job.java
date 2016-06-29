@@ -310,7 +310,7 @@ public class Job {
     return future;
   }
 
-  // TODO: integrate with Circuit Breaker
+  // TODO: enhancement: integrate backoff with Circuit Breaker
 
   /**
    * Get job attempt backoff strategy implementation
@@ -462,7 +462,7 @@ public class Job {
       .zadd(RedisHelper.getKey("jobs"), this.priority.getValue(), this.zid, _failure())
       .exec(_completer(future, this));
 
-    // TODO: add search functionality
+    // TODO: add search functionality (full-index engine, for Chinese language this is difficult)
 
     return future.compose(r ->
       this.state(this.state));

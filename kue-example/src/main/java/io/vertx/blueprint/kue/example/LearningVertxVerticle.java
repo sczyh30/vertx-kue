@@ -20,6 +20,10 @@ public class LearningVertxVerticle extends AbstractVerticle {
     // create our job queue
     Kue kue = Kue.createQueue(vertx, config());
 
+    // consume queue error
+    kue.on("error", message ->
+      System.out.println("[Global Error] " + message.body()));
+
     JsonObject data = new JsonObject()
       .put("title", "Learning Vert.x")
       .put("content", "core");

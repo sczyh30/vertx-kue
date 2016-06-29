@@ -12,7 +12,6 @@
 - [Callback Kue - Polyglot support](#)
 - [Show time!](#show-time)
 - [Finish!](#finish)
-- [From Akka?](from-akka)
 
 ## Preface
 
@@ -90,7 +89,7 @@ Since we have two components, you may wonder how can they interact with each oth
 Recall the demand of Vert.x Kue - a priority job queue backed by *Redis*, so in the core part of Vert.x Kue there will be:
 
 - `Job` data object
-- `JobService` - service that provides some operations for jobs
+- `JobService` - an asynchronous service interface that provides some operations for jobs
 - `KueWorker` - verticles that processes jobs
 - `Kue` - the job queue class
 
@@ -833,7 +832,7 @@ The `progress` method takes two parameters, one is current value, other is total
 
 ### Job failure, error and attempt
 
-When a job failed and has remaining attempt times, it can be restarted. Let's see the implementation of `failedAttempt` method:
+When a job failed and has remaining attempt times, it can be retried with `failAttempt` method. Let's see the implementation of `failedAttempt` method:
 
 ```java
 Future<Job> failedAttempt(Throwable err) {
@@ -843,9 +842,138 @@ Future<Job> failedAttempt(Throwable err) {
 }
 ```
 
-### Job failure and error
+Wow, so short! In fact, the `failedAttempt` method is a composition of three asynchronous methods: `error`, `failed` and `attemptInternal`.
+When we want to have a retry, we first emit `error` queue event and log it in Redis, then change current job status to `FAILED`, finally retry.
+Let's first see `error` method:
+
+```java
+public Future<Job> error(Throwable ex) {
+  // send this on worker address in order to consume it with `Kue#on` method
+  return this.emitError(ex) // (1)
+    .set("error", ex.getMessage()) // (2)
+    .compose(j -> j.log("error | " + ex.getMessage())); // (3)
+}
+```
+
+First we emit `error` event (1), then set `error` field with error message (2) and log it in Redis (3). We encapsulated a `emitError` method to help emit `error` event:
+
+```java
+@Fluent
+public Job emitError(Throwable ex) {
+  JsonObject errorMessage = new JsonObject().put("id", this.id)
+    .put("message", ex.getMessage());
+  eventBus.send(Kue.workerAddress("error"), errorMessage);
+  eventBus.send(Kue.getCertainJobAddress("error", this), errorMessage);
+  return this;
+}
+```
+
+The error message format resembles this example:
+
+```json
+{
+    "id": 2052,
+    "message": "some error"
+}
+```
+
+Let's then look at the `failed` method:
+
+```java
+public Future<Job> failed() {
+  this.failed_at = System.currentTimeMillis();
+  return this.updateNow() // (1)
+    .compose(j -> j.set("failed_at", String.valueOf(j.failed_at))) // (2)
+    .compose(j -> j.state(JobState.FAILED)); // (3)
+}
+```
+
+It's very simple. First we update the `updated_at` field (1) and `failed_at` field (2), then set the state to `FAILED` with `state` method.
+
+The core logic of attempting is in `attemptInternal` method:
+
+```java
+private Future<Job> attemptInternal() {
+  int remaining = this.max_attempts - this.attempts; // (1)
+  if (remaining > 0) { // has remaining
+    return this.attemptAdd() // (2)
+      .compose(Job::reattempt) // (3)
+      .setHandler(r -> {
+        if (r.failed()) {
+          this.emitError(r.cause()); // (4)
+        }
+      });
+  } else if (remaining == 0) { // (5)
+    return Future.failedFuture("No more attempts");
+  } else { // (6)
+    return Future.failedFuture(new IllegalStateException("Attempts Exceeded"));
+  }
+}
+```
+
+In our job data object, we have `max_attempts` for max retry threshold and `attempts` for already retry times, so we calculate `remaining` times (1). If we have `remaining` times, we return a composed `Future` of `attemptAdd` and `reattempt` method. We first call `attemptAdd` to increase attempts in Redis and set new attempts to current job (2). After that we call `reattempt` method.
+
+But before we step into the `reattempt` method, we move our focus to another stuff. We know that Vert.x Kue supports **retry backoff**, which means that we can delay the retry with a certain strategy(e.g. **fixed** or **exponential**). We have a `backoff` field in `Job` class and its format should resemble this:
+
+```json
+{
+    "type": "fixed",
+    "delay": 5000
+}
+```
+
+The implementation of backoff support is in `getBackoffImpl` method, which returns a `Function` that takes a integer(refers to `attempts`) and returns generated delay time:
+
+```java
+private Function<Integer, Long> getBackoffImpl() {
+  String type = this.backoff.getString("type", "fixed"); // (1) by default `fixed` type
+  long _delay = this.backoff.getLong("delay", this.delay); // (2)
+  switch (type) {
+    case "exponential": // (3)
+      return attempts -> Math.round(_delay * 0.5 * (Math.pow(2, attempts) - 1));
+    case "fixed":
+    default: // (4)
+      return attempts -> _delay;
+  }
+}
+```
+
+First we get the backoff type. We have two types of backoff currently: `fixed` and `fixed`. The former one's delay time is fixed, while the later one is exponential.If we don't indicate the type, Vert.x Kue will use `fixed` type by  default (1). Then we get `delay` from the backoff json object and if it is ont present, we'll use `delay` field of current job (2). Then for `exponential` type, we calculate `[delay * 0.5 * 2^attempts]` for the delay (3). And for `fixed` type, we simply use original `delay` (4).
+
+Ok, now back to our `reattempt` method:
+
+```java
+private Future<Job> reattempt() {
+  if (this.backoff != null) {
+    long delay = this.getBackoffImpl().apply(attempts); // (1) calc delay time
+    return this.setDelay(delay)
+      .setPromote_at(System.currentTimeMillis() + delay)
+      .update() // (2)
+      .compose(Job::delayed); // (3)
+  } else {
+    return this.inactive(); // (4) only restart the job
+  }
+}
+```
+
+First we check if the `backoff` field is present. If valid, we get the generated `delay` value (1) and then set `delay` and `promote_at` time to current job. Next we `update` the job and finally set the job state to `DELAYED` with `delayed` method (3). This is another async method composition! And if the backoff is not available, we'll simply `inactive` the job, which represents prompting the job into job queue and then restarting (4).
+
+That's the entire retry implementation, not very complicated yeah?
+From the methods above we could find `Future` composition everywhere. If we write these async methods in callback-based model, we may fall into the callback hell (⊙o⊙)
+That's not very concise and elegant... So by contrast, we'll find it convenient to use the **monadic** and **reactive** `Future`.
+
+
+Great! We've completed our journey with `Job` class, and next let's march into the `JobService`!
 
 ## Event bus service - JobService
+
+###
+
+In this section let's see `JobService` - including common logic for jobs. As this is a common service interface, in order to make every component in cluster accessible to the service, we'd like to expose it on event bus then consume it every where. This kind of interaction is known as *Remote Procedure Call*. With RPC, a component can send messages to another component by doing a local procedure call. Similarly, the result can be sent to the caller with RPC.
+
+But traditional RPC has a drawback: the caller has to wait until the response from the callee has been received. You may want to say: this is a blocking model, which does not fit for Vert.x asynchronous model. In addition, the traditional RPC isn't really *Failure-Oriented*.
+
+Fortunately, Vert.x provides an effective and reactive kind of RPC: asynchronous RPC. Instead of waiting for the response, we could pass a `Handler<AsyncResult<R>>` to the method and when the result is arrived, the handler will be called. That corresponds to the asynchronous model of Vert.x.
 
 ## Here we process jobs - KueWorker
 
@@ -853,8 +981,131 @@ Future<Job> failedAttempt(Throwable err) {
 
 ## CallbackKue - Polyglot support
 
+A bit closer to success! But as Vert.x supports polyglot languages, we could develop another `Kue` interface that supports Vert.x Codegen to automatically generate polyglot code. Due to the constraints of Vert.x Codegen, we need to use callback-based asynchronous model, so let's name it `CallbackKue`. For example, as logic methods in `Job` class can't be generated, we need to implement equalivant methods such as `saveJob`. Its original signature:
+
+```java
+public Future<Job> save();
+```
+
+We could convert to the equalivant callback-based signature:
+
+```java
+@Fluent
+CallbackKue saveJob(Job job, Handler<AsyncResult<Job>> handler);
+```
+
+Other methods are similar so we don't elaborate here. You can visit the code on [GitHub](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/kue-core/src/main/java/io/vertx/blueprint/kue/CallbackKue.java).
+
+The `CallbackKue` interface should be annotated with `@VertxGen` annotation so that Vert.x Codegen could process the interface and then generate polyglot code:
+
+```java
+@VertxGen
+public interface CallbackKue extends JobService {
+
+  static CallbackKue createKue(Vertx vertx, JsonObject config) {
+    return new CallbackKueImpl(vertx, config);
+  }
+
+  // ...
+
+}
+```
+
+The polyglot generation also requires corresponding dependency. For example, if we want Ruby version, we should add `compile("io.vertx:vertx-lang-ruby:${vertxVersion}")` to `build.gradle`.
+
+After correct configuration we could run `kue-core:annotationProcessing` task to generate the code. The generated Rx code will be in `generated` directory, while JS and Ruby code will be generated in `resources` directory. Then we can use Vert.x Kue in other languages! Amazing!
+
+As for implemenation of `CallbackKue`, that's very simple as we could reuse `Kue` and `JobService`. You can visit the code on [GitHub](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/kue-core/src/main/java/io/vertx/blueprint/kue/CallbackKueImpl.java).
+
 ## Show time!
 
-## Finish!
+The entire core component of Vert.x Kue is completed! Now it's time to write an application then run! We create a `LearningVertxVerticle` class in `io.vertx.blueprint.kue.example` package (`kue-example` project) and write:
 
-## From Akka?
+```java
+package io.vertx.blueprint.kue.example;
+
+import io.vertx.blueprint.kue.Kue;
+import io.vertx.blueprint.kue.queue.Job;
+import io.vertx.blueprint.kue.queue.Priority;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.json.JsonObject;
+
+
+public class LearningVertxVerticle extends AbstractVerticle {
+
+  @Override
+  public void start() throws Exception {
+    // create our job queue
+    Kue kue = Kue.createQueue(vertx, config());
+
+    // consume queue error
+    kue.on("error", message ->
+      System.out.println("[Global Error] " + message.body()));
+
+    JsonObject data = new JsonObject()
+      .put("title", "Learning Vert.x")
+      .put("content", "core");
+
+    // we are going to learn Vert.x, so create a job!
+    Job j = kue.createJob("learn vertx", data)
+      .priority(Priority.HIGH)
+      .onComplete(r -> { // on complete handler
+        System.out.println("Feeling: " + r.getResult().getString("feeling", "none"));
+      }).onFailure(r -> { // on failure handler
+        System.out.println("eee...so difficult...");
+      }).onProgress(r -> { // on progress modifying handler
+        System.out.println("I love this! My progress => " + r);
+      });
+
+    // save the job
+    j.save().setHandler(r0 -> {
+      if (r0.succeeded()) {
+        // start learning!
+        kue.processBlocking("learn vertx", 1, job -> {
+          job.progress(10, 100);
+          // aha...spend 3 seconds to learn!
+          vertx.setTimer(3000, r1 -> {
+            job.setResult(new JsonObject().put("feeling", "amazing and wonderful!")) // set a result to the job
+              .done(); // finish learning!
+          });
+        });
+      } else {
+        System.err.println("Wow, something happened: " + r0.cause().getMessage());
+      }
+    });
+  }
+
+}
+```
+
+In common, a Vert.x Kue application contains several parts: create job queue, create and save jobs, process the job. We recommand developers write code in an verticle.
+
+In this example, we are going to simulate a task of learning Vert.x (so cool)! First we create a job queue with `Kue.createQueue` method and listen to queue `error` events with `on(error, handler)`. Then we create the learning task with `kue.createJob` and set priority to `HIGH`. Simultaneously we listen to job `complete`, `failed` and `progress` events. Next we save the job and if successful, we start learning Vert.x! As it may cost some time, we use `processBlocking` to do stuff that may spend long time. In the process handler, we first set progress to `10` with `job.progress`. Then we use `vertx.setTimer` to set a timeout with setting results and then completing.
+
+Then we need to set the `Main-Verticle` attribute in `kue-example` subproject to `io.vertx.blueprint.kue.example.LearningVertxVerticle`.
+
+Ok, it's time to show! Open the terminal and build the project:
+
+    gradle build
+
+Don't forget to run Redis:
+
+    redis-server
+
+Then we first run the Vert.x Kue Core Verticle:
+
+    java -jar kue-core/build/libs/vertx-blueprint-kue-core.jar -cluster -ha -conf config/config.json
+
+Finally run our example:
+
+    java -jar kue-example/build/libs/vertx-blueprint-kue-example.jar -cluster -ha -conf config/config.json
+
+Then in terminal you can see the output:
+
+```
+INFO: Kue Verticle is running...
+I love this! My progress => 10
+Feeling: amazing and wonderful!
+```
+
+## Finish!

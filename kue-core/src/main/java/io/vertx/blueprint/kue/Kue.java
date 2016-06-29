@@ -401,9 +401,10 @@ public class Kue {
    * Check job promotion
    * Promote delayed jobs, checking every `ms`,
    */
-  private void checkJobPromotion() { // TODO: enhance and check
-    int timeout = config.getInteger("promotionTimeout", 1000);
-    int limit = config.getInteger("promotionLimit", 1000);
+  private void checkJobPromotion() { // TODO: enhance and check (need lock?) | TO REVIEW
+    int timeout = config.getInteger("job.promotion.interval", 1000);
+    int limit = config.getInteger("job.promotion.limit", 1000);
+    // need a mechanism to stop the circuit timer
     vertx.setTimer(timeout, l -> {
       client.zrangebyscore(RedisHelper.getKey("jobs:DELAYED"), String.valueOf(0), String.valueOf(System.currentTimeMillis()),
         new RangeLimitOptions(new JsonObject().put("offset", 0).put("count", limit)), r -> {
@@ -430,8 +431,17 @@ public class Kue {
   /**
    * Check active job ttl
    */
-  private void checkActiveJobTtl() { // TODO: add TTL support
+  private void checkActiveJobTtl() {  // TODO
+    int timeout = config.getInteger("job.ttl.interval", 1000);
+    int limit = config.getInteger("job.ttl.limit", 1000);
+    // need a mechanism to stop the circuit timer
+    vertx.setTimer(timeout, l -> {
+      client.zrangebyscore(RedisHelper.getKey("jobs:ACTIVE"), String.valueOf(100000), String.valueOf(System.currentTimeMillis()),
+        new RangeLimitOptions(new JsonObject().put("offset", 0).put("count", limit)), r -> {
 
+        });
+      checkActiveJobTtl();
+    });
   }
 
 }
