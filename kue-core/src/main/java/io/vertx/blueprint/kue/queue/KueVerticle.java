@@ -21,7 +21,6 @@ public class KueVerticle extends AbstractVerticle {
 
   private static Logger logger = LoggerFactory.getLogger(Job.class);
 
-  public static final String EB_KUE_SERVICE_ADDRESS = "vertx.kue.service.internal"; // no use
   public static final String EB_JOB_SERVICE_ADDRESS = "vertx.kue.service.job.internal";
 
   private JsonObject config;
@@ -32,7 +31,7 @@ public class KueVerticle extends AbstractVerticle {
     this.config = config();
     this.jobService = JobService.create(vertx, config);
     // create redis client
-    RedisClient redisClient = RedisClient.create(vertx, RedisHelper.options(config));
+    RedisClient redisClient = RedisHelper.client(vertx, config);
     redisClient.ping(pr -> { // test connection
       if (pr.succeeded()) {
         logger.info("Kue Verticle is running...");

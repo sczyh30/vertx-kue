@@ -6,10 +6,11 @@
 - [Message system in Vert.x](#message-system-in-vert-x)
 - [Basic design of Vert.x Kue](#basic-design-of-vert-x-kue)
 - [Project structure](#project-structure)
-- [Job entity - not only a data object](#)
-- [Here we process jobs - KueWorker](#)
-- [Kue - The job queue](#)
-- [Callback Kue - Polyglot support](#)
+- [Job entity - not only a data object](#job-entity---not-only-a-data-object)
+- [Event bus service - JobService](#event-bus-service---jobservice)
+- [Kue - The job queue](#kue---the-job-queue)
+- [Here we process jobs - KueWorker](#here-we-process-jobs---kueworker)
+- [Callback Kue - Polyglot support](#callbackkue---polyglot-support)
 - [Show time!](#show-time)
 - [Finish!](#finish)
 
@@ -137,9 +138,17 @@ There are five job states in Vert.x Kue:
 
 We use state machine to depict the states:
 
-![]()
+![Job State Machine](../images/job_state_machine.png)
+
+And here is the diagram of events between each state change:
+
+![Events with state change](../images/event_emit_state_machine.png)
 
 ### Workflow diagram
+
+To make it clear, we use this diagram to briefly illustrate how Vert.x Kue works at high level:
+
+![Diagram - How Vert.x Kue works](../images/kue_diagram.png)
 
 Now we've had a rough understanding of Vert.x Kue's design, so it's time to concentrate on the code~~
 
@@ -967,7 +976,7 @@ Great! We've completed our journey with `Job` class, and next let's march into t
 
 ## Event bus service - JobService
 
-###
+### Async RPC
 
 In this section let's see `JobService` - including common logic for jobs. As this is a common service interface, in order to make every component in cluster accessible to the service, we'd like to expose it on event bus then consume it every where. This kind of interaction is known as *Remote Procedure Call*. With RPC, a component can send messages to another component by doing a local procedure call. Similarly, the result can be sent to the caller with RPC.
 
@@ -975,13 +984,457 @@ But traditional RPC has a drawback: the caller has to wait until the response fr
 
 Fortunately, Vert.x provides an effective and reactive kind of RPC: asynchronous RPC. Instead of waiting for the response, we could pass a `Handler<AsyncResult<R>>` to the method and when the result is arrived, the handler will be called. That corresponds to the asynchronous model of Vert.x.
 
-## Here we process jobs - KueWorker
+So you may wonder how to register services on event bus. Does we have to wrap and send messages to event bus, while in the other side decoding the message and then call the service? No, we needn't! Vert.x provides us a component to automatically generate service proxy - **Vert.x Service Proxy**. With the help of Vert.x Service Proxy, we can simply design our asynchronous service interface and then only need to place `@ProxyGen` annotation.
+
+[NOTE Constraint of `@ProxyGen` | There are constraints of asynchronous methods in `@ProxyGen`. The asynchronous methods should be callback-based - that is, the methods should take a `Handler<AsyncResult<R>>` parameter. The type of R is also restricted for some certain types or data objects. Please check the [documentation](http://vertx.io/docs/vertx-service-proxy/) for details. ]
+
+### Async service interface
+
+Let's see the code of `JobService` interface:
+
+```java
+@ProxyGen
+@VertxGen
+public interface JobService {
+
+  static JobService create(Vertx vertx, JsonObject config) {
+    return new JobServiceImpl(vertx, config);
+  }
+
+  static JobService createProxy(Vertx vertx, String address) {
+    return ProxyHelper.createProxy(JobService.class, vertx, address);
+  }
+
+  /**
+   * Get job from backend by id
+   *
+   * @param id      job id
+   * @param handler async result handler
+   */
+  @Fluent
+  JobService getJob(long id, Handler<AsyncResult<Job>> handler);
+
+  /**
+   * Remove a job by id
+   *
+   * @param id      job id
+   * @param handler async result handler
+   */
+  @Fluent
+  JobService removeJob(long id, Handler<AsyncResult<Void>> handler);
+
+  /**
+   * Judge whether a job with certain id exists
+   *
+   * @param id      job id
+   * @param handler async result handler
+   */
+  @Fluent
+  JobService existsJob(long id, Handler<AsyncResult<Boolean>> handler);
+
+  /**
+   * Get job log by id
+   *
+   * @param id      job id
+   * @param handler async result handler
+   */
+  @Fluent
+  JobService getJobLog(long id, Handler<AsyncResult<JsonArray>> handler);
+
+  /**
+   * Get a list of job in certain state in range (from, to) with order
+   *
+   * @param state   expected job state
+   * @param from    from
+   * @param to      to
+   * @param order   range order
+   * @param handler async result handler
+   */
+  @Fluent
+  JobService jobRangeByState(String state, long from, long to, String order, Handler<AsyncResult<List<Job>>> handler);
+
+  /**
+   * Get a list of job in certain state and type in range (from, to) with order
+   *
+   * @param type    expected job type
+   * @param state   expected job state
+   * @param from    from
+   * @param to      to
+   * @param order   range order
+   * @param handler async result handler
+   */
+  @Fluent
+  JobService jobRangeByType(String type, String state, long from, long to, String order, Handler<AsyncResult<List<Job>>> handler);
+
+  /**
+   * Get a list of job in range (from, to) with order
+   *
+   * @param from    from
+   * @param to      to
+   * @param order   range order
+   * @param handler async result handler
+   */
+  @Fluent
+  JobService jobRange(long from, long to, String order, Handler<AsyncResult<List<Job>>> handler);
+
+  // runtime cardinality metrics
+
+  /**
+   * Get cardinality by job type and state
+   *
+   * @param type    job type
+   * @param state   job state
+   * @param handler async result handler
+   */
+  @Fluent
+  JobService cardByType(String type, JobState state, Handler<AsyncResult<Long>> handler);
+
+  /**
+   * Get cardinality by job state
+   *
+   * @param state   job state
+   * @param handler async result handler
+   */
+  @Fluent
+  JobService card(JobState state, Handler<AsyncResult<Long>> handler);
+
+  /**
+   * Get cardinality of completed jobs
+   *
+   * @param type    job type; if null, then return global metrics
+   * @param handler async result handler
+   */
+  @Fluent
+  JobService completeCount(String type, Handler<AsyncResult<Long>> handler);
+
+  /**
+   * Get cardinality of failed jobs
+   *
+   * @param type job type; if null, then return global metrics
+   */
+  @Fluent
+  JobService failedCount(String type, Handler<AsyncResult<Long>> handler);
+
+  /**
+   * Get cardinality of inactive jobs
+   *
+   * @param type job type; if null, then return global metrics
+   */
+  @Fluent
+  JobService inactiveCount(String type, Handler<AsyncResult<Long>> handler);
+
+  /**
+   * Get cardinality of active jobs
+   *
+   * @param type job type; if null, then return global metrics
+   */
+  @Fluent
+  JobService activeCount(String type, Handler<AsyncResult<Long>> handler);
+
+  /**
+   * Get cardinality of delayed jobs
+   *
+   * @param type job type; if null, then return global metrics
+   */
+  @Fluent
+  JobService delayedCount(String type, Handler<AsyncResult<Long>> handler);
+
+  /**
+   * Get the job types present
+   *
+   * @param handler async result handler
+   */
+  @Fluent
+  JobService getAllTypes(Handler<AsyncResult<List<String>>> handler);
+
+  /**
+   * Return job ids with the given `state`
+   *
+   * @param state   job state
+   * @param handler async result handler
+   */
+  @Fluent
+  JobService getIdsByState(JobState state, Handler<AsyncResult<List<Long>>> handler);
+
+  /**
+   * Get queue work time in milliseconds
+   *
+   * @param handler async result handler
+   */
+  @Fluent
+  JobService getWorkTime(Handler<AsyncResult<Long>> handler);
+}
+```
+
+In addition, we added `@VertxGen` annotation to `JobService`, which is for polyglot languages support.
+
+In `JobService` we also defined two static methods: `create` for create a `JobService` instance; `createProxy` for create a service proxy.
+
+As we've mentioned above, the `JobService` contains common logic for `Job`. The functionality of each method has been described in the comment so let's directly explain the implementation.
+
+### Job service implementation
+
+The code is long... So we don't show the code here. We just explain. You can look it up on [GitHub](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/kue-core/src/main/java/io/vertx/blueprint/kue/service/impl/JobServiceImpl.java).
+
+- `getJob`: This is very simple. Just use `hgetall` operation to retrieve the certain job from Redis. Once the result is retrieved, the handler will be called. If failure happens, we need to call `removeBadJob` to remove the bad job entity.
+- `removeJob`: We can regard this method as a combination of `getJob` and `Job#remove`.
+- `existsJob`: Use `exists` operation to judge whether a job with certain `id` exists.
+- `getJobLog`: Use `lrange` operation to retrieve job log from `vertx_kue:job:{id}:log` list.
+- `rangeGeneral`: This is a general method to retrieve jobs in certain range (range of a sorted set) and certain order. This method takes five parameters. The first refers to the key, the second and third refers to range `from` and `to` respectively. The forth refers to the order(`asc` or `desc`), and the fifth refers to the result handler. In this implementation, we first call `zrange` to get the `zid` list of our expected jobs. If the list size is 0, then indicates empty; Else use reactive operations to convert the list into a `List<Long>` ids. In order to show jobs in order, we need to `sort` the list by the given order. Then we create a `List<Job>` job list and traverse the `ids` using `foreach`. In each traverse we call `getJob` to get the corresponding job and add it into the job list. Finally we call the handler with the `jobList`.
+
+[NOTE `zrange` operation | `zrange` returns the specified range of elements in the sorted set stored at key. See [ZRANGE - Redis](http://redis.io/commands/zrange) for details. ]
+
+The following three methods make use of `rangeGeneral` method:
+
+- `jobRangeByState`: Get a range of jobs by state. The corresponding key is `vertx_kue:jobs:{state}`.
+- `jobRangeByType`: Get a range of jobs by state and type. The corresponding key is `vertx_kue:jobs:{type}:{state}`.
+- `jobRange`: Get a range of jobs. The corresponding key is `vertx_kue:jobs`.
+
+The following two basic methods are about cardinality metrics:
+
+- `cardByType`: Use `zcard` to get job counts of a certain `type` and `state`.
+- `card`: Use `zcard` to get job counts of a certain `state`.
+
+The following five helper methods are based on the two basic methods:
+
+- `completeCount`
+- `failedCount`
+- `delayedCount`
+- `inactiveCount`
+- `activeCount`
+
+- `getAllTypes`: Use `smembers` to get all job types stored in `vertx_kue:job:types` set.
+- `getIdsByState`: Use `zrange` to get job ids with given `state`.
+- `getWorkTime`: Simply `get` current Vert.x Kue's work time from `vertx_kue:stats:work-time` field.
+
+### Register the job service
+
+Now that the job service implementation is complete, let's see how to register it on the event bus! We need a `KueVerticle` that creates the actual service instance, and then registers the service on the event bus.
+
+Open the `io.vertx.blueprint.kue.queue.KueVerticle` class and we will see:
+
+```java
+package io.vertx.blueprint.kue.queue;
+
+import io.vertx.blueprint.kue.service.JobService;
+import io.vertx.blueprint.kue.util.RedisHelper;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
+import io.vertx.redis.RedisClient;
+import io.vertx.serviceproxy.ProxyHelper;
+
+
+public class KueVerticle extends AbstractVerticle {
+
+  private static Logger logger = LoggerFactory.getLogger(Job.class);
+
+  public static final String EB_JOB_SERVICE_ADDRESS = "vertx.kue.service.job.internal"; // (1)
+
+  private JsonObject config;
+  private JobService jobService;
+
+  @Override
+  public void start(Future<Void> future) throws Exception {
+    this.config = config();
+    this.jobService = JobService.create(vertx, config); // (2)
+    // create redis client
+    RedisClient redisClient = RedisHelper.client(vertx, config);
+    redisClient.ping(pr -> { // (3) test connection
+      if (pr.succeeded()) {
+        logger.info("Kue Verticle is running...");
+
+        // (4) register job service
+        ProxyHelper.registerService(JobService.class, vertx, jobService, EB_JOB_SERVICE_ADDRESS);
+
+        future.complete();
+      } else {
+        logger.error("oops!", pr.cause());
+        future.fail(pr.cause());
+      }
+    });
+  }
+
+}
+```
+
+First we need an event bus address where the service is published (1). In `start` method, we first create an actual job service instance (2). Then create a `RedisClient` instance and test connection with `ping` (3). If the connection is okay, we then register the service by using the `registerService` method in `ProxyHelper` class (4).
+
+Then as soon as the verticle is deployed in clustered mode, the service will be publish on the event bus and we can consume the service in other components. Wonderful!
 
 ## Kue - The job queue
 
+The `Kue` class represents a job queue. Let's see the implementation of `Kue` class. First look at its constructor:
+
+```java
+public Kue(Vertx vertx, JsonObject config) {
+  this.vertx = vertx;
+  this.config = config;
+  this.jobService = JobService.createProxy(vertx, EB_JOB_SERVICE_ADDRESS);
+  this.client = RedisHelper.client(vertx, config);
+  Job.setVertx(vertx, RedisHelper.client(vertx, config)); // init static vertx instance inner job
+}
+```
+
+Here we should focus on two points. One is that we use `createProxy` helper method to create a proxy for `JobService`. Another is that we need to init the static fields of `Job` class as we've mentioned above.
+
+### Future-based encapsulation
+
+In `Kue`, we encapsulated future-based asynchronous methods with callback-based methods of `JobService`. This is simple. For example,
+
+```java
+@Fluent
+JobService getJob(long id, Handler<AsyncResult<Job>> handler);
+```
+
+can be encapsulated as:
+
+```java
+public Future<Optional<Job>> getJob(long id) {
+  Future<Optional<Job>> future = Future.future();
+  jobService.getJob(id, r -> {
+    if (r.succeeded()) {
+      future.complete(Optional.ofNullable(r.result()));
+    } else {
+      future.fail(r.cause());
+    }
+  });
+  return future;
+}
+```
+
+Other future-based methods are similar so we don't explain one by one. You could refer to the code.
+
+![](../images/kue_future_based_methods.png)
+
+### Process and processBlocking
+
+Our Vert.x Kue is intended to **process jobs**, so in `Kue` we implemented some process methods:
+
+```java
+public Kue process(String type, int n, Handler<Job> handler) {
+  if (n <= 0) {
+    throw new IllegalStateException("The process times must be positive");
+  }
+  while (n-- > 0) {
+    processInternal(type, handler, false);
+  }
+  setupTimers();
+  return this;
+}
+
+public Kue process(String type, Handler<Job> handler) {
+  processInternal(type, handler, false);
+  setupTimers();
+  return this;
+}
+
+public Kue processBlocking(String type, int n, Handler<Job> handler) {
+  if (n <= 0) {
+    throw new IllegalStateException("The process times must be positive");
+  }
+  while (n-- > 0) {
+    processInternal(type, handler, true);
+  }
+  setupTimers();
+  return this;
+}
+```
+
+The first and the second are similar - both can process jobs in **Event Loop**. In addition, we can specify the threshold of processing jobs number `n` in the first `process` method. Recall the feature of **Event Loop** - we can't block them or the events would not be handled. So if we need to do some blocking procedure when processing jobs, we could use `processBlocking` method. Their code looks similar, so what's the difference? As weve mentioned above, we designed `KueWorker` - verticles that process jobs. So for `process` method, the `KueWorker` is an ordinary verticle, while for `processBlocking` method, the `KueWorker` is a **worker verticle**. What is the difference between two kinds of verticles? That is - the worker verticle will use **worker threads** so even if we do some blocking procedure, the event loop thread would not be blocked.
+
+The three process methods make use of `processInternal`:
+
+```java
+private void processInternal(String type, Handler<Job> handler, boolean isWorker) {
+  KueWorker worker = new KueWorker(type, handler, this); // (1)
+  vertx.deployVerticle(worker, new DeploymentOptions().setWorker(isWorker), r0 -> { // (2)
+    if (r0.succeeded()) {
+      this.on("job_complete", msg -> {
+        long dur = new Job(((JsonObject) msg.body()).getJsonObject("job")).getDuration();
+        client.incrby(RedisHelper.getKey("stats:work-time"), dur, r1 -> { // (3)
+          if (r1.failed())
+            r1.cause().printStackTrace();
+        });
+      });
+    }
+  });
+}
+```
+
+First we create a `KueWorker` instance (1). We'll see the detail of `KueWorker` class later. Then we deploy the kue worker with configuration `DeploymentOptions`. The third parameter of `processInternal` indicates whether the verticle should be deployed as worker verticle and we set the value with `setWorker` (2). If succeeded deployed, we'll consume global `complete` event on the event bus. When every message arrives, we decode it as the duration of the processing. Then we increase the kue work time using `incrby` (3).
+
+Back to the public process methods. Besides deploying kue workers, we also call `setupTimers` method. That means setting up timers for checking job promotion as well as checking active job ttl.
+
+### Check job promotion
+
+Our Vert.x Kue supports delayed jobs, so we need to promote job to the job queue as soon as the delay timeout. Let's see the `checkJobPromotion` method:
+
+```java
+private void checkJobPromotion() {
+  int timeout = config.getInteger("job.promotion.interval", 1000); // (1)
+  int limit = config.getInteger("job.promotion.limit", 1000); // (2)
+  vertx.setTimer(timeout, l -> { // (3)
+    client.zrangebyscore(RedisHelper.getKey("jobs:DELAYED"), String.valueOf(0), String.valueOf(System.currentTimeMillis()),
+      new RangeLimitOptions(new JsonObject().put("offset", 0).put("count", limit)), r -> {  // (4)
+        if (r.succeeded()) {
+          r.result().forEach(r1 -> {
+            long id = Long.parseLong(RedisHelper.stripFIFO((String) r1));
+            this.getJob(id).compose(jr -> jr.get().inactive())  // (5)
+              .setHandler(jr -> {
+                if (jr.succeeded()) {
+                  jr.result().emit("promotion", jr.result().getId()); // (6)
+                } else {
+                  jr.cause().printStackTrace();
+                }
+              });
+          });
+        } else {
+          r.cause().printStackTrace();
+        }
+      });
+    checkJobPromotion(); // (7)
+  });
+}
+```
+
+First we get `timeout` and `limit` from the config. The `timeout` refers to the interval between each check (1), while the `limit` attribute refers to the max job promotion count threshold (2). Then we set a timer using `vertx.setTimer` (3) and when timeout arrives, we retrieve jobs that need promoting from Redis (4). We do this with `zrangebyscore` operation, which returns all the elements in the sorted set at key with a score between min and max (including elements with score equal to min or max). The elements are considered to be ordered from low to high scores. Let's see the signature of `zrangebyscore`:
+
+```java
+RedisClient zrangebyscore(String key, String min, String max, RangeLimitOptions options, Handler<AsyncResult<JsonArray>> handler);
+```
+
+- `key`: the key of a sorted set. In this usage, it is `vertx_kue:jobs:DELAYED`.
+- `min` and `max`: Pattern defining a minimum value and a maximum value. Here the `min` is **0** and the `max` is current timestamp.
+
+Recall the `state` method in `Job` class, when the new state is `DELAYED`, we'll set the corresponding score to the `promote_at` time:
+
+```java
+case DELAYED:
+  client.transaction().zadd(RedisHelper.getKey("jobs:" + newState.name()),
+    this.promote_at, this.zid, _failure());
+```
+
+So as we specify the `max` as `System.currentTimeMillis()`, once is greater than `promote_at`, that means that the job can be promoted.
+
+- `options`: range and limit options. In this usage, we need to specify the `LIMIT` so we created a `new RangeLimitOptions(new JsonObject().put("offset", 0).put("count", limit)`
+
+The result of `zrangebyscore` is an `JsonArray` including zids of each wait-to-promote job. Next we traverse each zid , convert them to `id`, and then get the corresponding job, and finally call `inactive` method to set job state to `INACTIVE` (5). If the promotion is successful, we emit `promotion` event to the job-specific address (6).
+
+To make the check process continual, we need to call `checkJobPromotion` again in the end (7). That is a recursive call.
+
+
+
+
+## Here we process jobs - KueWorker
+
+
+
 ## CallbackKue - Polyglot support
 
-A bit closer to success! But as Vert.x supports polyglot languages, we could develop another `Kue` interface that supports Vert.x Codegen to automatically generate polyglot code. Due to the constraints of Vert.x Codegen, we need to use callback-based asynchronous model, so let's name it `CallbackKue`. For example, as logic methods in `Job` class can't be generated, we need to implement equalivant methods such as `saveJob`. Its original signature:
+A bit closer to success! But as Vert.x supports polyglot languages, we could develop another `Kue` interface that supports Vert.x Codegen to automatically generate polyglot code. As we've mentioned above, due to the constraints of Vert.x Codegen, we need to use callback-based asynchronous model, so let's name it `CallbackKue`. For example, as logic methods in `Job` class can't be generated, we need to implement equalivant methods such as `saveJob`. Its original signature:
 
 ```java
 public Future<Job> save();
@@ -1015,7 +1468,7 @@ The polyglot generation also requires corresponding dependency. For example, if 
 
 After correct configuration we could run `kue-core:annotationProcessing` task to generate the code. The generated Rx code will be in `generated` directory, while JS and Ruby code will be generated in `resources` directory. Then we can use Vert.x Kue in other languages! Amazing!
 
-As for implemenation of `CallbackKue`, that's very simple as we could reuse `Kue` and `JobService`. You can visit the code on [GitHub](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/kue-core/src/main/java/io/vertx/blueprint/kue/CallbackKueImpl.java).
+As for implementation of `CallbackKue`, that's very simple as we could reuse `Kue` and `JobService`. You can visit the code on [GitHub](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/kue-core/src/main/java/io/vertx/blueprint/kue/CallbackKueImpl.java).
 
 ## Show time!
 
@@ -1109,3 +1562,9 @@ Feeling: amazing and wonderful!
 ```
 
 ## Finish!
+
+Great! We have finished our journey with **Vert.x Kue Core**! In this long tutorial, you have learned how to develop a message based application with Vert.x. So cool!
+
+To learn the implementation of `kue-http`, please visit [Tutorial: Vert.x Blueprint - Vert.x Kue (Web)](doc-http.md). To learn more about Vert.x Kue features, please refer to [Vert.x Kue features documentation](vertx-kue-features-en.md).
+
+Vert.x can do various kinds of stuff. To learn more about Vert.x, you can visit [Vert.x Documentation](http://vertx.io/docs/) - this is always the most comprehensive material :-)
