@@ -23,7 +23,7 @@ Detailed documents and tutorials:
 - Rich integrated UI (with the help of Automattic/kue's UI)
 - UI progress indication
 - Job specific logging
-- Future-based asynchronous methods
+- Future-based asynchronous model
 - Polyglot language support
 - Powered by Vert.x!
 

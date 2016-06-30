@@ -1426,11 +1426,203 @@ The result of `zrangebyscore` is an `JsonArray` including zids of each wait-to-p
 To make the check process continual, we need to call `checkJobPromotion` again in the end (7). That is a recursive call.
 
 
-
-
 ## Here we process jobs - KueWorker
 
+We've explored numerous parts of Vert.x Kue Core and here we'll explore another most important part - `KueWorker`, where we process jobs. We've briefly mentioned it in the previous chapter and we know it's a vertice.
 
+Every worker is binded with a specific `type` and `jobHandler` so we need to specify them when creating new workers.
+
+### Prepare and start
+
+In `KueWorker`, we use `prepareAndStart()` to prepare job and start processing procedure:
+
+```java
+private void prepareAndStart() {
+  this.getJobFromBackend().setHandler(jr -> { // (1)
+    if (jr.succeeded()) {
+      if (jr.result().isPresent()) {
+        this.job = jr.result().get(); // (2)
+        process(); // (3)
+      } else {
+        this.emitJobEvent("error", null, new JsonObject().put("message", "job_not_exist"));
+        throw new IllegalStateException("job not exist");
+      }
+    } else {
+        this.emitJobEvent("error", null, new JsonObject().put("message", jr.cause().getMessage()));
+        jr.cause().printStackTrace();
+    }
+  });
+}
+```
+
+The logic is obvious. First we get a job from Redis backend using `getJobFromBackend` method. If we successfully get the job, we set the `job` field to the job got (2) and then `process` (3). If we are faced with failure, we should emit `error` job event with the failure message.
+
+### Get appropriate job with zpop command
+
+Let's step to `getJobFromBackend` method to see how we fetch a job by priority from Redis backend:
+
+```java
+private Future<Optional<Job>> getJobFromBackend() {
+  Future<Optional<Job>> future = Future.future();
+  client.blpop(RedisHelper.getKey(this.type + ":jobs"), 0, r1 -> { // (1)
+    if (r1.failed()) {
+      client.lpush(RedisHelper.getKey(this.type + ":jobs"), "1", r2 -> {
+        if (r2.failed())
+          future.fail(r2.cause());
+      });
+    } else {
+      this.zpop(RedisHelper.getKey("jobs:" + this.type + ":INACTIVE")) // (2)
+        .compose(kue::getJob) // (3)
+        .setHandler(r -> {
+          if (r.succeeded()) {
+            future.complete(r.result());
+          } else
+            future.fail(r.cause());
+        });
+    }
+  });
+  return future;
+}
+```
+
+From our previoud design, we know as soon as we save a common job, we'll `lpush` a value to the `vertx_kue:{type}:jobs` to indicate a new job available. The `blpop` Redis command can remove and get the first element in a list, or block until one is available, so we make use of it to wait until a job available (1). As soon as jobs are available, we use a `zpop` command to retrieve the appropriate job zid (high priority first). The `zpop` command pops the element with the lower score from a sorted set in an atomic way. It isn't implemented in Redis, so we need to solve it by ourselves.
+
+The documention of Redis introduced [a simple way](http://redis.io/topics/transactions#using-a-hrefcommandswatchwatcha-to-implement-zpop) to implement `ZPOP`: using `WATCH`. But in Vert.x Kue, we use a different approach to implement `zpop`:
+
+```java
+private Future<Long> zpop(String key) {
+  Future<Long> future = Future.future();
+  client.transaction()
+    .multi(_failure())
+    .zrange(key, 0, 0, _failure())
+    .zremrangebyrank(key, 0, 0, _failure())
+    .exec(r -> {
+      if (r.succeeded()) {
+        JsonArray res = r.result();
+        if (res.getJsonArray(0).size() == 0) // empty set
+          future.fail(new IllegalStateException("Empty zpop set"));
+        else {
+          try {
+            future.complete(Long.parseLong(RedisHelper.stripFIFO(
+              res.getJsonArray(0).getString(0))));
+          } catch (Exception ex) {
+            future.fail(ex);
+          }
+        }
+      } else {
+        future.fail(r.cause());
+      }
+    });
+  return future;
+}
+```
+
+In our own `zpop` implementation, we first start a transaction and then call `zrange` and `zremrangebyrank` commands. You can refer to [the documention of Redis](http://redis.io/commands) for details. Then we execute all previous commands in the transaction scope. If success, we'll get a `JsonArray` result. If there are no problems, our expected job zid could be retrieved using `res.getJsonArray(0).getString(0)`. After that we convert it to job `id` and parse it to `long` type.
+
+Once the `zpop` operation is okay, we get zid of an expected job waiting to be processed. So next step is getting the job entity (3). We put the result into a `Future` and then return.
+
+### The true "process"
+
+Well, now get back to `prepareAndStart` method. We've already got a job, then the next step is our task - `process` the job. Let's explore this important method:
+
+```java
+private void process() {
+  long curTime = System.currentTimeMillis();
+  this.job.setStarted_at(curTime)
+    .set("started_at", String.valueOf(curTime)) // (1) set start time
+    .compose(Job::active) // (2) set the job state to ACTIVE
+    .setHandler(r -> {
+      if (r.succeeded()) {
+        Job j = r.result();
+        // emit start event
+        this.emitJobEvent("start", j, null);  // (3) emit job `start` event
+        // (4) process logic invocation
+        try {
+          jobHandler.handle(j);
+        } catch (Exception ex) {
+          j.done(ex);
+        }
+        // (5) consume the job done event
+
+        eventBus.consumer(Kue.workerAddress("done", j), msg -> {
+          createDoneCallback(j).handle(Future.succeededFuture(
+            ((JsonObject) msg.body()).getJsonObject("result")));
+        });
+        eventBus.consumer(Kue.workerAddress("done_fail", j), msg -> {
+          createDoneCallback(j).handle(Future.failedFuture(
+            (String) msg.body()));
+        });
+      } else {
+          this.emitJobEvent("error", this.job, new JsonObject().put("message", r.cause().getMessage()));
+          r.cause().printStackTrace();
+      }
+    });
+}
+```
+
+The most significant method! First we set the start time (1) and then change the job state to `ACTIVE` (2). If these two actions are both successful, we emit job `start` event to event bus (3). And then we invoke the true "process" handler `jobHandler` (4). If there were failure thrown, we would call `job.done(ex)`, which will send `done_fail` internal event to notify the worker that the job has failed. But where do we consume the `done` and `done_fail` event? That's here (5)! Once we receive these two events, we'll call corresponding handler to complete or fail the job. The handler is generated by `createDoneCallback` method:
+
+```java
+private Handler<AsyncResult<JsonObject>> createDoneCallback(Job job) {
+  return r0 -> {
+    if (job == null) {
+      return;
+    }
+    if (r0.failed()) {
+      this.fail(r0.cause()); // (1)
+      return;
+    }
+    long dur = System.currentTimeMillis() - job.getStarted_at();
+    job.setDuration(dur)
+      .set("duration", String.valueOf(dur)); // (2)
+    JsonObject result = r0.result();
+    if (result != null) {
+      job.setResult(result)
+        .set("result", result.encodePrettily()); // (3)
+    }
+
+    job.complete().setHandler(r -> { // (4)
+      if (r.succeeded()) {
+        Job j = r.result();
+        if (j.isRemoveOnComplete()) { // (5)
+          j.remove();
+        }
+        this.emitJobEvent("complete", j, null); // (6)
+
+        this.prepareAndStart(); // (7) prepare for next job
+      }
+    });
+  };
+}
+```
+
+Now that there are two situations: complete and fail, let's first see complete. We first set the processing duration (2) and if our complete job contains result, set the result (3). Next we can call `job.complete` to set the state to `COMPLETE` (4). If success, we'll check whether `removeOnComplete` field (5). If true, we'll `remove` the job. Then we emit job `complete` event (and global `job_complete` event) to event bus (6). Now the worker should prepare for next job so we call `this.prepareAndStart()` in the end (7).
+
+### What if the job fails?
+
+If the job failed, we call `fail` method in `KueWorker`:
+
+```java
+private void fail(Throwable ex) {
+  job.failedAttempt(ex).setHandler(r -> { // (1)
+    if (r.failed()) {
+      this.error(r.cause(), job); // (2)
+    } else {
+      Job res = r.result();
+      if (res.hasAttempts()) { // (3)
+        this.emitJobEvent("failed_attempt", job, new JsonObject().put("message", ex.getMessage()));
+      } else {
+        this.emitJobEvent("failed", job, new JsonObject().put("message", ex.getMessage())); // (4)
+      }
+      prepareAndStart(); // (5)
+    }
+  });
+}
+```
+
+When facing failure, we first try to recover from failure using `failedAttempt` method (1). If attempt fails(e.g. no more attempt chance), we send `error` queue event (2). If success, we should inspect whether there are remaining retry chance, then send corresponding events(`failed` or `failed_attempt`). Similarly, the worker should prepare for next job so we call `this.prepareAndStart()` in the end (5).
+
+So that's all of the `KueWorker`. Very interesing and cool, isn't it? You may wonder: when can we actually run our application? Be patient, we'll show it very soon~~
 
 ## CallbackKue - Polyglot support
 

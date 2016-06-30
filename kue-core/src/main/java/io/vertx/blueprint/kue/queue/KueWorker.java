@@ -59,9 +59,11 @@ public class KueWorker extends AbstractVerticle {
           this.job = jr.result().get();
           process();
         } else {
+          this.emitJobEvent("error", null, new JsonObject().put("message", "job_not_exist"));
           throw new IllegalStateException("job not exist");
         }
       } else {
+        this.emitJobEvent("error", null, new JsonObject().put("message", jr.cause().getMessage()));
         jr.cause().printStackTrace();
       }
     });
@@ -87,12 +89,6 @@ public class KueWorker extends AbstractVerticle {
             j.done(ex);
           }
           // subscribe the job done event
-          eventBus.consumer(Kue.workerAddress("done"), msg -> {
-            if (msg.headers().get("id").equals(String.valueOf(j.getId()))) {
-              createDoneCallback(j).handle(Future.succeededFuture(
-                ((JsonObject) msg.body()).getJsonObject("result")));
-            }
-          });
 
           eventBus.consumer(Kue.workerAddress("done", j), msg -> {
             createDoneCallback(j).handle(Future.succeededFuture(
@@ -103,14 +99,16 @@ public class KueWorker extends AbstractVerticle {
               (String) msg.body()));
           });
         } else {
+          this.emitJobEvent("error", this.job, new JsonObject().put("message", r.cause().getMessage()));
           r.cause().printStackTrace();
         }
       });
   }
 
   private void cleanup() {
-    eventBus.consumer(Kue.workerAddress("done")).unregister();
-    eventBus.consumer(Kue.workerAddress("done_fail")).unregister();
+    eventBus.consumer(Kue.workerAddress("done", this.job)).unregister();
+    eventBus.consumer(Kue.workerAddress("done_fail", this.job)).unregister();
+    this.job = null;
   }
 
   private void error(Throwable ex, Job job) {
@@ -201,7 +199,6 @@ public class KueWorker extends AbstractVerticle {
         return;
       }
       if (r0.failed()) {
-        cleanup();
         this.fail(r0.cause());
         return;
       }
@@ -244,10 +241,16 @@ public class KueWorker extends AbstractVerticle {
     JsonObject data = new JsonObject().put("job", job.toJson())
       .put("extra", extra);
     eventBus.send(Kue.workerAddress("job_" + event), data);
-    if (event.equals("failed") || event.equals("failed_attempt")) {
-      eventBus.send(Kue.getCertainJobAddress(event, job), data);
-    } else {
-      eventBus.send(Kue.getCertainJobAddress(event, job), job.toJson());
+    switch (event) {
+      case "failed":
+      case "failed_attempt":
+        eventBus.send(Kue.getCertainJobAddress(event, job), data);
+        break;
+      case "error":
+        eventBus.send(Kue.workerAddress("error"), data);
+        break;
+      default:
+        eventBus.send(Kue.getCertainJobAddress(event, job), job.toJson());
     }
   }
 
