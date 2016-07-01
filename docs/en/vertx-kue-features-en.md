@@ -138,6 +138,16 @@ Job email = kue.createJob("email", data)
 
 Vert.x Kue will check the delayed jobs(`checkJobPromotion`) with a timer, promoting them if the scheduled delay has been exceeded, defaulting to a check of top 1000 jobs every second.
 
+### Failure Backoff
+
+Job retry attempts are done as soon as they fail, with no delay, even if your job had a delay set via `Job#delay`. If you want to delay job re-attempts upon failures (known as backoff) you can use set a `backoff` config on the object:
+
+```java
+job.setBackoff(new JsonObject().put("delay", 5000).put("type", "fixed"));
+```
+
+At present we support two kinds of backoff: `fixed` and `exponential`. The `fixed` type uses a fixed delay timeout, and we can specify it via the `delay` attribute in `backoff` field. If not specified, Vert.x Kue will use the original `delay` field in the job. The `exponential` type enables exponential backoff.
+
 ## Processing Jobs
 
 It's very simple to process jobs in Vert.x Kue. We can use `kue.process(jobType, n, handler)` to process jobs concurrently. The first parameter refers to the type of job and the second parameter refers to the maximum active job count, while the third parameter refers to the handler that process the job.
@@ -218,9 +228,19 @@ Then we can pass the config file to Vert.x Launcher when we deploy our verticles
 
 The UI of Vert.x Kue is from the original [Automattic/kue](https://github.com/Automattic/kue). Thanks to Automattic/kue and the open-source community!
 
+If we want to use Kue UI, we can simply run `kue-http` component:
+
+    java -jar kue-http/build/libs/vertx-blueprint-kue-http.jar -cluster -ha -conf config/config.json
+
+Then you can visit `localhost:8080`:
+
+![](../images/vertx_kue_ui_1.png)
+
 ## Vert.x Kue REST API
 
 ### GET /stats
+
+Get global stats(`workTime` and counts of every job state):
 
 ```json
 {
@@ -234,6 +254,8 @@ The UI of Vert.x Kue is from the original [Automattic/kue](https://github.com/Au
 ```
 
 ### GET /job/:id
+
+Get a job with certain `id`:
 
 ```json
 {
@@ -264,12 +286,40 @@ The UI of Vert.x Kue is from the original [Automattic/kue](https://github.com/Au
 
 ### GET /job/:id/log
 
+Get job `:id`'s log:
+
+```json
+[
+  "error | f1",
+  "error | f2",
+  "error | f3"
+]
+```
+
 ### GET /jobs/:from/to/:to/:order?
+
+Get jobs with the specified range `:from` to `:to`, for example `/jobs/0/to/2/asc`, where `:order` may be **asc** or **desc**.
 
 ### GET /jobs/:state/:from/to/:to/:order?
 
+Same as above, restricting by `:state` which is one of:
+
+- active
+- inactive
+- failed
+- complete
+
 ### GET /jobs/:type/:state/:from/to/:to/:order?
+
+Same as above, however restricted to `:type` and `:state`.
 
 ### DELETE /job/:id
 
+Delete a job:
+
+    $ curl -X DELETE http://localhost:8080/job/6
+    {"message":"job 6 removed"}
+
 ### PUT /job
+
+Create a job.

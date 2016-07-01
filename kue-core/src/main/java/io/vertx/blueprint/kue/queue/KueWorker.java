@@ -52,7 +52,7 @@ public class KueWorker extends AbstractVerticle {
    * Prepare job and start processing procedure
    */
   private void prepareAndStart() {
-    cleanup();
+    // cleanup();
     this.getJobFromBackend().setHandler(jr -> {
       if (jr.succeeded()) {
         if (jr.result().isPresent()) {
@@ -228,6 +228,7 @@ public class KueWorker extends AbstractVerticle {
   @Override
   public void stop() throws Exception {
     // stop hook
+    cleanup();
   }
 
   /**

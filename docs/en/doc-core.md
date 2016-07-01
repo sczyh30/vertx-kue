@@ -416,7 +416,7 @@ public static void setVertx(Vertx v, RedisClient redisClient) {
 }
 ```
 
-The first field `logger` is a Vert.x Logger instance we are all familar with. But you may wonder why `Vertx` field is present here. Should `Job` class be a data object? Of course it is a data object, but **not only** a data object. In `Job` class there are numerous methods that do some operations about job such as `save` and `progress`. I imitated the design in Automattic/kue and put these logic in `Job` class. They are almost future-based asynchronous methods, so it's convenient to compose the async results like this:
+The first field `logger` is a Vert.x Logger instance we are all familiar with. But you may wonder why `Vertx` field is present here. Should `Job` class be a data object? Of course it is a data object, but **not only** a data object. In `Job` class there are numerous methods that do some operations about job such as `save` and `progress`. I imitated the design in Automattic/kue and put these logic in `Job` class. They are almost future-based asynchronous methods, so it's convenient to compose the async results like this:
 
 ```java
 job.save()

@@ -288,18 +288,40 @@ Vert.x Kue同样也提供一组REST API供UI组件和用户调用。
 
 ### GET /job/:id/log
 
-获取指定任务的日志。
+获取指定任务的日志:
+
+```json
+[
+  "error | f1",
+  "error | f2",
+  "error | f3"
+]
+```
 
 ### GET /jobs/:from/to/:to/:order?
 
+获取某个范围(`:from`到`:to`)的任务，并且指定排序顺序(`asc`和`desc`)。比如`/jobs/0/to/2/asc`。
+
 ### GET /jobs/:state/:from/to/:to/:order?
+
+和上面的功能相似，但是需要指定任务状态`:state`：
+
+- active
+- inactive
+- failed
+- complete
 
 ### GET /jobs/:type/:state/:from/to/:to/:order?
 
+和上面的功能相似，但是需要指定任务状态`:state`以及任务类型`:type`。
+
 ### DELETE /job/:id
 
-删除某个特定id的任务
+删除某个特定id的任务:
+
+    $ curl -X DELETE http://localhost:8080/job/6
+    {"message":"job 6 removed"}
 
 ### PUT /job
 
-创建一个新任务
+创建一个新任务。

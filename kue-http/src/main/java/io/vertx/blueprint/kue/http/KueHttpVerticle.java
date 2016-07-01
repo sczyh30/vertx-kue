@@ -108,7 +108,7 @@ public class KueHttpVerticle extends AbstractVerticle {
    */
   private void render(RoutingContext context, String state) { // TODO: bug in `types` param
     final String uiPath = "webroot/views/job/list.jade";
-    String title = config().getString("title", "Vert.x Kue");
+    String title = config().getString("kue.ui.title", "Vert.x Kue");
     kue.getAllTypes()
       .setHandler(resultHandler(context, r -> {
         context.put("state", state)
@@ -266,7 +266,7 @@ public class KueHttpVerticle extends AbstractVerticle {
   private void apiJobRange(RoutingContext context) {
     try {
       String order = context.request().getParam("order");
-      if (order == null || !(order.equals("asc") && order.equals("desc")))
+      if (order == null || !isOrderValid(order))
         order = "asc";
       Long from = Long.parseLong(context.request().getParam("from"));
       Long to = Long.parseLong(context.request().getParam("to"));
@@ -284,13 +284,32 @@ public class KueHttpVerticle extends AbstractVerticle {
   }
 
   private void apiJobTypeRange(RoutingContext context) {
-    notImplemented(context); // TODO: Not Implemented
+    try {
+      String order = context.request().getParam("order");
+      if (order == null || !isOrderValid(order)) {
+        order = "asc";
+      }
+      Long from = Long.parseLong(context.request().getParam("from"));
+      Long to = Long.parseLong(context.request().getParam("to"));
+      String state = context.request().getParam("state");
+      String type = context.request().getParam("type");
+      kue.jobRangeByType(type, state, from, to, order)
+        .setHandler(resultHandler(context, r -> {
+          String result = new JsonArray(r).encodePrettily();
+          context.response()
+            .putHeader("content-type", "application/json")
+            .end(result);
+        }));
+    } catch (Exception e) {
+      e.printStackTrace();
+      badRequest(context, e);
+    }
   }
 
   private void apiJobStateRange(RoutingContext context) {
     try {
       String order = context.request().getParam("order");
-      if (order == null || !(order.equals("asc") && order.equals("desc")))
+      if (order == null || !isOrderValid(order))
         order = "asc";
       Long from = Long.parseLong(context.request().getParam("from"));
       Long to = Long.parseLong(context.request().getParam("to"));
@@ -306,6 +325,10 @@ public class KueHttpVerticle extends AbstractVerticle {
       e.printStackTrace();
       badRequest(context, e);
     }
+  }
+
+  private boolean isOrderValid(String order) {
+    return order.equals("asc") && order.equals("desc");
   }
 
   private void apiDeleteJob(RoutingContext context) {
