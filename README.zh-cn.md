@@ -21,9 +21,9 @@ Vert.x Kue是[Automattic/kue](https://github.com/Automattic/kue)的Vert.x实现�
 - 任务日志
 - 基于`Future`的异步模式
 - 多种语言支持
-- 由 ** Vert.x** 强力驱动！
+- 由 **Vert.x** 强力驱动！
 
-特性详情请见[Vert.x Kue 特性介绍](docs/zh-cn/vertx-kue-features.zh-cn.md)
+特性详情请见[Vert.x Kue 特性介绍](docs/zh-cn/vertx-kue-features.zh-cn.md)。
 
 ## 构建/运行
 
