@@ -133,7 +133,7 @@ In our Vert.x Kue, most of the asynchronous methods are `Future` based. In Vert.
 
 ### Events in Vert.x Kue
 
-As we mentioned in the [feature document](vertx-kue-features-en.md), Vert.x Kue support two kinds of events: **job events** and **queue events**. All events are sent and consumed on the clustered event bus. In Vert.x Kue we designed three kinds of address:
+As we've mentioned in the [feature document](vertx-kue-features-en.md), Vert.x Kue support two kinds of events: **job events** and **queue events**. All events are sent and consumed on the clustered event bus. In Vert.x Kue we designed three kinds of address:
 
 - `vertx.kue.handler.job.{handlerType}.{addressId}.{jobType}`: job event address for a certain job
 - `vertx.kue.handler.workers.{eventType}`: queue event address
@@ -305,7 +305,7 @@ task wrapper(type: Wrapper) {
 }
 ```
 
-Seems a bit longer than blueprint project? Let's explain that:
+Seems a bit longer than the previous blueprint project? Let's explain that:
 
 - In `configure(allprojects)`, we configure settings for all projects (global).
 In global dependencies, `vertx-hazelcast` is for clustered Vert.x and `vertx-codegen` is for code generating.
@@ -511,7 +511,7 @@ The `address_id` field must be assigned when a job is created. By default it is 
 
 ### Job event helper methods
 
-As we've mentioned above, we send and receive events on clustered event bus with a specific address format `vertx.kue.handler.job.{handlerType}.{addressId}.{jobType}`. So we provide two helper methods `emit` and `on` (like `EventEmitter` in Node.js) to send and consume events for current job:
+As we've mentioned above, we send and receive job events on clustered event bus with a specific address format `vertx.kue.handler.job.{handlerType}.{addressId}.{jobType}`. So we provide two helper methods `emit` and `on` (like `EventEmitter` in Node.js) to send and consume events for current job:
 
 ```java
 @Fluent
@@ -529,13 +529,13 @@ public Job emit(String event, Object msg) {
 }
 ```
 
-In our following code, we'll make use of these two helper methods.
+In our following code, we'll frequently make use of these two helper methods.
 
 ### Store format in Redis
 
 Before we explain the logic methods, let's first illustrate the store format in Redis:
 
-- All keys of Vert.x Kue in Redis start with `vertx_kue:`
+- All keys of Vert.x Kue in Redis start with `vertx_kue:` (namespace)
 - `vertx:kue:job:{id}`: a map stores the job entity with certain id
 - `vertx:kue:ids`: the id counter, indicating the current max id
 - `vertx:kue:job:types`: a list stores all job types
@@ -976,7 +976,7 @@ private Function<Integer, Long> getBackoffImpl() {
 }
 ```
 
-First we get the backoff type. We have two types of backoff currently: `fixed` and `fixed`. The former one's delay time is fixed, while the later one is exponential.If we don't indicate the type, Vert.x Kue will use `fixed` type by  default (1). Then we get `delay` from the backoff json object and if it is ont present, we'll use `delay` field of current job (2). Then for `exponential` type, we calculate `[delay * 0.5 * 2^attempts]` for the delay (3). And for `fixed` type, we simply use original `delay` (4).
+First we get the backoff type. We have two types of backoff currently: `fixed` and `exponential`. The former one's delay time is fixed, while the later one is exponential. If we don't indicate the type, Vert.x Kue will use `fixed` type by  default (1). Then we get `delay` from the backoff json object and if it is not present, we'll use `delay` field of current job (2). Then for `exponential` type, we calculate `[delay * 0.5 * 2^attempts]` for the delay (3). And for `fixed` type, we simply use original `delay` (4).
 
 Ok, now back to our `reattempt` method:
 
@@ -1349,7 +1349,7 @@ public Kue process(String type, int n, Handler<Job> handler) {
   }
   while (n-- > 0) {
     processInternal(type, handler, false);
-  }
+  }f
   setupTimers();
   return this;
 }
@@ -1484,7 +1484,7 @@ private void prepareAndStart() {
 }
 ```
 
-The logic is obvious. First we get a job from Redis backend using `getJobFromBackend` method. If we successfully get the job, we set the `job` field to the job got (2) and then `process` (3). If we are faced with failure, we should emit `error` job event with the failure message.
+The logic is obvious. First we get a job from Redis backend using `getJobFromBackend` method (1). If we successfully get the job, we set the `job` field to the job got (2) and then `process` (3). If we are faced with failure, we should emit `error` job event with the failure message.
 
 ### Get appropriate job with zpop command
 

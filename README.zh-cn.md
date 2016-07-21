@@ -14,7 +14,7 @@ Vert.x Kue是[Automattic/kue](https://github.com/Automattic/kue)的Vert.x实现�
 - 可延迟的任务
 - 同时处理多个任务
 - 任务事件以及工作队列事件
-- 可选的重试机制以及延迟恢复机制
+- 可选的任务重试机制以及延迟恢复机制
 - RESTful API
 - 简洁明了的用户界面(基于Automattic/kue UI)
 - 任务进度实时展示
