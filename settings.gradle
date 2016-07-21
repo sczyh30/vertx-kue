@@ -1,0 +1,5 @@
+rootProject.name = 'vertx-blueprint-job-queue'
+
+include "kue-core"
+include "kue-http"
+include "kue-example"

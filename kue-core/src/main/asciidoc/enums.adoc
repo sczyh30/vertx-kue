@@ -1,0 +1,42 @@
+= Enums
+
+[[JobState]]
+== JobState
+
+++++
+ Vert.x Blueprint - Job Queue
+ Job state enum class
+++++
+'''
+
+[cols=">25%,75%"]
+[frame="topbot"]
+|===
+^|Name | Description
+|[[INACTIVE]]`INACTIVE`|-
+|[[ACTIVE]]`ACTIVE`|-
+|[[COMPLETE]]`COMPLETE`|-
+|[[FAILED]]`FAILED`|-
+|[[DELAYED]]`DELAYED`|-
+|===
+
+[[Priority]]
+== Priority
+
+++++
+ Vert.x Blueprint - Job Queue
+ Job priority enum class
+++++
+'''
+
+[cols=">25%,75%"]
+[frame="topbot"]
+|===
+^|Name | Description
+|[[LOW]]`LOW`|-
+|[[NORMAL]]`NORMAL`|-
+|[[MEDIUM]]`MEDIUM`|-
+|[[HIGH]]`HIGH`|-
+|[[CRITICAL]]`CRITICAL`|-
+|===
+

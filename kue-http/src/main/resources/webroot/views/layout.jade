@@ -1,0 +1,26 @@
+html
+    head
+        title= title
+        link(rel='stylesheet', href='./public/stylesheets/main.css')
+        script(src='./public/javascripts/utils.js')
+        script(src='./public/javascripts/jquery.min.js')
+        script(src='./public/javascripts/jquery.ext.js')
+        script(src='./public/javascripts/caustic.js')
+        script(src='./public/javascripts/progress.js')
+        script(src='./public/javascripts/loading.js')
+        script(src='./public/javascripts/job.js')
+        script(src='./public/javascripts/search.js')
+        script(src='./public/javascripts/main.js')
+    body
+        include _menu
+        #actions
+            include _search
+            <!-- include _filter -->
+            include _sort
+        #content
+            block body
+        script(type='text/template')#job-template
+            include _job
+        script(type='text/template')#row-template
+            include _row
+        #error
