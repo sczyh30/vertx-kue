@@ -1346,7 +1346,7 @@ Vert.x Kue支持延时任务，因此我们需要在任务延时时间到达时�
 private void checkJobPromotion() {
   int timeout = config.getInteger("job.promotion.interval", 1000); // (1)
   int limit = config.getInteger("job.promotion.limit", 1000); // (2)
-  vertx.setTimer(timeout, l -> { // (3)
+  vertx.setPeriodic(timeout, l -> { // (3)
     client.zrangebyscore(RedisHelper.getKey("jobs:DELAYED"), String.valueOf(0), String.valueOf(System.currentTimeMillis()),
       new RangeLimitOptions(new JsonObject().put("offset", 0).put("count", limit)), r -> {  // (4)
         if (r.succeeded()) {
@@ -1365,12 +1365,11 @@ private void checkJobPromotion() {
           r.cause().printStackTrace();
         }
       });
-    checkJobPromotion(); // (7)
   });
 }
 ```
 
-首先我们从配置中获取监测延时任务的间隔(`job.promotion.interval`，默认1000ms)以及提升数量阈值(`job.promotion.limit`，默认1000)。然后我们使用`vertx.setTimer`方法设一个定时器 (3)，当间隔时间到时，我们从Redis中获取需要被提升的任务 (4)。这里我们通过`zrangebyscore`获取每个需要被提升任务的`id`。我们来看一下`zrangebyscore`方法的定义：
+首先我们从配置中获取监测延时任务的间隔(`job.promotion.interval`，默认1000ms)以及提升数量阈值(`job.promotion.limit`，默认1000)。然后我们使用`vertx.setPeriodic`方法设一个周期性的定时器 (3)，每隔一段时间就从Redis中获取需要被提升的任务 (4)。这里我们通过`zrangebyscore`获取每个需要被提升任务的`id`。我们来看一下`zrangebyscore`方法的定义：
 
 ```java
 RedisClient zrangebyscore(String key, String min, String max, RangeLimitOptions options, Handler<AsyncResult<JsonArray>> handler);
@@ -1392,8 +1391,6 @@ case DELAYED:
 - `options`: range和limit配置。这里我们需要指定`LIMIT`值所以我们用`new RangeLimitOptions(new JsonObject().put("offset", 0).put("count", limit)`创建了一个配置
 
 `zrangebyscore`的结果是一个`JsonArray`，里面包含着所有等待提升任务的`zid`。获得结果后我们就将每个`zid`转换为`id`，然后分别获取对应的任务实体，最后对每个任务调用`inactive`方法来将任务状态设为`INACTIVE` (5)。如果任务成功提升至工作队列，我们就发送`promotion`事件 (6)。
-
-我们需要不断地监测延时任务，因此我们在最后再调用一次`checkJobPromotion`方法 (7)，即此方法为递归函数。
 
 ### CallbackKue - 提供多语言支持
 

@@ -1405,7 +1405,7 @@ Our Vert.x Kue supports delayed jobs, so we need to promote job to the job queue
 private void checkJobPromotion() {
   int timeout = config.getInteger("job.promotion.interval", 1000); // (1)
   int limit = config.getInteger("job.promotion.limit", 1000); // (2)
-  vertx.setTimer(timeout, l -> { // (3)
+  vertx.setPeriodic(timeout, l -> { // (3)
     client.zrangebyscore(RedisHelper.getKey("jobs:DELAYED"), String.valueOf(0), String.valueOf(System.currentTimeMillis()),
       new RangeLimitOptions(new JsonObject().put("offset", 0).put("count", limit)), r -> {  // (4)
         if (r.succeeded()) {
@@ -1424,12 +1424,11 @@ private void checkJobPromotion() {
           r.cause().printStackTrace();
         }
       });
-    checkJobPromotion(); // (7)
   });
 }
 ```
 
-First we get `timeout` and `limit` from the config. The `timeout` refers to the interval between each check (1), while the `limit` attribute refers to the max job promotion count threshold (2). Then we set a timer using `vertx.setTimer` (3) and when timeout arrives, we retrieve jobs that need promoting from Redis (4). We do this with `zrangebyscore` operation, which returns all the elements in the sorted set at key with a score between min and max (including elements with score equal to min or max). The elements are considered to be ordered from low to high scores. Let's see the signature of `zrangebyscore`:
+First we get `timeout` and `limit` from the config. The `timeout` refers to the interval between each check (1), while the `limit` attribute refers to the max job promotion count threshold (2). Then we use `vertx.setPeriodic` to set a periodic timer to fire every `timeout` (3) and when every timeout arrives, we retrieve jobs that need promoting from Redis (4). We do this with `zrangebyscore` operation, which returns all the elements in the sorted set at key with a score between min and max (including elements with score equal to min or max). The elements are considered to be ordered from low to high scores. Let's see the signature of `zrangebyscore`:
 
 ```java
 RedisClient zrangebyscore(String key, String min, String max, RangeLimitOptions options, Handler<AsyncResult<JsonArray>> handler);
@@ -1451,9 +1450,6 @@ So as we specify the `max` as `System.currentTimeMillis()`, once is greater than
 - `options`: range and limit options. In this usage, we need to specify the `LIMIT` so we created a `new RangeLimitOptions(new JsonObject().put("offset", 0).put("count", limit)`
 
 The result of `zrangebyscore` is an `JsonArray` including zids of each wait-to-promote job. Next we traverse each zid , convert them to `id`, and then get the corresponding job, and finally call `inactive` method to set job state to `INACTIVE` (5). If the promotion is successful, we emit `promotion` event to the job-specific address (6).
-
-To make the check process continual, we need to call `checkJobPromotion` again in the end (7). That is a recursive call.
-
 
 ## Here we process jobs - KueWorker
 

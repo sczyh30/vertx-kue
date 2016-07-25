@@ -14,9 +14,7 @@ import java.util.List;
 
 
 /**
- * Vert.x Blueprint - Job Queue
- * Callback-based Kue Implementation
- * For Vert.x Codegen to support polyglot languages
+ * Implementation of {@link io.vertx.blueprint.kue.CallbackKue}.
  *
  * @author Eric Zhao
  */

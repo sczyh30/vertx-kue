@@ -1,9 +1,11 @@
 # Vert.x Kue
 
-Vert.x Blueprint Application - **Vert.x Kue** is a priority job queue developed with Vert.x and backed by *Redis*.
+[![Travis Build Status](https://travis-ci.org/sczyh30/vertx-blueprint-job-queue.svg?branch=master)](https://travis-ci.org/sczyh30/vertx-blueprint-job-queue)
+
+Vert.x Blueprint Application - **Vert.x Kue** is a priority job queue developed with Vert.x and backed by *Redis* .
 It's a Vert.x implementation version of [Automattic/kue](https://github.com/Automattic/kue).
 
-This repo is an introduction to message-based application development using Vert.x.
+This repo is an introduction to **message-based application development using Vert.x**.
 
 ## Detailed Document
 
@@ -48,3 +50,7 @@ Then we can run the example:
 Then you can visit `http://localhost:8080` to inspect the queue via Kue UI in the browser.
 
 ![](docs/images/vertx_kue_ui_1.png)
+
+## Want to improve this blueprint ?
+
+Forks and PRs are definitely welcome !

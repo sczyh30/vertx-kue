@@ -23,8 +23,7 @@ import java.util.Optional;
 import static io.vertx.blueprint.kue.queue.KueVerticle.EB_JOB_SERVICE_ADDRESS;
 
 /**
- * Vert.x Blueprint - Job Queue (Vert.x Kue)
- * Kue class
+ * The Kue class refers to a job queue.
  *
  * @author Eric Zhao
  */
@@ -44,8 +43,8 @@ public class Kue {
   }
 
   /**
-   * Generate handler address with certain job on event bus
-   * Format: vertx.kue.handler.job.{handlerType}.{addressId}.{jobType}
+   * Generate handler address with certain job on event bus.
+   * <p>Format: vertx.kue.handler.job.{handlerType}.{addressId}.{jobType}</p>
    *
    * @return corresponding address
    */
@@ -54,8 +53,8 @@ public class Kue {
   }
 
   /**
-   * Generate worker address on event bus
-   * Format: vertx.kue.handler.workers.{eventType}
+   * Generate worker address on event bus.
+   * <p>Format: vertx.kue.handler.workers.{eventType}</p>
    *
    * @return corresponding address
    */
@@ -64,8 +63,8 @@ public class Kue {
   }
 
   /**
-   * Generate worker address on event bus
-   * Format: vertx.kue.handler.workers.{eventType}.{addressId}
+   * Generate worker address on event bus.
+   * <p>Format: vertx.kue.handler.workers.{eventType}.{addressId}</p>
    *
    * @return corresponding address
    */
@@ -74,7 +73,7 @@ public class Kue {
   }
 
   /**
-   * Create a Kue instance
+   * Create a Kue instance.
    *
    * @param vertx  vertx instance
    * @param config config json object
@@ -85,15 +84,15 @@ public class Kue {
   }
 
   /**
-   * Get the JobService
-   * Notice: only available in package scope
+   * Get the JobService.
+   * <em>Notice: only available in package scope</em>
    */
   JobService getJobService() {
     return this.jobService;
   }
 
   /**
-   * Create a job instance
+   * Create a job instance.
    *
    * @param type job type
    * @param data job extra data
@@ -119,7 +118,7 @@ public class Kue {
   }
 
   /**
-   * Queue-level events listener
+   * Queue-level events listener.
    *
    * @param eventType event type
    * @param handler   handler
@@ -130,7 +129,7 @@ public class Kue {
   }
 
   /**
-   * Process a job in asynchronous way
+   * Process a job in asynchronous way.
    *
    * @param type    job type
    * @param n       job process times
@@ -148,7 +147,7 @@ public class Kue {
   }
 
   /**
-   * Process a job in asynchronous way (once)
+   * Process a job in asynchronous way (once).
    *
    * @param type    job type
    * @param handler job process handler
@@ -160,7 +159,7 @@ public class Kue {
   }
 
   /**
-   * Process a job that may be blocking
+   * Process a job that may be blocking.
    *
    * @param type    job type
    * @param n       job process times
@@ -180,7 +179,7 @@ public class Kue {
   // job logic
 
   /**
-   * Get job from backend by id
+   * Get job from backend by id.
    *
    * @param id job id
    * @return async result
@@ -198,7 +197,7 @@ public class Kue {
   }
 
   /**
-   * Remove a job by id
+   * Remove a job by id.
    *
    * @param id job id
    * @return async result
@@ -214,7 +213,7 @@ public class Kue {
   }
 
   /**
-   * Judge whether a job with certain id exists
+   * Judge whether a job with certain id exists.
    *
    * @param id job id
    * @return async result
@@ -226,7 +225,7 @@ public class Kue {
   }
 
   /**
-   * Get job log by id
+   * Get job log by id.
    *
    * @param id job id
    * @return async result
@@ -238,7 +237,7 @@ public class Kue {
   }
 
   /**
-   * Get a list of job in certain state in range (from, to) with order
+   * Get a list of job in certain state in range (from, to) with order.
    *
    * @return async result
    * @see JobService#jobRangeByState(String, long, long, String, Handler)
@@ -250,7 +249,7 @@ public class Kue {
   }
 
   /**
-   * Get a list of job in certain state and type in range (from, to) with order
+   * Get a list of job in certain state and type in range (from, to) with order.
    *
    * @return async result
    * @see JobService#jobRangeByType(String, String, long, long, String, Handler)
@@ -262,7 +261,7 @@ public class Kue {
   }
 
   /**
-   * Get a list of job in range (from, to) with order
+   * Get a list of job in range (from, to) with order.
    *
    * @return async result
    * @see JobService#jobRange(long, long, String, Handler)
@@ -276,7 +275,7 @@ public class Kue {
   // runtime cardinality metrics
 
   /**
-   * Get cardinality by job type and state
+   * Get cardinality by job type and state.
    *
    * @param type  job type
    * @param state job state
@@ -289,7 +288,7 @@ public class Kue {
   }
 
   /**
-   * Get cardinality by job state
+   * Get cardinality by job state.
    *
    * @param state job state
    * @return corresponding cardinality (Future)
@@ -301,9 +300,9 @@ public class Kue {
   }
 
   /**
-   * Get cardinality of completed jobs
+   * Get cardinality of completed jobs.
    *
-   * @param type job type; if null, then return global metrics
+   * @param type job type; if null, then return global metrics.
    */
   public Future<Long> completeCount(String type) {
     Future<Long> future = Future.future();
@@ -312,9 +311,9 @@ public class Kue {
   }
 
   /**
-   * Get cardinality of failed jobs
+   * Get cardinality of failed jobs.
    *
-   * @param type job type; if null, then return global metrics
+   * @param type job type; if null, then return global metrics.
    */
   public Future<Long> failedCount(String type) {
     Future<Long> future = Future.future();
@@ -323,9 +322,9 @@ public class Kue {
   }
 
   /**
-   * Get cardinality of inactive jobs
+   * Get cardinality of inactive jobs.
    *
-   * @param type job type; if null, then return global metrics
+   * @param type job type; if null, then return global metrics.
    */
   public Future<Long> inactiveCount(String type) {
     Future<Long> future = Future.future();
@@ -334,9 +333,9 @@ public class Kue {
   }
 
   /**
-   * Get cardinality of active jobs
+   * Get cardinality of active jobs.
    *
-   * @param type job type; if null, then return global metrics
+   * @param type job type; if null, then return global metrics.
    */
   public Future<Long> activeCount(String type) {
     Future<Long> future = Future.future();
@@ -345,9 +344,9 @@ public class Kue {
   }
 
   /**
-   * Get cardinality of delayed jobs
+   * Get cardinality of delayed jobs.
    *
-   * @param type job type; if null, then return global metrics
+   * @param type job type; if null, then return global metrics.
    */
   public Future<Long> delayedCount(String type) {
     Future<Long> future = Future.future();
@@ -356,7 +355,7 @@ public class Kue {
   }
 
   /**
-   * Get the job types present
+   * Get the job types present.
    *
    * @return async result list
    */
@@ -367,7 +366,7 @@ public class Kue {
   }
 
   /**
-   * Return job ids with the given `state`
+   * Return job ids with the given `state`.
    *
    * @param state job state
    * @return async result list
@@ -379,7 +378,7 @@ public class Kue {
   }
 
   /**
-   * Get queue work time in milliseconds
+   * Get queue work time in milliseconds.
    *
    * @return async result
    */
@@ -390,7 +389,7 @@ public class Kue {
   }
 
   /**
-   * Set up timers for checking job promotion and active job ttl
+   * Set up timers for checking job promotion and active job ttl.
    */
   private void setupTimers() {
     this.checkJobPromotion();
@@ -398,14 +397,14 @@ public class Kue {
   }
 
   /**
-   * Check job promotion
-   * Promote delayed jobs, checking every `ms`,
+   * Check job promotion.
+   * Promote delayed jobs, checking every `ms`.
    */
-  private void checkJobPromotion() { // TODO: enhance and check (need lock?) | TO REVIEW
+  private void checkJobPromotion() { // TODO: TO REVIEW
     int timeout = config.getInteger("job.promotion.interval", 1000);
     int limit = config.getInteger("job.promotion.limit", 1000);
     // need a mechanism to stop the circuit timer
-    vertx.setTimer(timeout, l -> {
+    vertx.setPeriodic(timeout, l -> {
       client.zrangebyscore(RedisHelper.getKey("jobs:DELAYED"), String.valueOf(0), String.valueOf(System.currentTimeMillis()),
         new RangeLimitOptions(new JsonObject().put("offset", 0).put("count", limit)), r -> {
           if (r.succeeded()) {
@@ -424,23 +423,21 @@ public class Kue {
             r.cause().printStackTrace();
           }
         });
-      checkJobPromotion();
     });
   }
 
   /**
-   * Check active job ttl
+   * Check active job ttl.
    */
   private void checkActiveJobTtl() {  // TODO
     int timeout = config.getInteger("job.ttl.interval", 1000);
     int limit = config.getInteger("job.ttl.limit", 1000);
     // need a mechanism to stop the circuit timer
-    vertx.setTimer(timeout, l -> {
+    vertx.setPeriodic(timeout, l -> {
       client.zrangebyscore(RedisHelper.getKey("jobs:ACTIVE"), String.valueOf(100000), String.valueOf(System.currentTimeMillis()),
         new RangeLimitOptions(new JsonObject().put("offset", 0).put("count", limit)), r -> {
 
         });
-      checkActiveJobTtl();
     });
   }
 

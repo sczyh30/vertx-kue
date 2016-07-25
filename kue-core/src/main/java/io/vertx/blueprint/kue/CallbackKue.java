@@ -12,9 +12,7 @@ import io.vertx.core.json.JsonObject;
 
 
 /**
- * Vert.x Blueprint - Job Queue
- * Callback-based Kue Interface
- * For Vert.x Codegen to support polyglot languages
+ * A callback-based {@link io.vertx.blueprint.kue.Kue} interface for Vert.x Codegen to support polyglot languages.
  *
  * @author Eric Zhao
  */
