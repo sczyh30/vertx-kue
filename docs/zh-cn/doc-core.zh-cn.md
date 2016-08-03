@@ -1666,6 +1666,6 @@ Feeling: amazing and wonderful!
 
 棒极了！我们终于结束了我们的Vert.x Kue核心部分探索之旅～～！从这篇超长的教程中，你学到了如何利用Vert.x去开发一个基于消息的应用！太酷了！
 
-如果想了解`kue-http`的实现，请移步[Vert.x 蓝图 | Vert.x Kue 教程（Web部分）](http://www.sczyh30.com/vertx-blueprint-job-queue/cn/kue-http/index.html)。如果想了解更多的关于Vert.x Kue的特性，请移步[Vert.x Kue 特性介绍](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/docs/zh-cn/vertx-kue-features.zh-cn.md)。
+如果想了解`kue-http`的实现，请移步[Vert.x 蓝图 | Vert.x Kue 教程（Web部分）](http://sczyh30.github.io/vertx-blueprint-job-queue/cn/kue-http/index.html)。如果想了解更多的关于Vert.x Kue的特性，请移步[Vert.x Kue 特性介绍](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/docs/zh-cn/vertx-kue-features.zh-cn.md)。
 
 Vert.x能做的不仅仅是这些。想要了解更多的关于Vert.x的知识，请参考[Vert.x 官方文档](http://vertx.io/docs/) —— 这永远是资料最齐全的地方。

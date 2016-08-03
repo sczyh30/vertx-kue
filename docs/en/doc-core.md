@@ -1737,6 +1737,6 @@ Feeling: amazing and wonderful!
 
 Great! We have finished our journey with **Vert.x Kue Core**! In this long tutorial, you have learned how to develop a message based application with Vert.x. So cool!
 
-To learn the implementation of `kue-http`, please visit [Tutorial: Vert.x Blueprint - Vert.x Kue (Web)](http://www.sczyh30.com/vertx-blueprint-job-queue/kue-http/index.html). To learn more about Vert.x Kue features, please refer to [Vert.x Kue features documentation](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/docs/en/vertx-kue-features-en.md).
+To learn the implementation of `kue-http`, please visit [Tutorial: Vert.x Blueprint - Vert.x Kue (Web)](http://sczyh30.github.io/vertx-blueprint-job-queue/kue-http/index.html). To learn more about Vert.x Kue features, please refer to [Vert.x Kue features documentation](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/docs/en/vertx-kue-features-en.md).
 
 Vert.x can do various kinds of stuff. To learn more about Vert.x, you can visit [Vert.x Documentation](http://vertx.io/docs/) - this is always the most comprehensive material :-)

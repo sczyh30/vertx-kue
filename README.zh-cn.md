@@ -2,13 +2,13 @@
 
 [![Travis Build Status](https://travis-ci.org/sczyh30/vertx-blueprint-job-queue.svg?branch=master)](https://travis-ci.org/sczyh30/vertx-blueprint-job-queue)
 
-Vert.x Kue是Vert.x Blueprint(蓝图)系列的第二个应用。它是一个使用Vert.x开发的优先级工作队列，数据存储使用的是 *Redis*。
-Vert.x Kue是[Automattic/kue](https://github.com/Automattic/kue)的Vert.x实现版本。
+Vert.x Kue是Vert.x Blueprint(蓝图)系列的第二个应用。它是一个使用Vert.x开发的优先级工作队列，数据存储使用的是 **Redis** 。
+Vert.x Kue是 [Automattic/kue](https://github.com/Automattic/kue) 的Vert.x实现版本。
 
 ## 详细文档教程
 
-- [Vert.x Kue Core 教程](docs/zh-cn/doc-core.zh-cn.md)
-- [Vert.x Kue Web 教程](docs/zh-cn/doc-http.zh-cn.md)
+- [Vert.x Kue Core 教程](http://sczyh30.github.io/vertx-blueprint-job-queue/cn/kue-core/index.html)
+- [Vert.x Kue Web 教程](http://sczyh30.github.io/vertx-blueprint-job-queue/cn/kue-http/index.html)
 
 ## 特性
 

@@ -2,7 +2,7 @@ In this tutorial we are going to take a quick look on implementation of `kue-htt
 
 # Vert.x Kue REST API
 
-Our `kue-http` component only have one class `KueHttpVerticle`, where both REST API and UI are implemented. For REST API, the approach is quite similar to what we have elaborated in [Vert.x Blueprint - Todo-Backend Tutorial](https://github.com/sczyh30/vertx-blueprint-todo-backend/blob/master/docs/doc-en.md) so here we don't explain the code. You can refer to [Vert.x Blueprint - Todo-Backend Tutorial](https://github.com/sczyh30/vertx-blueprint-todo-backend/blob/master/docs/doc-en.md) for tutorial about **Vert.x Web**.
+Our `kue-http` component only have one class `KueHttpVerticle`, where both REST API and UI are implemented. For REST API, the approach is quite similar to what we have elaborated in [Vert.x Blueprint - Todo-Backend Tutorial](http://sczyh30.github.io/vertx-blueprint-todo-backend/) so here we don't explain the code. You can refer to [Vert.x Blueprint - Todo-Backend Tutorial](http://sczyh30.github.io/vertx-blueprint-todo-backend/) for tutorial about **Vert.x Web**.
 
 # Adapt Kue UI with Vert.x Web
 

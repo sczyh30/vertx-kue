@@ -11,8 +11,8 @@ This repo is an introduction to **message-based application development using Ve
 
 Detailed documents and tutorials:
 
-- [English Version](docs/en)
-- [中文文档](docs/zh-cn)
+- [English Version](http://sczyh30.github.io/vertx-blueprint-job-queue/kue-core/index.html)
+- [中文文档](http://sczyh30.github.io/vertx-blueprint-job-queue/cn/kue-core/index.html)
 
 ## Features
 

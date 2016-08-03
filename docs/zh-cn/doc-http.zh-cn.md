@@ -2,7 +2,7 @@
 
 # Vert.x Kue REST API
 
-`kue-http`模块中只有一个类 `KueHttpVerticle`，作为整个REST API以及UI服务的实现。对REST API部分来说，如果看过我们之前的 [Vert.x 蓝图 | 待办事项服务开发教程](https://github.com/sczyh30/vertx-blueprint-todo-backend/blob/master/docs/doc-zh-cn.md) 的话，你应该对这一部分非常熟悉了，因此这里我们就不详细解释了。有关使用Vert.x Web实现REST API的教程可参考 [Vert.x 蓝图 | 待办事项服务开发教程](https://github.com/sczyh30/vertx-blueprint-todo-backend/blob/master/docs/doc-zh-cn.md)。
+`kue-http`模块中只有一个类 `KueHttpVerticle`，作为整个REST API以及UI服务的实现。对REST API部分来说，如果看过我们之前的 [Vert.x 蓝图 | 待办事项服务开发教程](http://sczyh30.github.io/vertx-blueprint-todo-backend/cn/) 的话，你应该对这一部分非常熟悉了，因此这里我们就不详细解释了。有关使用Vert.x Web实现REST API的教程可参考 [Vert.x 蓝图 | 待办事项服务开发教程](http://sczyh30.github.io/vertx-blueprint-todo-backend/cn/)。
 
 # 将Kue UI与Vert.x Web进行适配
 
