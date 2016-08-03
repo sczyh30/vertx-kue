@@ -1,18 +1,10 @@
-# Vert.x 蓝图 | Vert.x Kue 教程（Web部分）
-
 在这部分教程中，我们将粗略地探索一下`kue-http`模块的实现。
 
-## 目录
+# Vert.x Kue REST API
 
-- [Vert.x Kue REST API](#vertx-kue-rest-api)
-- [将Kue UI与Vert.x Web进行适配](#将kue-ui与vertx-web进行适配)
-- [展示时间！](#展示时间)
+`kue-http`模块中只有一个类 `KueHttpVerticle`，作为整个REST API以及UI服务的实现。对REST API部分来说，如果看过我们之前的 [Vert.x 蓝图 | 待办事项服务开发教程](https://github.com/sczyh30/vertx-blueprint-todo-backend/blob/master/docs/doc-zh-cn.md) 的话，你应该对这一部分非常熟悉了，因此这里我们就不详细解释了。有关使用Vert.x Web实现REST API的教程可参考 [Vert.x 蓝图 | 待办事项服务开发教程](https://github.com/sczyh30/vertx-blueprint-todo-backend/blob/master/docs/doc-zh-cn.md)。
 
-## Vert.x Kue REST API
-
-`kue-http`模块中只有一个类`KueHttpVerticle`，作为整个REST API以及UI服务的实现。对REST API部分来说，如果看过我们之前的 [Vert.x 蓝图 | 待办事项服务开发教程](https://github.com/sczyh30/vertx-blueprint-todo-backend/blob/master/docs/doc-zh-cn.md) 的话，你应该对这一部分非常熟悉了，因此这里我们就不详细解释了。有关使用Vert.x Web实现REST API的教程可参考 [Vert.x 蓝图 | 待办事项服务开发教程](https://github.com/sczyh30/vertx-blueprint-todo-backend/blob/master/docs/doc-zh-cn.md)。
-
-## 将Kue UI与Vert.x Web进行适配
+# 将Kue UI与Vert.x Web进行适配
 
 除了REST API之外，我们还给Vert.x Kue提供了一个用户界面。我们复用了Automattic/Kue的用户界面所以我们就不用写前端代码了（部分API有变动的地方我已进行了修改）。我们只需要将前端代码与Vert.x Web适配即可。
 
@@ -72,7 +64,7 @@ router.route(KUE_UI_ACTIVE).handler(this::handleUIActive);
 
 是不是非常方便呢？不仅如此，Vert.x Web还提供了其它各种模板引擎的支持，比如 *FreeMaker*, *Pebble* 以及 *Thymeleaf 3*。如果感兴趣的话，你可以查阅[官方文档](http://vertx.io/docs/vertx-web/java/#_templates)来获取详细的使用指南。
 
-## 展示时间！
+# 展示时间！
 
 是不是等不及要看UI长啥样了？现在我们就来展示一下！首先构建项目：
 
@@ -90,4 +82,4 @@ router.route(KUE_UI_ACTIVE).handler(this::handleUIActive);
 
 好啦！现在在浏览器中访问`http://localhost:8080`，我们的Kue UI就呈现在我们眼前啦！
 
-![](../images/vertx_kue_ui_1.png)
+![](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-job-queue/master/docs/images/vertx_kue_ui_1.png)

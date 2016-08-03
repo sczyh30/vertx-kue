@@ -1,49 +1,4 @@
-# Tutorial: Vert.x Blueprint - Vert.x Kue (Core)
-
-## Table of contents
-
-- [Preface](#preface)
-- [Message system in Vert.x](#message-system-in-vert-x)
-    - [Publish/subscribe messaging](#publishsubscribe-messaging)
-    - [Point to point messaging](#point-to-point-messaging)
-    - [Request-response messaging](#request-response-messaging)
-- [Basic design of Vert.x Kue](#basic-design-of-vertx-kue)
-    - [Components of Vert.x Kue](#components-of-vertx-kue)
-    - [Vert.x Kue Core](#vertx-kue-core)
-    - [Future based asynchronous pattern](#future-based-asynchronous-pattern)
-    - [Events in Vert.x Kue](#events-in-vertx-kue)
-    - [Job state](#job-state)
-    - [Workflow diagram](#workflow-diagram)
-- [Project structure](#project-structure)
-- [Job entity - not only a data object](#job-entity---not-only-a-data-object)
-    - [Job properties](#job-properties)
-    - [Job event helper methods](#job-event-helper-methods)
-    - [Store format in Redis](#store-format-in-redis)
-    - [Change job state](#change-job-state)
-    - [Save job](#save-job)
-    - [Remove job](#remove-job)
-    - [Job events listener](#job-events-listener)
-    - [Update progress](#update-progress)
-    - [Job failure, error and attempt](#job-failure-error-and-attempt)
-- [Event bus service - JobService](#event-bus-service---jobservice)
-    - [Async RPC](#async-rpc)
-    - [Async service interface](#async-service-interface)
-    - [Job service implementation](#job-service-implementation)
-    - [Register the job service](#register-the-job-service)
-- [Kue - The job queue](#kue---the-job-queue)
-    - [Future-based encapsulation](#future-based-encapsulation)
-    - [Process and processBlocking](#process-and-processblocking)
-    - [Check job promotion](#check-job-promotion)
-- [Here we process jobs - KueWorker](#here-we-process-jobs---kueworker)
-    - [Prepare and start](#prepare-and-start)
-    - [Get appropriate job with zpop command](#get-appropriate-job-with-zpop-command)
-    - [The true "process"](#the-true-process)
-    - [What if the job fails?](#what-if-the-job-fails)
-- [Callback Kue - Polyglot support](#callbackkue---polyglot-support)
-- [Show time!](#show-time)
-- [Finish!](#finish)
-
-## Preface
+# Preface
 
 Hi, welcome back to the Vert.x Blueprint tutorial series~ In this tutorial, we are going to see a message based application - Vert.x Kue.
 Vert.x Kue is a priority job queue backed by *Redis*. It's a Vert.x implementation version of [Automattic/kue](https://github.com/Automattic/kue). We can use Vert.x Kue to process various kinds of jobs, e.g. **converting files** or **processing orders**.
@@ -60,11 +15,11 @@ What you are going to learn:
 
 This is the second part of **Vert.x Blueprint Project**. The entire code is available on [GitHub](https://github.com/sczyh30/vertx-blueprint-job-queue/tree/master).
 
-## Message system in Vert.x
+# Message system in Vert.x
 
 We are going to develop a message based application, so let's have a glimpse of the message system in Vert.x. In Vert.x, we could send and receive messages on the **event bus** between the different verticles with different `Vertx` instance. So cool yeah? Messages are sent on the event bus to an **address**, which can be arbitrary string like `foo.bar.nihao`. The event bus supports **publish/subscribe**, **point to point**, and **request-response** messaging. Let's take a look.
 
-### Publish/subscribe messaging
+## Publish/subscribe messaging
 
 First is **pub/sub** pattern. Messages are published to an address, and all handlers that registered to the address (aka. subscribe) will be notified with the message. Let's see how to do this:
 
@@ -88,11 +43,11 @@ We could get a reference to the event bus with `vertx.eventBus()` method. And th
 1: Ni Hao!
 ```
 
-### Point to point messaging
+## Point to point messaging
 
 If we replace `publish` method with `send` method, that is **point to point(send/recv)** pattern. Messages are sent to an address, Vert.x will then route it to just one of the handlers registered at the address using a non-strict round-robin algorithm. In the point to point example, the program will print only `1: Ni Hao!` or `2: Ni Hao!`.
 
-### Request-response messaging
+## Request-response messaging
 
 When a message is received by a handler, can it reply to the sender? Of course!  When we `send` a message, we can specify a reply handler.
 
@@ -101,9 +56,9 @@ Then when a message is received by a consumer, it can reply message to the sende
 
 Now we are simply aware of event bus in Vert.x, so let' step into the design of Vert.x Kue! For more details about event bus, we can refer to [Vert.x Core Manual - Event Bus](http://vertx.io/docs/vertx-core/java/#event_bus).
 
-## Basic design of Vert.x Kue
+# Basic design of Vert.x Kue
 
-### Components of Vert.x Kue
+## Components of Vert.x Kue
 
 In our project, we divide Vert.x Kue into two components:
 
@@ -114,7 +69,7 @@ And we also provide `kue-example`, a custom example component that illustrates h
 
 Since we have two components, you may wonder how can they interact with each other. And if we write our own Kue verticles, how can we consume the services of Kue Core? We'll give the answer in the following section :-)
 
-### Vert.x Kue Core
+## Vert.x Kue Core
 
 Recall the demand of Vert.x Kue - a priority job queue backed by *Redis*, so in the core part of Vert.x Kue there will be:
 
@@ -127,19 +82,19 @@ We need a mechanism to interact between components, and here we'll deploy vertic
 
 In Vert.x Kue, the `JobService` is registered and exposed on the **clustered** event bus so that other component could consume it on the event bus. We designed a `KueVerticle`, where we can register services. With the help of **Vert.x Service Proxy**, we can easily register services on event bus, then get service proxies in other components.
 
-### Future based asynchronous pattern
+## Future based asynchronous pattern
 
 In our Vert.x Kue, most of the asynchronous methods are `Future` based. In Vert.x 3.3.0, we support monadic operators for `Future`, like `map` and `compose`. These are very convenient as we can compose many futures in reactive way rather than step into the callback hell.
 
-### Events in Vert.x Kue
+## Events in Vert.x Kue
 
-As we've mentioned in the [feature document](vertx-kue-features-en.md), Vert.x Kue support two kinds of events: **job events** and **queue events**. All events are sent and consumed on the clustered event bus. In Vert.x Kue we designed three kinds of address:
+As we've mentioned in the [feature document](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/docs/en/vertx-kue-features-en.md), Vert.x Kue support two kinds of events: **job events** and **queue events**. All events are sent and consumed on the clustered event bus. In Vert.x Kue we designed three kinds of address:
 
 - `vertx.kue.handler.job.{handlerType}.{addressId}.{jobType}`: job event address for a certain job
 - `vertx.kue.handler.workers.{eventType}`: queue event address
 - `vertx.kue.handler.workers.{eventType}.{addressId}`: queue event address for a certain job
 
-In the [feature document](vertx-kue-features-en.md), we've mentioned several types of events:
+In the [feature document](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/docs/en/vertx-kue-features-en.md), we've mentioned several types of events:
 
 - `start` the job is now running (`onStart`)
 - `promotion` the job is promoted from delayed state to queued (`onPromotion`)
@@ -155,7 +110,7 @@ Every job has it own address so that it can receive the corresponding event.
 Specially, We also have two types of internal queue events: `done` referring to a job's finish and `done_fail` referring to a job's fail.
 These two events use the third address.
 
-### Job state
+## Job state
 
 There are five job states in Vert.x Kue:
 
@@ -167,21 +122,21 @@ There are five job states in Vert.x Kue:
 
 We use state machine to depict the states:
 
-![Job State Machine](../images/job_state_machine.png)
+![Job State Machine](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-job-queue/master/docs/images/job_state_machine.png)
 
 And here is the diagram of events between each state change:
 
-![Events with state change](../images/event_emit_state_machine.png)
+![Events with state change](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-job-queue/master/docs/images/event_emit_state_machine.png)
 
-### Workflow diagram
+## Workflow diagram
 
 To make it clear, we use this diagram to briefly illustrate how Vert.x Kue works at high level:
 
-![Diagram - How Vert.x Kue works](../images/kue_diagram.png)
+![Diagram - How Vert.x Kue works](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-job-queue/master/docs/images/kue_diagram.png)
 
 Now we've had a rough understanding of Vert.x Kue's design, so it's time to concentrate on the code~~
 
-## Project structure
+# Project structure
 
 Let's start our journey with Vert.x Kue! First get the code from GitHub:
 
@@ -359,11 +314,11 @@ In this blog, we talk about Vert.x Kue Core so our code is all in `kue-core` dir
 
 We are now aware of the structrue of Vert.x Kue project, so start watching code!
 
-## Job entity - not only a data object
+# Job entity - not only a data object
 
 Our Vert.x Kue is responsible for processing jobs, so let's see the `Job` class first. `Job` class is in `io.vertx.blueprint.kue.queue` package. You may find it a bit long to read the code. Don't worry, we divide it into several parts and then explain.
 
-### Job properties
+## Job properties
 
 First we have a look of the job properties:
 
@@ -509,7 +464,7 @@ public Job(String type, JsonObject data) {
 
 The `address_id` field must be assigned when a job is created. By default it is a UUID string. And in every constructors, we should call `_checkStatic` method to inspect whether the static fields have been assigned.
 
-### Job event helper methods
+## Job event helper methods
 
 As we've mentioned above, we send and receive job events on clustered event bus with a specific address format `vertx.kue.handler.job.{handlerType}.{addressId}.{jobType}`. So we provide two helper methods `emit` and `on` (like `EventEmitter` in Node.js) to send and consume events for current job:
 
@@ -531,7 +486,7 @@ public Job emit(String event, Object msg) {
 
 In our following code, we'll frequently make use of these two helper methods.
 
-### Store format in Redis
+## Store format in Redis
 
 Before we explain the logic methods, let's first illustrate the store format in Redis:
 
@@ -547,7 +502,7 @@ Before we explain the logic methods, let's first illustrate the store format in 
 
 Okay, now let's see the important logic methods in `Job` class.
 
-### Change job state
+## Change job state
 
 As we have mentioned above, there are five kinds of state in `Job` class. All job operations are accompanied by a job state change. So let's first see the `state` method:
 
@@ -676,7 +631,7 @@ Future<Job> updateNow() {
 }
 ```
 
-### Save job
+## Save job
 
 Now let's take a look on an important method - `save` method:
 
@@ -746,7 +701,7 @@ Then we start a transaction and save `updated_at` time to Redis and `zadd` the z
 
 So the procedure of saving a job is simple: `save -> update -> state`.
 
-### Remove job
+## Remove job
 
 Removing a job is simple. Just use `zrem` and `del` to remove corresponding things in Redis. Let's see the implementation:
 
@@ -773,7 +728,7 @@ public Future<Void> remove() {
 
 Here we only look at the `remove` event. If the job is successfully removed, the job will send `remove` event on event bus. The sent data contains the id of removed job.
 
-### Job events listener
+## Job events listener
 
 We can consume job events with several `onXXX` methods:
 
@@ -852,7 +807,7 @@ Notice that the data sent in different events is different so let's explain:
 - `onProgress`: the data is current complete rate
 - `onRemove`: the data is a `JsonObject`, with a field `id` indicating the id of removed job
 
-### Update progress
+## Update progress
 
 We can also update job progress with `progress` method. Here is its implementation:
 
@@ -868,7 +823,7 @@ public Future<Job> progress(int complete, int total) {
 
 The `progress` method takes two parameters, one is current value, other is total value. We first calculate the complete rate (1) and then send `progress` event to event bus (2). Finally we save `progress` to Redis, composing `updateNow` method, then return `Future` result.
 
-### Job failure, error and attempt
+## Job failure, error and attempt
 
 When a job failed and has remaining attempt times, it can be retried with `failAttempt` method. Let's see the implementation of `failedAttempt` method:
 
@@ -1003,9 +958,9 @@ That's not very concise and elegant... So by contrast, we'll find it convenient 
 
 Great! We've completed our journey with `Job` class, and next let's march into the `JobService`!
 
-## Event bus service - JobService
+# Event bus service - JobService
 
-### Async RPC
+## Async RPC
 
 In this section let's see `JobService` - including common logic for jobs. As this is a common service interface, in order to make every component in cluster accessible to the service, we'd like to expose it on event bus then consume it every where. This kind of interaction is known as *Remote Procedure Call*. With RPC, a component can send messages to another component by doing a local procedure call. Similarly, the result can be sent to the caller with RPC.
 
@@ -1017,7 +972,7 @@ So you may wonder how to register services on event bus. Does we have to wrap an
 
 [NOTE Constraint of `@ProxyGen` | There are constraints of asynchronous methods in `@ProxyGen`. The asynchronous methods should be callback-based - that is, the methods should take a `Handler<AsyncResult<R>>` parameter. The type of R is also restricted for some certain types or data objects. Please check the [documentation](http://vertx.io/docs/vertx-service-proxy/) for details. ]
 
-### Async service interface
+## Async service interface
 
 Let's see the code of `JobService` interface:
 
@@ -1201,7 +1156,7 @@ In `JobService` we also defined two static methods: `create` for create a `JobSe
 
 As we've mentioned above, the `JobService` contains common logic for `Job`. The functionality of each method has been described in the comment so let's directly explain the implementation.
 
-### Job service implementation
+## Job service implementation
 
 The code is long... So we don't show the code here. We just explain. You can look it up on [GitHub](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/kue-core/src/main/java/io/vertx/blueprint/kue/service/impl/JobServiceImpl.java).
 
@@ -1236,7 +1191,7 @@ The following five helper methods are based on the two basic methods:
 - `getIdsByState`: Use `zrange` to get job ids with given `state`.
 - `getWorkTime`: Simply `get` current Vert.x Kue's work time from `vertx_kue:stats:work-time` field.
 
-### Register the job service
+## Register the job service
 
 Now that the job service implementation is complete, let's see how to register it on the event bus! We need a `KueVerticle` that creates the actual service instance, and then registers the service on the event bus.
 
@@ -1293,7 +1248,7 @@ First we need an event bus address where the service is published (1). In `start
 
 Then as soon as the verticle is deployed in clustered mode, the service will be publish on the event bus and we can consume the service in other components. Wonderful!
 
-## Kue - The job queue
+# Kue - The job queue
 
 The `Kue` class represents a job queue. Let's see the implementation of `Kue` class. First look at its constructor:
 
@@ -1309,7 +1264,7 @@ public Kue(Vertx vertx, JsonObject config) {
 
 Here we should focus on two points. One is that we use `createProxy` helper method to create a proxy for `JobService`. Another is that we need to init the static fields of `Job` class as we've mentioned above.
 
-### Future-based encapsulation
+## Future-based encapsulation
 
 In `Kue`, we encapsulated future-based asynchronous methods with callback-based methods of `JobService`. This is simple. For example,
 
@@ -1336,9 +1291,9 @@ public Future<Optional<Job>> getJob(long id) {
 
 Other future-based methods are similar so we don't explain one by one. You could refer to the code.
 
-![](../images/kue_future_based_methods.png)
+![](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-job-queue/master/docs/images/kue_future_based_methods.png)
 
-### Process and processBlocking
+## Process and processBlocking
 
 Our Vert.x Kue is intended to **process jobs**, so in `Kue` we implemented some process methods:
 
@@ -1397,7 +1352,7 @@ First we create a `KueWorker` instance (1). We'll see the detail of `KueWorker` 
 
 Back to the public process methods. Besides deploying kue workers, we also call `setupTimers` method. That means setting up timers for checking job promotion as well as checking active job ttl.
 
-### Check job promotion
+## Check job promotion
 
 Our Vert.x Kue supports delayed jobs, so we need to promote job to the job queue as soon as the delay timeout. Let's see the `checkJobPromotion` method:
 
@@ -1451,13 +1406,13 @@ So as we specify the `max` as `System.currentTimeMillis()`, once is greater than
 
 The result of `zrangebyscore` is an `JsonArray` including zids of each wait-to-promote job. Next we traverse each zid , convert them to `id`, and then get the corresponding job, and finally call `inactive` method to set job state to `INACTIVE` (5). If the promotion is successful, we emit `promotion` event to the job-specific address (6).
 
-## Here we process jobs - KueWorker
+# Here we process jobs - KueWorker
 
 We've explored numerous parts of Vert.x Kue Core and here we'll explore another most important part - `KueWorker`, where we process jobs. We've briefly mentioned it in the previous chapter and we know it's a vertice.
 
 Every worker is binded with a specific `type` and `jobHandler` so we need to specify them when creating new workers.
 
-### Prepare and start
+## Prepare and start
 
 In `KueWorker`, we use `prepareAndStart()` to prepare job and start processing procedure:
 
@@ -1482,7 +1437,7 @@ private void prepareAndStart() {
 
 The logic is obvious. First we get a job from Redis backend using `getJobFromBackend` method (1). If we successfully get the job, we set the `job` field to the job got (2) and then `process` (3). If we are faced with failure, we should emit `error` job event with the failure message.
 
-### Get appropriate job with zpop command
+## Get appropriate job with zpop command
 
 Let's step to `getJobFromBackend` method to see how we fetch a job by priority from Redis backend:
 
@@ -1546,7 +1501,7 @@ In our own `zpop` implementation, we first start a transaction and then call `zr
 
 Once the `zpop` operation is okay, we get zid of an expected job waiting to be processed. So next step is getting the job entity (3). We put the result into a `Future` and then return.
 
-### The true "process"
+## The true "process"
 
 Well, now get back to `prepareAndStart` method. We've already got a job, then the next step is our task - `process` the job. Let's explore this important method:
 
@@ -1623,7 +1578,7 @@ private Handler<AsyncResult<JsonObject>> createDoneCallback(Job job) {
 
 Now that there are two situations: complete and fail, let's first see complete. We first set the processing duration (2) and if our complete job contains result, set the result (3). Next we can call `job.complete` to set the state to `COMPLETE` (4). If success, we'll check whether `removeOnComplete` field (5). If true, we'll `remove` the job. Then we emit job `complete` event (and global `job_complete` event) to event bus (6). Now the worker should prepare for next job so we call `this.prepareAndStart()` in the end (7).
 
-### What if the job fails?
+## What if the job fails?
 
 If the job failed, we call `fail` method in `KueWorker`:
 
@@ -1649,7 +1604,7 @@ When facing failure, we first try to recover from failure using `failedAttempt` 
 
 So that's all of the `KueWorker`. Very interesing and cool, isn't it? You may wonder: when can we actually run our application? Be patient, we'll show it very soon~~
 
-## CallbackKue - Polyglot support
+# CallbackKue - Polyglot support
 
 A bit closer to success! But as Vert.x supports polyglot languages, we could develop another `Kue` interface that supports Vert.x Codegen to automatically generate polyglot code. As we've mentioned above, due to the constraints of Vert.x Codegen, we need to use callback-based asynchronous model, so let's name it `CallbackKue`. For example, as logic methods in `Job` class can't be generated, we need to implement equalivant methods such as `saveJob`. Its original signature:
 
@@ -1687,7 +1642,7 @@ After correct configuration we could run `kue-core:annotationProcessing` task to
 
 As for implementation of `CallbackKue`, that's very simple as we could reuse `Kue` and `JobService`. You can visit the code on [GitHub](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/kue-core/src/main/java/io/vertx/blueprint/kue/CallbackKueImpl.java).
 
-## Show time!
+# Show time!
 
 The entire core component of Vert.x Kue is completed! Now it's time to write an application then run! We create a `LearningVertxVerticle` class in `io.vertx.blueprint.kue.example` package (`kue-example` project) and write:
 
@@ -1778,10 +1733,10 @@ I love this! My progress => 10
 Feeling: amazing and wonderful!
 ```
 
-## Finish!
+# Finish!
 
 Great! We have finished our journey with **Vert.x Kue Core**! In this long tutorial, you have learned how to develop a message based application with Vert.x. So cool!
 
-To learn the implementation of `kue-http`, please visit [Tutorial: Vert.x Blueprint - Vert.x Kue (Web)](doc-http.md). To learn more about Vert.x Kue features, please refer to [Vert.x Kue features documentation](vertx-kue-features-en.md).
+To learn the implementation of `kue-http`, please visit [Tutorial: Vert.x Blueprint - Vert.x Kue (Web)](http://www.sczyh30.com/vertx-blueprint-job-queue/kue-http/index.html). To learn more about Vert.x Kue features, please refer to [Vert.x Kue features documentation](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/docs/en/vertx-kue-features-en.md).
 
 Vert.x can do various kinds of stuff. To learn more about Vert.x, you can visit [Vert.x Documentation](http://vertx.io/docs/) - this is always the most comprehensive material :-)

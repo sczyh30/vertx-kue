@@ -1,51 +1,6 @@
-# Vert.x 蓝图 | Vert.x Kue 教程（Core部分）
+# 前言
 
-## 目录
-
-- [前言](#前言)
-- [Vert.x的消息系统](#vertx的消息系统)
-    - [发布/订阅模式](#发布订阅模式)
-    - [点对点模式](#点对点模式)
-    - [请求/回应模式](#请求回应模式)
-- [Vert.x Kue 架构设计](#vertx-kue-架构设计)
-    - [Vert.x Kue 组件划分](#vertx-kue-组件划分)
-    - [Vert.x Kue 核心模块](#vertx-kue-核心模块)
-    - [基于Future的异步模式](#基于future的异步模式)
-    - [Vert.x Kue中的事件](#vertx-kue中的事件)
-    - [任务状态](#任务状态)
-    - [Vert.x Kue 整体设计](#整体设计)
-- [项目结构](#项目结构)
-- [任务实体 - 不仅仅是一个数据对象](#任务实体---不仅仅是一个数据对象)
-    - [任务成员属性](#任务成员属性)
-    - [任务事件辅助函数](#任务事件辅助函数)
-    - [Redis中的存储形式](#redis中的存储形式)
-    - [改变任务状态](#改变任务状态)
-    - [保存任务](#保存任务)
-    - [移除任务](#移除任务)
-    - [监听任务事件](#监听任务事件)
-    - [更新任务进度](#更新任务进度)
-    - [任务失败以及重试机制](#任务失败以及重试机制)
-- [Event Bus 服务 - JobService](#event-bus-服务---jobservice)
-    - [异步RPC](#异步rpc)
-    - [异步服务接口](#异步服务接口)
-    - [任务服务的实现](#任务服务的实现)
-    - [注册任务服务](#注册任务服务)
-- [Kue - 工作队列](#kue---工作队列)
-    - [基于Future的封装](#基于future的封装)
-    - [process和processBlocking方法](#process和processblocking方法)
-    - [监测延时任务](#监测延时任务)
-    - [CallbackKue - 提供多语言支持](#callbackkue---提供多语言支持)
-- [KueWorker - 任务在此处理](#kueworker---任务在此处理)
-    - [prepareAndStart方法](#prepareandstart方法)
-    - [使用zpop按照优先级顺序获取任务](#使用zpop按照优先级顺序获取任务)
-    - [真正的“处理”逻辑](#真正的处理逻辑)
-    - [处理失败了怎么办？](#处理失败了怎么办)
-- [展示时间！](#展示时间)
-- [完成我们的探索之旅！](#完成我们的探索之旅)
-
-## 前言
-
-欢迎回到Vert.x 蓝图系列～在本教程中，我们将利用Vert.x开发一个基于消息的应用 - Vert.x Kue，它是一个使用Vert.x开发的优先级工作队列，数据存储使用的是 *Redis*。Vert.x Kue是[Automattic/kue](https://github.com/Automattic/kue)的Vert.x实现版本。我们可以使用Vert.x Kue来处理各种各样的任务，比如文件转换、订单处理等等。
+欢迎回到Vert.x 蓝图系列～在本教程中，我们将利用Vert.x开发一个基于消息的应用 - Vert.x Kue，它是一个使用Vert.x开发的优先级工作队列，数据存储使用的是 *Redis* 。Vert.x Kue是[Automattic/kue](https://github.com/Automattic/kue)的Vert.x实现版本。我们可以使用Vert.x Kue来处理各种各样的任务，比如文件转换、订单处理等等。
 
 通过本教程，你将会学习到以下内容：
 
@@ -56,15 +11,15 @@
 - **Vert.x Service Proxy**（服务代理）的运用
 - 更深层次的Redis运用
 
-本教程是**Vert.x 蓝图系列**的第二篇教程，对应的Vert.x版本为**3.3.2**。本教程中的完整代码已托管至[GitHub](https://github.com/sczyh30/vertx-blueprint-job-queue/tree/master)。
+本教程是 **Vert.x 蓝图系列** 的第二篇教程，对应的Vert.x版本为 **3.3.2** 。本教程中的完整代码已托管至[GitHub](https://github.com/sczyh30/vertx-blueprint-job-queue/tree/master)。
 
-## Vert.x的消息系统
+# Vert.x的消息系统
 
 既然我们要用Vert.x开发一个基于消息的应用，那么我们先来瞅一瞅Vert.x的消息系统吧～在Vert.x中，我们可以通过 **Event Bus** 来发送和接收各种各样的消息，这些消息可以来自不同的`Vertx`实例。怎么样，很酷吧？我们都将消息发送至Event Bus上的某个**地址**上，这个地址可以是任意的字符串。
 
 Event Bus支持三种消息机制：**发布/订阅**(Publish/Subscribe)、**点对点**(Point to point)以及**请求/回应**(Request-Response)模式。下面我们就来看一看这几种机制。
 
-### 发布/订阅模式
+## 发布/订阅模式
 
 在**发布/订阅模式**中，消息被发布到Event Bus的某一个地址上，所有订阅此地址的`Handler`都会接收到该消息并且调用相应的处理逻辑。我们来看一看示例代码：
 
@@ -88,19 +43,19 @@ eventBus.publish("foo.bar.baz", "+1s"); // 向此地址发送消息
 1: +1s
 ```
 
-### 点对点模式
+## 点对点模式
 
 如果我们把上面的示例中的`publish`方法替代成`send`方法，上面的实例就变成**点对点模式**了。在点对点模式中，消息被发布到Event Bus的某一个地址上。Vert.x会将此消息传递给其中监听此地址的`Handler`之一。如果有多个`Handler`绑定到此地址，那么就使用轮询算法随机挑一个`Handler`传递消息。比如在此示例中，程序只会打印`2: +1s`或者`1: +1s`之中的一个。
 
-### 请求/回应模式
+## 请求/回应模式
 
 当我们绑定的`Handler`接收到消息的时候，我们可不可以给消息的发送者回复呢？当然了！当我们通过`send`方法发送消息的时候，我们可以同时指定一个回复处理函数(reply handler)。然后当某个消息的订阅者接收到消息的时候，它就可以给发送者回复消息；如果发送者接收到了回复，发送者绑定的回复处理函数就会被调用。这就是**请求/回应模式**。
 
 好啦，现在我们已经粗略了解了Vert.x中的消息系统 - Event Bus的基本使用，下面我们就看看Vert.x Kue的基本设计。有关更多关于Event Bus的信息请参考[Vert.x Core Manual - Event Bus](http://vertx.io/docs/vertx-core/java/#event_bus)。
 
-## Vert.x Kue 架构设计
+# Vert.x Kue 架构设计
 
-### Vert.x Kue 组件划分
+## Vert.x Kue 组件划分
 
 在我们的项目中，我们将Vert.x Kue划分为两个模块：
 
@@ -111,7 +66,7 @@ eventBus.publish("foo.bar.baz", "+1s"); // 向此地址发送消息
 
 既然我们的项目有两个模块，那么你一定会好奇：两个模块之间是如何进行通信的？并且如果我们写自己的Kue应用的话，我们该怎样去调用Kue Core中的服务呢？不要着急，谜底将在后边的章节中揭晓:-)
 
-### Vert.x Kue 核心模块
+## Vert.x Kue 核心模块
 
 回顾一下Vert.x Kue的作用 - 优先级工作队列，所以在Vert.x Kue的核心模块中我们设计了以下的类：
 
@@ -124,19 +79,19 @@ eventBus.publish("foo.bar.baz", "+1s"); // 向此地址发送消息
 
 在Vert.x Kue中，我们将`JobService`服务发布至分布式的Event Bus上，这样其它的组件就可以通过Event Bus调用该服务了。我们设计了一个`KueVerticle`用于注册服务。Vert.x提供了Vert.x Service Proxy（服务代理组件），可以很方便地将服务注册至Event Bus上，然后在其它地方获取此服务的代理并调用。我们将在下面的章节中详细介绍**Vert.x Service Proxy**。
 
-### 基于Future的异步模式
+## 基于Future的异步模式
 
 在我们的Vert.x Kue中，大多数的异步方法都是基于`Future`的。如果您看过蓝图系列的第一篇文章的话，您一定不会对这种模式很陌生。在Vert.x 3.3.2中，我们的`Future`支持基本的响应式的操作，比如`map`和`compose`。它们用起来非常方便，因为我们可以将多个`Future`以响应式的方式组合起来而不用担心陷入回调地狱中。
 
-### Vert.x Kue中的事件
+## Vert.x Kue中的事件
 
-正如我们在[Vert.x Kue 特性介绍](vertx-kue-features.zh-cn.md)中提到的那样，Vert.x Kue支持两种级别的事件：**任务事件(job events)** 以及 **队列事件(queue events)**。在Vert.x Kue中，我们设计了三种事件地址：
+正如我们在[Vert.x Kue 特性介绍](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/docs/zh-cn/vertx-kue-features.zh-cn.md)中提到的那样，Vert.x Kue支持两种级别的事件：**任务事件(job events)** 以及 **队列事件(queue events)**。在Vert.x Kue中，我们设计了三种事件地址：
 
 - `vertx.kue.handler.job.{handlerType}.{addressId}.{jobType}`: 某个特定任务的任务事件地址
 - `vertx.kue.handler.workers.{eventType}`: （全局）队列事件地址
 - `vertx.kue.handler.workers.{eventType}.{addressId}`: 某个特定任务的内部事件地址
 
-在[特性介绍文档](vertx-kue-features.zh-cn.md)中，我们提到了以下几种任务事件：
+在[特性介绍文档](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/docs/zh-cn/vertx-kue-features.zh-cn.md)中，我们提到了以下几种任务事件：
 
 - `start` 开始处理一个任务 (`onStart`)
 - `promotion` 一个延期的任务时间已到，提升至工作队列中 (`onPromotion`)
@@ -150,7 +105,7 @@ eventBus.publish("foo.bar.baz", "+1s"); // 向此地址发送消息
 
 特别地，我们还有两个内部事件：`done`和`done_fail`。`done`事件对应一个任务在底层的处理已经完成，而`done_fail`事件对应一个任务在底层的处理失败。这两个事件使用第三种地址进行传递。
 
-### 任务状态
+## 任务状态
 
 在Vert.x Kue中，任务共有五种状态：
 
@@ -162,21 +117,21 @@ eventBus.publish("foo.bar.baz", "+1s"); // 向此地址发送消息
 
 我们使用状态图来描述任务状态的变化：
 
-![Job State Machine](../images/job_state_machine.png)
+![Job State Machine](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-job-queue/master/docs/images/job_state_machine.png)
 
 以及任务状态的变化伴随的事件：
 
-![Events with state change](../images/event_emit_state_machine.png)
+![Events with state change](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-job-queue/master/docs/images/event_emit_state_machine.png)
 
-### 整体设计
+## 整体设计
 
 为了让大家对Vert.x Kue的架构有大致的了解，我用一幅图来简略描述整个Vert.x Kue的设计：
 
-![Diagram - How Vert.x Kue works](../images/kue_diagram.png)
+![Diagram - How Vert.x Kue works](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-job-queue/master/docs/images/kue_diagram.png)
 
 现在我们对Vert.x Kue的设计有了大致的了解了，下面我们就来看一看Vert.x Kue的代码实现了～
 
-## 项目结构
+# 项目结构
 
 我们来开始探索Vert.x Kue的旅程吧！首先我们先从GitHub上clone源代码：
 
@@ -351,11 +306,11 @@ include "kue-example"
 好啦！现在我们已经对Vert.x Kue项目的整体结构有了大致的了解了，下面我们开始源码探索之旅！
 
 
-## 任务实体 - 不仅仅是一个数据对象
+# 任务实体 - 不仅仅是一个数据对象
 
 Vert.x Kue是用来处理任务的，因此我们先来看一下代表任务实体的`Job`类。`Job`类位于`io.vertx.blueprint.kue.queue`包下。代码可能有点长，不要担心，我们把它分成几部分，分别来解析。
 
-### 任务成员属性
+## 任务成员属性
 
 我们先来看一下`Job`类中的成员属性：
 
@@ -459,7 +414,7 @@ private void _checkStatic() {
 
 在`Job`类中我们有四个构造函数。其中`address_id`成员必须在一个任务被创建时就被赋值，默认情况下此地址用一个唯一的UUID字符串表示。每一个构造函数中我们都要调用`_checkStatic`函数来检测静态成员变量是否被初始化。
 
-### 任务事件辅助函数
+## 任务事件辅助函数
 
 正如我们之前所提到的那样，我们通过一个特定的地址`vertx.kue.handler.job.{handlerType}.{addressId}.{jobType}`在分布式的Event Bus上发送和接收任务事件(job events)。所以我们提供了两个用于发送和接收事件的辅助函数`emit`和`on`(类似于Node.js中的`EventEmitter`)：
 
@@ -481,7 +436,7 @@ public Job emit(String event, Object msg) {
 
 在后面的代码中，我们将频繁使用这两个辅助函数。
 
-### Redis中的存储形式
+## Redis中的存储形式
 
 在我们探索相关的逻辑函数之前，我们先来描述一下Vert.x Kue的数据在Redis中是以什么样的形式存储的：
 
@@ -497,7 +452,7 @@ public Job emit(String event, Object msg) {
 
 OK，下面我们就来看看`Job`类中重要的逻辑函数。
 
-### 改变任务状态
+## 改变任务状态
 
 我们之前提到过，Vert.x Kue中的任务一共有五种状态。所有的任务相关的操作都伴随着任务状态的变换，因此我们先来看一下`state`方法的实现，它用于改变任务的状态：
 
@@ -624,7 +579,7 @@ Future<Job> updateNow() {
 }
 ```
 
-### 保存任务
+## 保存任务
 
 这里我们来看一下整个`Job`类中最重要的方法之一 - `save`方法，它的作用是保存任务至Redis中。
 
@@ -686,7 +641,7 @@ Future<Job> update() {
 
 最后总结一下将一个任务存储到Redis中经过的步骤：`save -> update -> state` :-)
 
-### 移除任务
+## 移除任务
 
 移除任务非常简单，借助`zrem`和`del`方法即可。我们来看一下其实现：
 
@@ -713,7 +668,7 @@ public Future<Void> remove() {
 
 注意到成功移除任务时，我们会向Event Bus上的特定地址发送`remove`任务事件。此事件包含着被移除任务的`id`。
 
-### 监听任务事件
+## 监听任务事件
 
 我们可以通过几种 `onXXX` 方法来监听任务事件：
 
@@ -792,7 +747,7 @@ public Job onProgress(Handler<Integer> progressHandler) {
 - `onProgress`: 发送的数据是当前任务进度
 - `onRemove`: 发送的数据是`JsonObject`类型的，其中`id`代表被移除任务的编号
 
-### 更新任务进度
+## 更新任务进度
 
 我们可以通过`progress`方法来更新任务进度。看一下其实现：
 
@@ -808,7 +763,7 @@ public Future<Job> progress(int complete, int total) {
 
 `progress`方法接受两个参数：第一个是当前完成的进度值，第二个是完成状态需要的进度值。我们首先计算出当前的进度 (1)，然后向特定地址发送`progress`事件 (2)。最后我们将进度存储至Redis中并更新时间，返回`Future` (3)。
 
-### 任务失败以及重试机制
+## 任务失败以及重试机制
 
 当一个任务处理失败时，如果它有剩余的重试次数，Vert.x Kue会自动调用`failAttempt`方法进行重试。我们来看一下`failAttempt`方法的实现：
 
@@ -940,11 +895,11 @@ private Future<Job> reattempt() {
 不错！到现在为止我们已经探索完`Job`类的源码了～下面我们来看一下`JobService`类。
 
 
-## Event Bus 服务 - JobService
+# Event Bus 服务 - JobService
 
 在本章节中我们来探索一下`JobService`接口及其实现 —— 它包含着各种普通的操作和统计`Job`的逻辑。
 
-### 异步RPC
+## 异步RPC
 
 我们的`JobService`是一个通用逻辑接口，因此我们希望应用中的每一个组件都能访问此服务，即进行RPC。在Vert.x中，我们可以将服务注册至Event Bus上，然后其它组件就可以通过Event Bus来远程调用注册的服务了。
 
@@ -956,7 +911,7 @@ private Future<Job> reattempt() {
 
 [NOTE `@ProxyGen`注解的限制 | `@ProxyGen`注解的使用有诸多限制。比如，所有的异步方法都必须是基于回调的，也就是说每个方法都要接受一个`Handler<AsyncResult<R>>`类型的参数。并且，类型`R`也是有限制的 —— 只允许基本类型以及数据对象类型。详情请参考[官方文档](http://vertx.io/docs/vertx-service-proxy/)。 ]
 
-### 异步服务接口
+## 异步服务接口
 
 我们来看一下`JobService`的源码：
 
@@ -1140,7 +1095,7 @@ public interface JobService {
 
 `JobService`接口中包含一些任务操作和统计的相关逻辑，每个方法的功能都已经在注释中阐述了，因此我们就直接来看它的实现吧～
 
-### 任务服务的实现
+## 任务服务的实现
 
 `JobService`接口的实现位于`JobServiceImpl`类中，代码非常长，因此这里就不贴代码了。。。大家可以对照[GitHub中的代码](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/kue-core/src/main/java/io/vertx/blueprint/kue/service/impl/JobServiceImpl.java)读下面的内容。
 
@@ -1177,7 +1132,7 @@ public interface JobService {
 - `getIdsByState`: 使用`zrange`获取某一指定状态下所有任务的ID。
 - `getWorkTime`: 使用`get`命令从`vertx_kue:stats:work-time`中获取Vert.x Kue的工作时间。
 
-### 注册任务服务
+## 注册任务服务
 
 既然完成了`JobService`的实现，接下来我们来看一下如何利用Service Proxy将服务注册至Event Bus上。这里我们还需要一个`KueVerticle`来创建要注册的服务实例，并且将其注册至Event Bus上。
 
@@ -1234,7 +1189,7 @@ public class KueVerticle extends AbstractVerticle {
 
 这样，一旦我们在集群模式下部署`KueVerticle`，服务就会被发布至Event Bus上，然后我们就可以在其他组件中去远程调用此服务了。很奇妙吧！
 
-## Kue - 工作队列
+# Kue - 工作队列
 
 `Kue`类代表着工作队列。我们来看一下`Kue`类的实现。首先先看一下其构造函数：
 
@@ -1250,7 +1205,7 @@ public Kue(Vertx vertx, JsonObject config) {
 
 这里我们需要注意两点：第一点，我们通过`createProxy`方法来创建一个`JobService`的服务代理；第二点，之前提到过，我们需要在这里初始化`Job`类中的静态成员变量。
 
-### 基于Future的封装
+## 基于Future的封装
 
 我们的`JobService`是基于回调的，这是服务代理组件所要求的。为了让Vert.x Kue更加响应式，使用起来更加方便，我们在`Kue`类中以基于Future的异步模式封装了`JobService`中的所有异步方法。这很简单，比如这个方法：
 
@@ -1277,9 +1232,9 @@ public Future<Optional<Job>> getJob(long id) {
 
 其实就是加一层`Future`。其它的封装过程也类似所以我们就不细说了。
 
-![](../images/kue_future_based_methods.png)
+![](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-job-queue/master/docs/images/kue_future_based_methods.png)
 
-### process和processBlocking方法
+## process和processBlocking方法
 
 `process`和`processBlocking`方法用于处理任务：
 
@@ -1338,7 +1293,7 @@ private void processInternal(String type, Handler<Job> handler, boolean isWorker
 
 再回到前面三个处理方法中。除了部署`KueWorker`以外，我们还调用了`setupTimers`方法，用于设定定时器以监测延时任务以及监测活动任务TTL。
 
-### 监测延时任务
+## 监测延时任务
 
 Vert.x Kue支持延时任务，因此我们需要在任务延时时间到达时将任务“提升”至工作队列中等待处理。这个工作是在`checkJobPromotion`方法中实现的：
 
@@ -1392,19 +1347,19 @@ case DELAYED:
 
 `zrangebyscore`的结果是一个`JsonArray`，里面包含着所有等待提升任务的`zid`。获得结果后我们就将每个`zid`转换为`id`，然后分别获取对应的任务实体，最后对每个任务调用`inactive`方法来将任务状态设为`INACTIVE` (5)。如果任务成功提升至工作队列，我们就发送`promotion`事件 (6)。
 
-### CallbackKue - 提供多语言支持
+## CallbackKue - 提供多语言支持
 
 我们知道，Vert.x支持多种语言(如JS，Ruby)，因此如果能让我们的Vert.x Kue支持多种语言那当然是极好的！这没有问题～Vert.x Codegen可以处理含`@VertxGen`注解的异步接口，生成多语言版本。`@VertxGen`注解同样限制异步方法 —— 需要基于回调，因此我们设计了一个`CallbackKue`接口用于提供多语言支持。`CallbackKue`的设计非常简单，其实现复用了`Kue`和`jobService`的代码。大家可以直接看源码，一目了然，这里就不细说了。
 
 注意要生成多语言版本的代码，需要添加相应的依赖。比如要生成Ruby版本的代码就要向`build.gradle`中添加`compile("io.vertx:vertx-lang-ruby:${vertxVersion}")`。
 
-## KueWorker - 任务在此处理
+# KueWorker - 任务在此处理
 
 好啦，我们已经对Vert.x Kue Core的几个核心部分有了大致的了解了，现在是时候探索一下任务处理的本源 - `KueWorker`了～
 
 每一个worker都对应一个特定的任务类型，并且绑定着特定的处理函数(`Handler`)，所以我们需要在创建的时候指定它们。
 
-### prepareAndStart方法
+## prepareAndStart方法
 
 在`KueWorker`中，我们使用`prepareAndStart`方法来准备要处理的任务并且开始处理任务的过程：
 
@@ -1429,7 +1384,7 @@ private void prepareAndStart() {
 
 代码比较直观。首先我们通过`getJobFromBackend`方法从Redis中按照优先级顺序获取任务 (1)。如果成功获取任务，我们就把获取到的任务保存起来 (2) 然后通过`process`方法处理任务 (3)。如果中间出现错误，我们需要发送`error`错误事件，其中携带错误信息。
 
-### 使用zpop按照优先级顺序获取任务
+## 使用zpop按照优先级顺序获取任务
 
 我们来看一下我们是如何从Redis中按照优先级顺序获取任务实体的：
 
@@ -1459,7 +1414,7 @@ private Future<Optional<Job>> getJobFromBackend() {
 
 之前我们已经了解到，每当我们保存一个任务的时候，我们都会向`vertx_kue:{type}:jobs`列表中插入一个新元素表示新的任务可供处理。因此这里我们通过`blpop`命令来等待可用的任务 (1)。一旦有任务可供处理，我们就利用`zpop`方法取出高优先级的任务的`zid` (2)。`zpop`命令是一个原子操作，用于从有序集合中弹出最小score值的元素。注意Redis没有实现`zpop`命令，因此我们需要自己实现。
 
-[Redis官方文档]((http://redis.io/topics/transactions#using-a-hrefcommandswatchwatcha-to-implement-zpop))介绍了一种实现`zpop`命令的简单方法 - 利用 `WATCH`。这里我们利用另外一种思路实现`zpop`命令：
+[Redis官方文档](http://redis.io/topics/transactions#using-a-hrefcommandswatchwatcha-to-implement-zpop)介绍了一种实现`zpop`命令的简单方法 - 利用 `WATCH`。这里我们利用另外一种思路实现`zpop`命令：
 
 ```java
 private Future<Long> zpop(String key) {
@@ -1493,7 +1448,7 @@ private Future<Long> zpop(String key) {
 
 接着回到`getJobFromBackend`方法中。获取到对应的`id`之后，我们就可以通过`Kue`的`getJob`函数获取任务实体了 (3)。由于`getJobFromBackend`也是一个异步方法，因此我们同样将结果置于`Future`中。
 
-### 真正的“处理”逻辑
+## 真正的“处理”逻辑
 
 前边讲了那么多，都是在为处理任务做准备。。。不要着急，现在终于到了真正的“处理”逻辑咯！我们看一下`process`方法的实现：
 
@@ -1570,7 +1525,7 @@ private Handler<AsyncResult<JsonObject>> createDoneCallback(Job job) {
 
 任务处理有两种情况：完成和失败，因此我们先来看任务成功处理的情况。我们首先给任务的用时(`duration`)赋值 (2)，并且如果任务产生了结果，也给结果(`result`)赋值 (3)。然后我们调用`job.complete`方法将状态设置为`COMPLETE` (4)。如果成功的话，我们就检查`removeOnComplete`标志位 (5) 并决定是否将任务从Redis中移除。然后我们向Event Bus发送任务完成事件(`complete`)以及队列事件`job_complete` (6)。现在这个任务的处理过程已经结束了，worker需要准备处理下一个任务了，因此最后我们调用`prepareAndStart`方法准备处理下一个`Job`。
 
-### 处理失败了怎么办？
+## 处理失败了怎么办？
 
 人生不如意事十之八九，任务处理过程中很可能会遇见各种各样的问题而失败。当任务处理失败时，我们调用`KueWorker`中的`fail`方法：
 
@@ -1596,7 +1551,7 @@ private void fail(Throwable ex) {
 
 这就是`KueWorker`的全部实现，是不是很有趣呢？看了这么久的代码也有些累了，下面是时候来写个Kue应用跑一下咯～
 
-## 展示时间！
+# 展示时间！
 
 在`io.vertx.blueprint.kue.example`包下(`kue-example`子工程)创建一个`LearningVertxVerticle`类，然后编写如下代码：
 
@@ -1707,10 +1662,10 @@ Feeling: amazing and wonderful!
 
 当然你也可以在Vert.x Kue的Web端查看任务情况。
 
-## 完成我们的探索之旅！
+# 完成我们的探索之旅！
 
 棒极了！我们终于结束了我们的Vert.x Kue核心部分探索之旅～～！从这篇超长的教程中，你学到了如何利用Vert.x去开发一个基于消息的应用！太酷了！
 
-如果想了解`kue-http`的实现，请移步[Vert.x 蓝图 | Vert.x Kue 教程（Web部分）](doc-http.zh-cn.md)。如果想了解更多的关于Vert.x Kue的特性，请移步[Vert.x Kue 特性介绍](vertx-kue-features.zh-cn.md)。
+如果想了解`kue-http`的实现，请移步[Vert.x 蓝图 | Vert.x Kue 教程（Web部分）](http://www.sczyh30.com/vertx-blueprint-job-queue/cn/kue-http/index.html)。如果想了解更多的关于Vert.x Kue的特性，请移步[Vert.x Kue 特性介绍](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/docs/zh-cn/vertx-kue-features.zh-cn.md)。
 
 Vert.x能做的不仅仅是这些。想要了解更多的关于Vert.x的知识，请参考[Vert.x 官方文档](http://vertx.io/docs/) —— 这永远是资料最齐全的地方。

@@ -1,18 +1,10 @@
-# Tutorial: Vert.x Blueprint - Vert.x Kue (Web)
-
 In this tutorial we are going to take a quick look on implementation of `kue-http`.
 
-## Table of contents
-
-- [Vert.x Kue REST API](#vert-x-kue-rest-api)
-- [Adapt Kue UI with Vert.x Web](#adapt-kue-ui-with-vert-x-web)
-- [Show time!](#show-time)
-
-## Vert.x Kue REST API
+# Vert.x Kue REST API
 
 Our `kue-http` component only have one class `KueHttpVerticle`, where both REST API and UI are implemented. For REST API, the approach is quite similar to what we have elaborated in [Vert.x Blueprint - Todo-Backend Tutorial](https://github.com/sczyh30/vertx-blueprint-todo-backend/blob/master/docs/doc-en.md) so here we don't explain the code. You can refer to [Vert.x Blueprint - Todo-Backend Tutorial](https://github.com/sczyh30/vertx-blueprint-todo-backend/blob/master/docs/doc-en.md) for tutorial about **Vert.x Web**.
 
-## Adapt Kue UI with Vert.x Web
+# Adapt Kue UI with Vert.x Web
 
 Besides the REST API, there is also a user interface in Vert.x Kue. We reused the frontend code of Automattic/Kue's UI so here we should adapt the UI with Vert.x Web.
 
@@ -66,7 +58,7 @@ router.route(KUE_UI_ACTIVE).handler(this::handleUIActive);
 
 Very convenient, isn't it? Vert.x Web also supports various other kinds of template engine such as *FreeMaker*, *Pebble* and *Thymeleaf 3*. If you are interested in it, you can refer to [the documentation](http://vertx.io/docs/vertx-web/java/#_templates).
 
-## Show time!
+# Show time!
 
 Can't wait to see the UI? Now let's demonstrate it! First build the project:
 
@@ -84,4 +76,4 @@ To watch the effects of the job processing, we can also run an example:
 
 Then visit `http://localhost:8080` and we can inspect the queue very clearly in the browser:
 
-![](../images/vertx_kue_ui_1.png)
+![](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-job-queue/master/docs/images/vertx_kue_ui_1.png)
