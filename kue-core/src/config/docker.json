@@ -1,0 +1,4 @@
+{
+  "redis.host": "redis",
+  "redis.port": 6379
+}

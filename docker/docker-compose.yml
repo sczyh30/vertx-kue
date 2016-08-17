@@ -1,0 +1,20 @@
+version: "2"
+services:
+  redis:
+    image: redis:latest
+    expose:
+      - "6379"
+    ports:
+      - "6379:6379"
+  vertx-kue-core:
+    build: ../kue-core/
+    depends_on:
+      - redis
+    links:
+      - redis
+  vertx-kue-http:
+    build: ../kue-http/
+    depends_on:
+      - vertx-kue-core
+    ports:
+      - "8080:8080"

@@ -31,7 +31,7 @@ Vert.x Kue是 [Automattic/kue](https://github.com/Automattic/kue) 的Vert.x实�
 
 首先构建整个项目：
 
-    gradle build
+    gradle build -x test
 
 然后不要忘记启动 Redis：
 
@@ -39,9 +39,9 @@ Vert.x Kue是 [Automattic/kue](https://github.com/Automattic/kue) 的Vert.x实�
 
 然后我们就可以运行我们的示例应用了：
 
-    java -jar kue-core/build/libs/vertx-blueprint-kue-core.jar -cluster -ha -conf config/config.json
-    java -jar kue-http/build/libs/vertx-blueprint-kue-http.jar -cluster -ha -conf config/config.json
-    java -jar kue-example/build/libs/vertx-blueprint-kue-example.jar -cluster -ha -conf config/config.json
+    java -jar kue-core/build/libs/vertx-blueprint-kue-core.jar -cluster
+    java -jar kue-http/build/libs/vertx-blueprint-kue-http.jar -cluster
+    java -jar kue-example/build/libs/vertx-blueprint-kue-example.jar -cluster
 
 运行成功后，我们可以在浏览器中输入 `http://localhost:8080` 地址来访问Vert.x Kue UI并且查看工作队列的信息了。
 
