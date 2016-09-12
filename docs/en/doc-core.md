@@ -7,13 +7,13 @@ What you are going to learn:
 
 - How to make use of **Vert.x Event Bus** (clustered)
 - How to develop message based application with Vert.x
-- Event pattern of event bus(Pub/sub, point to point)
+- Event and message patterns with the event bus (Pub/sub, point to point)
 - How to design clustered Vert.x applications
-- How to design a job queue
+- How to design and implement a job queue
 - How to use **Vert.x Service Proxy**
-- More complicated practice about Vert.x Redis
+- More complicated usage of [Vert.x Redis](http://vertx.io/docs/vertx-redis-client/java/)
 
-This is the second part of **Vert.x Blueprint Project**. The entire code is available on [GitHub](https://github.com/sczyh30/vertx-blueprint-job-queue/tree/master).
+This is the second part of [Vert.x Blueprint Project](http://vertx.io/blog/vert-x-blueprint-tutorials/). The entire code is available on [GitHub](https://github.com/sczyh30/vertx-blueprint-job-queue/tree/master).
 
 # Message system in Vert.x
 

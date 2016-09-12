@@ -11,7 +11,7 @@
 - **Vert.x Service Proxy**（服务代理）的运用
 - 更深层次的Redis运用
 
-本教程是 **Vert.x 蓝图系列** 的第二篇教程，对应的Vert.x版本为 **3.3.2** 。本教程中的完整代码已托管至[GitHub](https://github.com/sczyh30/vertx-blueprint-job-queue/tree/master)。
+本教程是 [Vert.x 蓝图系列](http://vertx.io/blog/vert-x-blueprint-tutorials/) 的第二篇教程，对应的Vert.x版本为 **3.3.3** 。本教程中的完整代码已托管至[GitHub](https://github.com/sczyh30/vertx-blueprint-job-queue/tree/master)。
 
 # Vert.x的消息系统
 

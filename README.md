@@ -35,19 +35,25 @@ For the detail of the features, please see [Vert.x Kue Features](docs/en/vertx-k
 
 First build the code:
 
-    gradle build -x test
+```
+gradle build -x test
+```
 
 ### Run in local
 
 Vert.x Kue requires Redis running:
 
-    redis-server
+```
+redis-server
+```
 
 Then we can run the example:
 
-    java -jar kue-core/build/libs/vertx-blueprint-kue-core.jar -cluster
-    java -jar kue-http/build/libs/vertx-blueprint-kue-http.jar -cluster
-    java -jar kue-example/build/libs/vertx-blueprint-kue-example.jar -cluster
+```
+java -jar kue-core/build/libs/vertx-blueprint-kue-core.jar -cluster
+java -jar kue-http/build/libs/vertx-blueprint-kue-http.jar -cluster
+java -jar kue-example/build/libs/vertx-blueprint-kue-example.jar -cluster
+```
 
 Then you can visit `http://localhost:8080` to inspect the queue via Kue UI in the browser.
 
@@ -57,11 +63,19 @@ Then you can visit `http://localhost:8080` to inspect the queue via Kue UI in th
 
 To run Vert.x Kue with Docker Compose:
 
-	docker-compose up --build
+```
+docker-compose up --build
+```
 
 Then you can run your applications in the terminal. For example:
 
-    java -jar kue-example/build/libs/vertx-blueprint-kue-example.jar -cluster
+```
+java -jar kue-example/build/libs/vertx-blueprint-kue-example.jar -cluster
+```
+
+# Architecture
+
+![Diagram - How Vert.x Kue works](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-job-queue/master/docs/images/kue_diagram.png)
 
 ## Want to improve this blueprint ?
 

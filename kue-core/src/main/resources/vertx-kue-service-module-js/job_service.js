@@ -28,8 +28,8 @@ var Job = io.vertx.blueprint.kue.queue.Job;
  Job Service Interface
 
  @class
- */
-var JobService = function (j_val) {
+*/
+var JobService = function(j_val) {
 
   var j_jobService = j_val;
   var that = this;
@@ -42,16 +42,16 @@ var JobService = function (j_val) {
    @param handler {function} async result handler 
    @return {JobService}
    */
-  this.getJob = function (id, handler) {
+  this.getJob = function(id, handler) {
     var __args = arguments;
-    if (__args.length === 2 && typeof __args[0] === 'number' && typeof __args[1] === 'function') {
-      j_jobService["getJob(long,io.vertx.core.Handler)"](id, function (ar) {
-        if (ar.succeeded()) {
-          handler(utils.convReturnDataObject(ar.result()), null);
-        } else {
-          handler(null, ar.cause());
-        }
-      });
+    if (__args.length === 2 && typeof __args[0] ==='number' && typeof __args[1] === 'function') {
+      j_jobService["getJob(long,io.vertx.core.Handler)"](id, function(ar) {
+      if (ar.succeeded()) {
+        handler(utils.convReturnDataObject(ar.result()), null);
+      } else {
+        handler(null, ar.cause());
+      }
+    });
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
   };
@@ -64,16 +64,16 @@ var JobService = function (j_val) {
    @param handler {function} async result handler 
    @return {JobService}
    */
-  this.removeJob = function (id, handler) {
+  this.removeJob = function(id, handler) {
     var __args = arguments;
-    if (__args.length === 2 && typeof __args[0] === 'number' && typeof __args[1] === 'function') {
-      j_jobService["removeJob(long,io.vertx.core.Handler)"](id, function (ar) {
-        if (ar.succeeded()) {
-          handler(null, null);
-        } else {
-          handler(null, ar.cause());
-        }
-      });
+    if (__args.length === 2 && typeof __args[0] ==='number' && typeof __args[1] === 'function') {
+      j_jobService["removeJob(long,io.vertx.core.Handler)"](id, function(ar) {
+      if (ar.succeeded()) {
+        handler(null, null);
+      } else {
+        handler(null, ar.cause());
+      }
+    });
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
   };
@@ -86,16 +86,16 @@ var JobService = function (j_val) {
    @param handler {function} async result handler 
    @return {JobService}
    */
-  this.existsJob = function (id, handler) {
+  this.existsJob = function(id, handler) {
     var __args = arguments;
-    if (__args.length === 2 && typeof __args[0] === 'number' && typeof __args[1] === 'function') {
-      j_jobService["existsJob(long,io.vertx.core.Handler)"](id, function (ar) {
-        if (ar.succeeded()) {
-          handler(ar.result(), null);
-        } else {
-          handler(null, ar.cause());
-        }
-      });
+    if (__args.length === 2 && typeof __args[0] ==='number' && typeof __args[1] === 'function') {
+      j_jobService["existsJob(long,io.vertx.core.Handler)"](id, function(ar) {
+      if (ar.succeeded()) {
+        handler(ar.result(), null);
+      } else {
+        handler(null, ar.cause());
+      }
+    });
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
   };
@@ -108,16 +108,16 @@ var JobService = function (j_val) {
    @param handler {function} async result handler 
    @return {JobService}
    */
-  this.getJobLog = function (id, handler) {
+  this.getJobLog = function(id, handler) {
     var __args = arguments;
-    if (__args.length === 2 && typeof __args[0] === 'number' && typeof __args[1] === 'function') {
-      j_jobService["getJobLog(long,io.vertx.core.Handler)"](id, function (ar) {
-        if (ar.succeeded()) {
-          handler(utils.convReturnJson(ar.result()), null);
-        } else {
-          handler(null, ar.cause());
-        }
-      });
+    if (__args.length === 2 && typeof __args[0] ==='number' && typeof __args[1] === 'function') {
+      j_jobService["getJobLog(long,io.vertx.core.Handler)"](id, function(ar) {
+      if (ar.succeeded()) {
+        handler(utils.convReturnJson(ar.result()), null);
+      } else {
+        handler(null, ar.cause());
+      }
+    });
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
   };
@@ -126,23 +126,23 @@ var JobService = function (j_val) {
    Get a list of job in certain state in range (from, to) with order
 
    @public
-   @param state {string} expected job state
-   @param from {number} from
+   @param state {string} expected job state 
+   @param from {number} from 
    @param to {number} to 
    @param order {string} range order 
    @param handler {function} async result handler 
    @return {JobService}
    */
-  this.jobRangeByState = function (state, from, to, order, handler) {
+  this.jobRangeByState = function(state, from, to, order, handler) {
     var __args = arguments;
-    if (__args.length === 5 && typeof __args[0] === 'string' && typeof __args[1] === 'number' && typeof __args[2] === 'number' && typeof __args[3] === 'string' && typeof __args[4] === 'function') {
-      j_jobService["jobRangeByState(java.lang.String,long,long,java.lang.String,io.vertx.core.Handler)"](state, from, to, order, function (ar) {
-        if (ar.succeeded()) {
-          handler(utils.convReturnListSetDataObject(ar.result()), null);
-        } else {
-          handler(null, ar.cause());
-        }
-      });
+    if (__args.length === 5 && typeof __args[0] === 'string' && typeof __args[1] ==='number' && typeof __args[2] ==='number' && typeof __args[3] === 'string' && typeof __args[4] === 'function') {
+      j_jobService["jobRangeByState(java.lang.String,long,long,java.lang.String,io.vertx.core.Handler)"](state, from, to, order, function(ar) {
+      if (ar.succeeded()) {
+        handler(utils.convReturnListSetDataObject(ar.result()), null);
+      } else {
+        handler(null, ar.cause());
+      }
+    });
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
   };
@@ -151,24 +151,24 @@ var JobService = function (j_val) {
    Get a list of job in certain state and type in range (from, to) with order
 
    @public
-   @param type {string} expected job type
-   @param state {string} expected job state
-   @param from {number} from
-   @param to {number} to
+   @param type {string} expected job type 
+   @param state {string} expected job state 
+   @param from {number} from 
+   @param to {number} to 
    @param order {string} range order 
    @param handler {function} async result handler 
    @return {JobService}
    */
-  this.jobRangeByType = function (type, state, from, to, order, handler) {
+  this.jobRangeByType = function(type, state, from, to, order, handler) {
     var __args = arguments;
-    if (__args.length === 6 && typeof __args[0] === 'string' && typeof __args[1] === 'string' && typeof __args[2] === 'number' && typeof __args[3] === 'number' && typeof __args[4] === 'string' && typeof __args[5] === 'function') {
-      j_jobService["jobRangeByType(java.lang.String,java.lang.String,long,long,java.lang.String,io.vertx.core.Handler)"](type, state, from, to, order, function (ar) {
-        if (ar.succeeded()) {
-          handler(utils.convReturnListSetDataObject(ar.result()), null);
-        } else {
-          handler(null, ar.cause());
-        }
-      });
+    if (__args.length === 6 && typeof __args[0] === 'string' && typeof __args[1] === 'string' && typeof __args[2] ==='number' && typeof __args[3] ==='number' && typeof __args[4] === 'string' && typeof __args[5] === 'function') {
+      j_jobService["jobRangeByType(java.lang.String,java.lang.String,long,long,java.lang.String,io.vertx.core.Handler)"](type, state, from, to, order, function(ar) {
+      if (ar.succeeded()) {
+        handler(utils.convReturnListSetDataObject(ar.result()), null);
+      } else {
+        handler(null, ar.cause());
+      }
+    });
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
   };
@@ -177,22 +177,22 @@ var JobService = function (j_val) {
    Get a list of job in range (from, to) with order
 
    @public
-   @param from {number} from
-   @param to {number} to
+   @param from {number} from 
+   @param to {number} to 
    @param order {string} range order 
    @param handler {function} async result handler 
    @return {JobService}
    */
-  this.jobRange = function (from, to, order, handler) {
+  this.jobRange = function(from, to, order, handler) {
     var __args = arguments;
-    if (__args.length === 4 && typeof __args[0] === 'number' && typeof __args[1] === 'number' && typeof __args[2] === 'string' && typeof __args[3] === 'function') {
-      j_jobService["jobRange(long,long,java.lang.String,io.vertx.core.Handler)"](from, to, order, function (ar) {
-        if (ar.succeeded()) {
-          handler(utils.convReturnListSetDataObject(ar.result()), null);
-        } else {
-          handler(null, ar.cause());
-        }
-      });
+    if (__args.length === 4 && typeof __args[0] ==='number' && typeof __args[1] ==='number' && typeof __args[2] === 'string' && typeof __args[3] === 'function') {
+      j_jobService["jobRange(long,long,java.lang.String,io.vertx.core.Handler)"](from, to, order, function(ar) {
+      if (ar.succeeded()) {
+        handler(utils.convReturnListSetDataObject(ar.result()), null);
+      } else {
+        handler(null, ar.cause());
+      }
+    });
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
   };
@@ -206,16 +206,16 @@ var JobService = function (j_val) {
    @param handler {function} async result handler 
    @return {JobService}
    */
-  this.cardByType = function (type, state, handler) {
+  this.cardByType = function(type, state, handler) {
     var __args = arguments;
     if (__args.length === 3 && typeof __args[0] === 'string' && typeof __args[1] === 'string' && typeof __args[2] === 'function') {
-      j_jobService["cardByType(java.lang.String,io.vertx.blueprint.kue.queue.JobState,io.vertx.core.Handler)"](type, io.vertx.blueprint.kue.queue.JobState.valueOf(state), function (ar) {
-        if (ar.succeeded()) {
-          handler(utils.convReturnLong(ar.result()), null);
-        } else {
-          handler(null, ar.cause());
-        }
-      });
+      j_jobService["cardByType(java.lang.String,io.vertx.blueprint.kue.queue.JobState,io.vertx.core.Handler)"](type, io.vertx.blueprint.kue.queue.JobState.valueOf(state), function(ar) {
+      if (ar.succeeded()) {
+        handler(utils.convReturnLong(ar.result()), null);
+      } else {
+        handler(null, ar.cause());
+      }
+    });
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
   };
@@ -228,16 +228,16 @@ var JobService = function (j_val) {
    @param handler {function} async result handler 
    @return {JobService}
    */
-  this.card = function (state, handler) {
+  this.card = function(state, handler) {
     var __args = arguments;
     if (__args.length === 2 && typeof __args[0] === 'string' && typeof __args[1] === 'function') {
-      j_jobService["card(io.vertx.blueprint.kue.queue.JobState,io.vertx.core.Handler)"](io.vertx.blueprint.kue.queue.JobState.valueOf(state), function (ar) {
-        if (ar.succeeded()) {
-          handler(utils.convReturnLong(ar.result()), null);
-        } else {
-          handler(null, ar.cause());
-        }
-      });
+      j_jobService["card(io.vertx.blueprint.kue.queue.JobState,io.vertx.core.Handler)"](io.vertx.blueprint.kue.queue.JobState.valueOf(state), function(ar) {
+      if (ar.succeeded()) {
+        handler(utils.convReturnLong(ar.result()), null);
+      } else {
+        handler(null, ar.cause());
+      }
+    });
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
   };
@@ -250,16 +250,16 @@ var JobService = function (j_val) {
    @param handler {function} async result handler 
    @return {JobService}
    */
-  this.completeCount = function (type, handler) {
+  this.completeCount = function(type, handler) {
     var __args = arguments;
     if (__args.length === 2 && typeof __args[0] === 'string' && typeof __args[1] === 'function') {
-      j_jobService["completeCount(java.lang.String,io.vertx.core.Handler)"](type, function (ar) {
-        if (ar.succeeded()) {
-          handler(utils.convReturnLong(ar.result()), null);
-        } else {
-          handler(null, ar.cause());
-        }
-      });
+      j_jobService["completeCount(java.lang.String,io.vertx.core.Handler)"](type, function(ar) {
+      if (ar.succeeded()) {
+        handler(utils.convReturnLong(ar.result()), null);
+      } else {
+        handler(null, ar.cause());
+      }
+    });
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
   };
@@ -272,16 +272,16 @@ var JobService = function (j_val) {
    @param handler {function} 
    @return {JobService}
    */
-  this.failedCount = function (type, handler) {
+  this.failedCount = function(type, handler) {
     var __args = arguments;
     if (__args.length === 2 && typeof __args[0] === 'string' && typeof __args[1] === 'function') {
-      j_jobService["failedCount(java.lang.String,io.vertx.core.Handler)"](type, function (ar) {
-        if (ar.succeeded()) {
-          handler(utils.convReturnLong(ar.result()), null);
-        } else {
-          handler(null, ar.cause());
-        }
-      });
+      j_jobService["failedCount(java.lang.String,io.vertx.core.Handler)"](type, function(ar) {
+      if (ar.succeeded()) {
+        handler(utils.convReturnLong(ar.result()), null);
+      } else {
+        handler(null, ar.cause());
+      }
+    });
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
   };
@@ -294,16 +294,16 @@ var JobService = function (j_val) {
    @param handler {function} 
    @return {JobService}
    */
-  this.inactiveCount = function (type, handler) {
+  this.inactiveCount = function(type, handler) {
     var __args = arguments;
     if (__args.length === 2 && typeof __args[0] === 'string' && typeof __args[1] === 'function') {
-      j_jobService["inactiveCount(java.lang.String,io.vertx.core.Handler)"](type, function (ar) {
-        if (ar.succeeded()) {
-          handler(utils.convReturnLong(ar.result()), null);
-        } else {
-          handler(null, ar.cause());
-        }
-      });
+      j_jobService["inactiveCount(java.lang.String,io.vertx.core.Handler)"](type, function(ar) {
+      if (ar.succeeded()) {
+        handler(utils.convReturnLong(ar.result()), null);
+      } else {
+        handler(null, ar.cause());
+      }
+    });
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
   };
@@ -316,16 +316,16 @@ var JobService = function (j_val) {
    @param handler {function} 
    @return {JobService}
    */
-  this.activeCount = function (type, handler) {
+  this.activeCount = function(type, handler) {
     var __args = arguments;
     if (__args.length === 2 && typeof __args[0] === 'string' && typeof __args[1] === 'function') {
-      j_jobService["activeCount(java.lang.String,io.vertx.core.Handler)"](type, function (ar) {
-        if (ar.succeeded()) {
-          handler(utils.convReturnLong(ar.result()), null);
-        } else {
-          handler(null, ar.cause());
-        }
-      });
+      j_jobService["activeCount(java.lang.String,io.vertx.core.Handler)"](type, function(ar) {
+      if (ar.succeeded()) {
+        handler(utils.convReturnLong(ar.result()), null);
+      } else {
+        handler(null, ar.cause());
+      }
+    });
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
   };
@@ -338,16 +338,16 @@ var JobService = function (j_val) {
    @param handler {function} 
    @return {JobService}
    */
-  this.delayedCount = function (type, handler) {
+  this.delayedCount = function(type, handler) {
     var __args = arguments;
     if (__args.length === 2 && typeof __args[0] === 'string' && typeof __args[1] === 'function') {
-      j_jobService["delayedCount(java.lang.String,io.vertx.core.Handler)"](type, function (ar) {
-        if (ar.succeeded()) {
-          handler(utils.convReturnLong(ar.result()), null);
-        } else {
-          handler(null, ar.cause());
-        }
-      });
+      j_jobService["delayedCount(java.lang.String,io.vertx.core.Handler)"](type, function(ar) {
+      if (ar.succeeded()) {
+        handler(utils.convReturnLong(ar.result()), null);
+      } else {
+        handler(null, ar.cause());
+      }
+    });
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
   };
@@ -359,16 +359,16 @@ var JobService = function (j_val) {
    @param handler {function} async result handler 
    @return {JobService}
    */
-  this.getAllTypes = function (handler) {
+  this.getAllTypes = function(handler) {
     var __args = arguments;
     if (__args.length === 1 && typeof __args[0] === 'function') {
-      j_jobService["getAllTypes(io.vertx.core.Handler)"](function (ar) {
-        if (ar.succeeded()) {
-          handler(ar.result(), null);
-        } else {
-          handler(null, ar.cause());
-        }
-      });
+      j_jobService["getAllTypes(io.vertx.core.Handler)"](function(ar) {
+      if (ar.succeeded()) {
+        handler(ar.result(), null);
+      } else {
+        handler(null, ar.cause());
+      }
+    });
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
   };
@@ -381,16 +381,16 @@ var JobService = function (j_val) {
    @param handler {function} async result handler 
    @return {JobService}
    */
-  this.getIdsByState = function (state, handler) {
+  this.getIdsByState = function(state, handler) {
     var __args = arguments;
     if (__args.length === 2 && typeof __args[0] === 'string' && typeof __args[1] === 'function') {
-      j_jobService["getIdsByState(io.vertx.blueprint.kue.queue.JobState,io.vertx.core.Handler)"](io.vertx.blueprint.kue.queue.JobState.valueOf(state), function (ar) {
-        if (ar.succeeded()) {
-          handler(utils.convReturnListSetLong(ar.result()), null);
-        } else {
-          handler(null, ar.cause());
-        }
-      });
+      j_jobService["getIdsByState(io.vertx.blueprint.kue.queue.JobState,io.vertx.core.Handler)"](io.vertx.blueprint.kue.queue.JobState.valueOf(state), function(ar) {
+      if (ar.succeeded()) {
+        handler(utils.convReturnListSetLong(ar.result()), null);
+      } else {
+        handler(null, ar.cause());
+      }
+    });
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
   };
@@ -402,16 +402,16 @@ var JobService = function (j_val) {
    @param handler {function} async result handler 
    @return {JobService}
    */
-  this.getWorkTime = function (handler) {
+  this.getWorkTime = function(handler) {
     var __args = arguments;
     if (__args.length === 1 && typeof __args[0] === 'function') {
-      j_jobService["getWorkTime(io.vertx.core.Handler)"](function (ar) {
-        if (ar.succeeded()) {
-          handler(utils.convReturnLong(ar.result()), null);
-        } else {
-          handler(null, ar.cause());
-        }
-      });
+      j_jobService["getWorkTime(io.vertx.core.Handler)"](function(ar) {
+      if (ar.succeeded()) {
+        handler(utils.convReturnLong(ar.result()), null);
+      } else {
+        handler(null, ar.cause());
+      }
+    });
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
   };
@@ -429,7 +429,7 @@ var JobService = function (j_val) {
  @param config {Object} 
  @return {JobService}
  */
-JobService.create = function (vertx, config) {
+JobService.create = function(vertx, config) {
   var __args = arguments;
   if (__args.length === 2 && typeof __args[0] === 'object' && __args[0]._jdel && (typeof __args[1] === 'object' && __args[1] != null)) {
     return utils.convReturnVertxGen(JJobService["create(io.vertx.core.Vertx,io.vertx.core.json.JsonObject)"](vertx._jdel, utils.convParamJsonObject(config)), JobService);
@@ -443,7 +443,7 @@ JobService.create = function (vertx, config) {
  @param address {string} 
  @return {JobService}
  */
-JobService.createProxy = function (vertx, address) {
+JobService.createProxy = function(vertx, address) {
   var __args = arguments;
   if (__args.length === 2 && typeof __args[0] === 'object' && __args[0]._jdel && typeof __args[1] === 'string') {
     return utils.convReturnVertxGen(JJobService["createProxy(io.vertx.core.Vertx,java.lang.String)"](vertx._jdel, address), JobService);

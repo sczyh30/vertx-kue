@@ -15,23 +15,21 @@ module VertxKueServiceModule
     def j_del
       @j_del
     end
-
-    # @param [::Vertx::Vertx] vertx
+    # @param [::Vertx::Vertx] vertx 
     # @param [Hash{String => Object}] config 
     # @return [::VertxKueServiceModule::JobService]
-    def self.create(vertx=nil, config=nil)
+    def self.create(vertx=nil,config=nil)
       if vertx.class.method_defined?(:j_del) && config.class == Hash && !block_given?
-        return ::Vertx::Util::Utils.safe_create(Java::IoVertxBlueprintKueService::JobService.java_method(:create, [Java::IoVertxCore::Vertx.java_class, Java::IoVertxCoreJson::JsonObject.java_class]).call(vertx.j_del, ::Vertx::Util::Utils.to_json_object(config)), ::VertxKueServiceModule::JobService)
+        return ::Vertx::Util::Utils.safe_create(Java::IoVertxBlueprintKueService::JobService.java_method(:create, [Java::IoVertxCore::Vertx.java_class,Java::IoVertxCoreJson::JsonObject.java_class]).call(vertx.j_del,::Vertx::Util::Utils.to_json_object(config)),::VertxKueServiceModule::JobService)
       end
       raise ArgumentError, "Invalid arguments when calling create(vertx,config)"
     end
-
-    # @param [::Vertx::Vertx] vertx
+    # @param [::Vertx::Vertx] vertx 
     # @param [String] address 
     # @return [::VertxKueServiceModule::JobService]
-    def self.create_proxy(vertx=nil, address=nil)
+    def self.create_proxy(vertx=nil,address=nil)
       if vertx.class.method_defined?(:j_del) && address.class == String && !block_given?
-        return ::Vertx::Util::Utils.safe_create(Java::IoVertxBlueprintKueService::JobService.java_method(:createProxy, [Java::IoVertxCore::Vertx.java_class, Java::java.lang.String.java_class]).call(vertx.j_del, address), ::VertxKueServiceModule::JobService)
+        return ::Vertx::Util::Utils.safe_create(Java::IoVertxBlueprintKueService::JobService.java_method(:createProxy, [Java::IoVertxCore::Vertx.java_class,Java::java.lang.String.java_class]).call(vertx.j_del,address),::VertxKueServiceModule::JobService)
       end
       raise ArgumentError, "Invalid arguments when calling create_proxy(vertx,address)"
     end
@@ -41,7 +39,7 @@ module VertxKueServiceModule
     # @return [self]
     def get_job(id=nil)
       if id.class == Fixnum && block_given?
-        @j_del.java_method(:getJob, [Java::long.java_class, Java::IoVertxCore::Handler.java_class]).call(id, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
+        @j_del.java_method(:getJob, [Java::long.java_class,Java::IoVertxCore::Handler.java_class]).call(id,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.toJson.encode) : nil : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling get_job(id)"
@@ -52,7 +50,7 @@ module VertxKueServiceModule
     # @return [self]
     def remove_job(id=nil)
       if id.class == Fixnum && block_given?
-        @j_del.java_method(:removeJob, [Java::long.java_class, Java::IoVertxCore::Handler.java_class]).call(id, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
+        @j_del.java_method(:removeJob, [Java::long.java_class,Java::IoVertxCore::Handler.java_class]).call(id,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling remove_job(id)"
@@ -63,7 +61,7 @@ module VertxKueServiceModule
     # @return [self]
     def exists_job(id=nil)
       if id.class == Fixnum && block_given?
-        @j_del.java_method(:existsJob, [Java::long.java_class, Java::IoVertxCore::Handler.java_class]).call(id, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result : nil) }))
+        @j_del.java_method(:existsJob, [Java::long.java_class,Java::IoVertxCore::Handler.java_class]).call(id,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling exists_job(id)"
@@ -74,7 +72,7 @@ module VertxKueServiceModule
     # @return [self]
     def get_job_log(id=nil)
       if id.class == Fixnum && block_given?
-        @j_del.java_method(:getJobLog, [Java::long.java_class, Java::IoVertxCore::Handler.java_class]).call(id, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.encode) : nil : nil) }))
+        @j_del.java_method(:getJobLog, [Java::long.java_class,Java::IoVertxCore::Handler.java_class]).call(id,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result != nil ? JSON.parse(ar.result.encode) : nil : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling get_job_log(id)"
@@ -86,9 +84,9 @@ module VertxKueServiceModule
     # @param [String] order range order
     # @yield async result handler
     # @return [self]
-    def job_range_by_state(state=nil, from=nil, to=nil, order=nil)
+    def job_range_by_state(state=nil,from=nil,to=nil,order=nil)
       if state.class == String && from.class == Fixnum && to.class == Fixnum && order.class == String && block_given?
-        @j_del.java_method(:jobRangeByState, [Java::java.lang.String.java_class, Java::long.java_class, Java::long.java_class, Java::java.lang.String.java_class, Java::IoVertxCore::Handler.java_class]).call(state, from, to, order, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result.to_a.map { |elt| elt != nil ? JSON.parse(elt.toJson.encode) : nil } : nil) }))
+        @j_del.java_method(:jobRangeByState, [Java::java.lang.String.java_class,Java::long.java_class,Java::long.java_class,Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(state,from,to,order,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result.to_a.map { |elt| elt != nil ? JSON.parse(elt.toJson.encode) : nil } : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling job_range_by_state(state,from,to,order)"
@@ -101,9 +99,9 @@ module VertxKueServiceModule
     # @param [String] order range order
     # @yield async result handler
     # @return [self]
-    def job_range_by_type(type=nil, state=nil, from=nil, to=nil, order=nil)
+    def job_range_by_type(type=nil,state=nil,from=nil,to=nil,order=nil)
       if type.class == String && state.class == String && from.class == Fixnum && to.class == Fixnum && order.class == String && block_given?
-        @j_del.java_method(:jobRangeByType, [Java::java.lang.String.java_class, Java::java.lang.String.java_class, Java::long.java_class, Java::long.java_class, Java::java.lang.String.java_class, Java::IoVertxCore::Handler.java_class]).call(type, state, from, to, order, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result.to_a.map { |elt| elt != nil ? JSON.parse(elt.toJson.encode) : nil } : nil) }))
+        @j_del.java_method(:jobRangeByType, [Java::java.lang.String.java_class,Java::java.lang.String.java_class,Java::long.java_class,Java::long.java_class,Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(type,state,from,to,order,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result.to_a.map { |elt| elt != nil ? JSON.parse(elt.toJson.encode) : nil } : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling job_range_by_type(type,state,from,to,order)"
@@ -114,9 +112,9 @@ module VertxKueServiceModule
     # @param [String] order range order
     # @yield async result handler
     # @return [self]
-    def job_range(from=nil, to=nil, order=nil)
+    def job_range(from=nil,to=nil,order=nil)
       if from.class == Fixnum && to.class == Fixnum && order.class == String && block_given?
-        @j_del.java_method(:jobRange, [Java::long.java_class, Java::long.java_class, Java::java.lang.String.java_class, Java::IoVertxCore::Handler.java_class]).call(from, to, order, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result.to_a.map { |elt| elt != nil ? JSON.parse(elt.toJson.encode) : nil } : nil) }))
+        @j_del.java_method(:jobRange, [Java::long.java_class,Java::long.java_class,Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(from,to,order,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result.to_a.map { |elt| elt != nil ? JSON.parse(elt.toJson.encode) : nil } : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling job_range(from,to,order)"
@@ -126,9 +124,9 @@ module VertxKueServiceModule
     # @param [:INACTIVE,:ACTIVE,:COMPLETE,:FAILED,:DELAYED] state job state
     # @yield async result handler
     # @return [self]
-    def card_by_type(type=nil, state=nil)
+    def card_by_type(type=nil,state=nil)
       if type.class == String && state.class == Symbol && block_given?
-        @j_del.java_method(:cardByType, [Java::java.lang.String.java_class, Java::IoVertxBlueprintKueQueue::JobState.java_class, Java::IoVertxCore::Handler.java_class]).call(type, Java::IoVertxBlueprintKueQueue::JobState.valueOf(state), (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result : nil) }))
+        @j_del.java_method(:cardByType, [Java::java.lang.String.java_class,Java::IoVertxBlueprintKueQueue::JobState.java_class,Java::IoVertxCore::Handler.java_class]).call(type,Java::IoVertxBlueprintKueQueue::JobState.valueOf(state),(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling card_by_type(type,state)"
@@ -139,7 +137,7 @@ module VertxKueServiceModule
     # @return [self]
     def card(state=nil)
       if state.class == Symbol && block_given?
-        @j_del.java_method(:card, [Java::IoVertxBlueprintKueQueue::JobState.java_class, Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintKueQueue::JobState.valueOf(state), (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result : nil) }))
+        @j_del.java_method(:card, [Java::IoVertxBlueprintKueQueue::JobState.java_class,Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintKueQueue::JobState.valueOf(state),(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling card(state)"
@@ -150,7 +148,7 @@ module VertxKueServiceModule
     # @return [self]
     def complete_count(type=nil)
       if type.class == String && block_given?
-        @j_del.java_method(:completeCount, [Java::java.lang.String.java_class, Java::IoVertxCore::Handler.java_class]).call(type, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result : nil) }))
+        @j_del.java_method(:completeCount, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(type,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling complete_count(type)"
@@ -161,7 +159,7 @@ module VertxKueServiceModule
     # @return [self]
     def failed_count(type=nil)
       if type.class == String && block_given?
-        @j_del.java_method(:failedCount, [Java::java.lang.String.java_class, Java::IoVertxCore::Handler.java_class]).call(type, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result : nil) }))
+        @j_del.java_method(:failedCount, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(type,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling failed_count(type)"
@@ -172,7 +170,7 @@ module VertxKueServiceModule
     # @return [self]
     def inactive_count(type=nil)
       if type.class == String && block_given?
-        @j_del.java_method(:inactiveCount, [Java::java.lang.String.java_class, Java::IoVertxCore::Handler.java_class]).call(type, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result : nil) }))
+        @j_del.java_method(:inactiveCount, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(type,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling inactive_count(type)"
@@ -183,7 +181,7 @@ module VertxKueServiceModule
     # @return [self]
     def active_count(type=nil)
       if type.class == String && block_given?
-        @j_del.java_method(:activeCount, [Java::java.lang.String.java_class, Java::IoVertxCore::Handler.java_class]).call(type, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result : nil) }))
+        @j_del.java_method(:activeCount, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(type,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling active_count(type)"
@@ -194,7 +192,7 @@ module VertxKueServiceModule
     # @return [self]
     def delayed_count(type=nil)
       if type.class == String && block_given?
-        @j_del.java_method(:delayedCount, [Java::java.lang.String.java_class, Java::IoVertxCore::Handler.java_class]).call(type, (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result : nil) }))
+        @j_del.java_method(:delayedCount, [Java::java.lang.String.java_class,Java::IoVertxCore::Handler.java_class]).call(type,(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling delayed_count(type)"
@@ -215,7 +213,7 @@ module VertxKueServiceModule
     # @return [self]
     def get_ids_by_state(state=nil)
       if state.class == Symbol && block_given?
-        @j_del.java_method(:getIdsByState, [Java::IoVertxBlueprintKueQueue::JobState.java_class, Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintKueQueue::JobState.valueOf(state), (Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result.to_a.map { |elt| elt } : nil) }))
+        @j_del.java_method(:getIdsByState, [Java::IoVertxBlueprintKueQueue::JobState.java_class,Java::IoVertxCore::Handler.java_class]).call(Java::IoVertxBlueprintKueQueue::JobState.valueOf(state),(Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result.to_a.map { |elt| elt } : nil) }))
         return self
       end
       raise ArgumentError, "Invalid arguments when calling get_ids_by_state(state)"
