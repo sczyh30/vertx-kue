@@ -8,7 +8,6 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
@@ -21,8 +20,8 @@ import java.util.UUID;
 import java.util.function.Function;
 
 /**
- * Vert.x Blueprint - Job Queue
- * Job Class
+ * Vert.x Kue
+ * Job domain class.
  *
  * @author Eric Zhao
  */
@@ -73,7 +72,7 @@ public class Job {
     _checkStatic();
   }
 
-  public Job(JsonObject json) {
+  public Job(JsonObject json) { // TODO: optimize this
     JobConverter.fromJson(json, this);
     this.address_id = json.getString("address_id");
     // generated converter cannot handle this
@@ -141,7 +140,7 @@ public class Job {
   }
 
   /**
-   * Set job priority
+   * Set job priority.
    *
    * @param level job priority level
    */
@@ -153,7 +152,7 @@ public class Job {
   }
 
   /**
-   * Set new job state
+   * Set new job state.
    *
    * @param newState new job state
    * @return async result of this job
@@ -162,6 +161,7 @@ public class Job {
     Future<Job> future = Future.future();
     RedisClient client = RedisHelper.client(vertx, new JsonObject()); // use a new client to keep transaction
     JobState oldState = this.state;
+    logger.debug("Job::state(from: " + oldState + ", to:" + newState.name() + ")");
     client.transaction().multi(r0 -> {
       if (r0.succeeded()) {
         if (oldState != null && !oldState.equals(newState)) {
@@ -206,7 +206,7 @@ public class Job {
   }
 
   /**
-   * Set error to the job
+   * Set error to the job.
    *
    * @param ex exception
    */
@@ -218,7 +218,7 @@ public class Job {
   }
 
   /**
-   * Complete a job
+   * Complete a job.
    */
   public Future<Job> complete() {
     return this.setProgress(100)
@@ -227,7 +227,7 @@ public class Job {
   }
 
   /**
-   * Set a job failed
+   * Set a job to `failed` state.
    */
   public Future<Job> failed() {
     this.failed_at = System.currentTimeMillis();
@@ -237,28 +237,28 @@ public class Job {
   }
 
   /**
-   * Set a job inactive
+   * Set a job to `inactive` state.
    */
   public Future<Job> inactive() {
     return this.state(JobState.INACTIVE);
   }
 
   /**
-   * Set a job active(started)
+   * Set a job active(started).
    */
   public Future<Job> active() {
     return this.state(JobState.ACTIVE);
   }
 
   /**
-   * Set a job delayed
+   * Set a job to `delayed` state.
    */
   public Future<Job> delayed() {
     return this.state(JobState.DELAYED);
   }
 
   /**
-   * Log with some messages
+   * Log with some messages.
    */
   public Future<Job> log(String msg) {
     Future<Job> future = Future.future();
@@ -267,7 +267,7 @@ public class Job {
   }
 
   /**
-   * Set progress
+   * Set progress.
    *
    * @param complete current value
    * @param total    total value
@@ -281,7 +281,7 @@ public class Job {
   }
 
   /**
-   * Set a key with value in Redis
+   * Set a key with value in Redis.
    *
    * @param key   property key
    * @param value value
@@ -298,7 +298,7 @@ public class Job {
   }
 
   /**
-   * Get a property of the job from backend
+   * Get a property of the job from backend.
    *
    * @param key property key(name)
    * @return async result
@@ -313,8 +313,8 @@ public class Job {
   // TODO: enhancement: integrate backoff with Circuit Breaker
 
   /**
-   * Get job attempt backoff strategy implementation
-   * Current we support two types: `exponential` and `fixed`
+   * Get job attempt backoff strategy implementation.
+   * Current we support two types: `exponential` and `fixed`.
    *
    * @return the corresponding function
    */
@@ -331,7 +331,7 @@ public class Job {
   }
 
   /**
-   * Try to reattempt the job
+   * Try to reattempt the job.
    */
   private Future<Job> reattempt() {
     if (this.backoff != null) {
@@ -346,7 +346,7 @@ public class Job {
   }
 
   /**
-   * Attempt once and save attemptAdd times to Redis
+   * Attempt once and save attemptAdd times to Redis backend.
    */
   private Future<Job> attemptAdd() {
     Future<Job> future = Future.future();
@@ -369,6 +369,7 @@ public class Job {
 
   private Future<Job> attemptInternal() {
     int remaining = this.max_attempts - this.attempts;
+    logger.debug("Job attempting...max=" + this.max_attempts + ", past=" + this.attempts);
     if (remaining > 0) {
       return this.attemptAdd()
         .compose(Job::reattempt)
@@ -385,7 +386,7 @@ public class Job {
   }
 
   /**
-   * Failed attempt
+   * Failed attempt.
    *
    * @param err exception
    */
@@ -408,7 +409,7 @@ public class Job {
   }
 
   /**
-   * Save the job
+   * Save the job to the backend.
    */
   public Future<Job> save() {
     // check
@@ -443,7 +444,7 @@ public class Job {
   }
 
   /**
-   * Update the job update time (`updateTime`)
+   * Update the job update time (`updateTime`).
    */
   Future<Job> updateNow() {
     this.updated_at = System.currentTimeMillis();
@@ -451,7 +452,7 @@ public class Job {
   }
 
   /**
-   * Update the job
+   * Update the job.
    */
   Future<Job> update() {
     Future<Job> future = Future.future();
@@ -469,7 +470,7 @@ public class Job {
   }
 
   /**
-   * Remove the job
+   * Remove the job.
    */
   public Future<Void> remove() {
     Future<Void> future = Future.future();
@@ -491,7 +492,7 @@ public class Job {
   }
 
   /**
-   * Add on complete handler on event bus
+   * Add on complete handler on event bus.
    *
    * @param completeHandler complete handler
    */
@@ -504,7 +505,7 @@ public class Job {
   }
 
   /**
-   * Add on failure handler on event bus
+   * Add on failure handler on event bus.
    *
    * @param failureHandler failure handler
    */
@@ -517,7 +518,7 @@ public class Job {
   }
 
   /**
-   * Add on failure attemptAdd handler on event bus
+   * Add on failure attemptAdd handler on event bus.
    *
    * @param failureHandler failure handler
    */
@@ -530,7 +531,7 @@ public class Job {
   }
 
   /**
-   * Add on promotion handler on event bus
+   * Add on promotion handler on event bus.
    *
    * @param handler failure handler
    */
@@ -543,7 +544,7 @@ public class Job {
   }
 
   /**
-   * Add on start handler on event bus
+   * Add on start handler on event bus.
    *
    * @param handler failure handler
    */
@@ -556,7 +557,7 @@ public class Job {
   }
 
   /**
-   * Add on remove handler on event bus
+   * Add on remove handler on event bus.
    *
    * @param removeHandler failure handler
    */
@@ -569,7 +570,7 @@ public class Job {
   }
 
   /**
-   * Add on progress changed handler on event bus
+   * Add on progress changed handler on event bus.
    *
    * @param progressHandler progress handler
    */
@@ -582,7 +583,7 @@ public class Job {
   }
 
   /**
-   * Add a certain event handler on event bus
+   * Add a certain event handler on event bus.
    *
    * @param event   event type
    * @param handler event handler
@@ -595,7 +596,7 @@ public class Job {
   }
 
   /**
-   * Send an event to event bus with some data
+   * Send an event to event bus with some data.
    *
    * @param event event type
    * @param msg   data
@@ -617,7 +618,7 @@ public class Job {
   }
 
   /**
-   * Fail a job
+   * Fail a job.
    */
   @Fluent
   public Job done(Throwable ex) {
@@ -626,7 +627,7 @@ public class Job {
   }
 
   /**
-   * Finish a job
+   * Finish a job.
    */
   @Fluent
   public Job done() {

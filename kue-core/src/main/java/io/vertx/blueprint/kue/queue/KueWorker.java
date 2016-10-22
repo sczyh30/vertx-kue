@@ -8,6 +8,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
@@ -18,8 +19,8 @@ import java.util.Optional;
 
 
 /**
- * Vert.x Blueprint - Job Queue
- * Kue Worker Verticle
+ * Vert.x Kue
+ * Tasks processing verticle.
  *
  * @author Eric Zhao
  */
@@ -33,6 +34,9 @@ public class KueWorker extends AbstractVerticle {
   private Job job;
   private final String type;
   private final Handler<Job> jobHandler;
+
+  private MessageConsumer doneConsumer; // preserve for unregister the consumer
+  private MessageConsumer doneFailConsumer;
 
   public KueWorker(String type, Handler<Job> jobHandler, Kue kue) {
     this.type = type;
@@ -49,10 +53,10 @@ public class KueWorker extends AbstractVerticle {
   }
 
   /**
-   * Prepare job and start processing procedure
+   * Prepare job and start processing procedure.
    */
   private void prepareAndStart() {
-    // cleanup();
+    cleanup();
     this.getJobFromBackend().setHandler(jr -> {
       if (jr.succeeded()) {
         if (jr.result().isPresent()) {
@@ -70,7 +74,7 @@ public class KueWorker extends AbstractVerticle {
   }
 
   /**
-   * Process the job
+   * Process the job.
    */
   private void process() {
     long curTime = System.currentTimeMillis();
@@ -82,6 +86,8 @@ public class KueWorker extends AbstractVerticle {
           Job j = r.result();
           // emit start event
           this.emitJobEvent("start", j, null);
+
+          logger.debug("KueWorker::process[instance:Verticle(" + this.deploymentID() + ")] with job " + job.getId());
           // process logic invocation
           try {
             jobHandler.handle(j);
@@ -90,11 +96,11 @@ public class KueWorker extends AbstractVerticle {
           }
           // subscribe the job done event
 
-          eventBus.consumer(Kue.workerAddress("done", j), msg -> {
+          doneConsumer = eventBus.consumer(Kue.workerAddress("done", j), msg -> {
             createDoneCallback(j).handle(Future.succeededFuture(
               ((JsonObject) msg.body()).getJsonObject("result")));
           });
-          eventBus.consumer(Kue.workerAddress("done_fail", j), msg -> {
+          doneFailConsumer = eventBus.consumer(Kue.workerAddress("done_fail", j), msg -> {
             createDoneCallback(j).handle(Future.failedFuture(
               (String) msg.body()));
           });
@@ -106,8 +112,8 @@ public class KueWorker extends AbstractVerticle {
   }
 
   private void cleanup() {
-    eventBus.consumer(Kue.workerAddress("done", this.job)).unregister();
-    eventBus.consumer(Kue.workerAddress("done_fail", this.job)).unregister();
+    Optional.ofNullable(doneConsumer).ifPresent(MessageConsumer::unregister);
+    Optional.ofNullable(doneFailConsumer).ifPresent(MessageConsumer::unregister);
     this.job = null;
   }
 
@@ -134,7 +140,7 @@ public class KueWorker extends AbstractVerticle {
   }
 
   /**
-   * Redis zpop atomic primitive with transaction
+   * Redis zpop atomic primitive with transaction.
    *
    * @param key redis key
    * @return the async result of zpop
@@ -166,7 +172,7 @@ public class KueWorker extends AbstractVerticle {
   }
 
   /**
-   * Get a job from Redis backend by priority
+   * Get a job from Redis backend by priority.
    *
    * @return async result of job
    */
@@ -239,8 +245,10 @@ public class KueWorker extends AbstractVerticle {
    * @param extra extra data
    */
   private void emitJobEvent(String event, Job job, JsonObject extra) {
-    JsonObject data = new JsonObject().put("job", job.toJson())
-      .put("extra", extra);
+    JsonObject data = new JsonObject().put("extra", extra);
+    if (job != null) {
+      data.put("job", job.toJson());
+    }
     eventBus.send(Kue.workerAddress("job_" + event), data);
     switch (event) {
       case "failed":
