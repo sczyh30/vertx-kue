@@ -17,8 +17,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Vert.x Blueprint - Job Queue
- * Job Service Implementation
+ * Redis backend implementation of {@link JobService}.
  *
  * @author Eric Zhao
  */

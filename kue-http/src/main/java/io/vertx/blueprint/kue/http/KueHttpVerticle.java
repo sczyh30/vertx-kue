@@ -10,6 +10,8 @@ import io.vertx.core.Handler;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -17,15 +19,16 @@ import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.templ.JadeTemplateEngine;
 
 /**
- * Vert.x Blueprint - Job Queue
- * Kue REST API Verticle
+ * The verticle serving Kue UI and REST API.
  *
  * @author Eric Zhao
  */
 public class KueHttpVerticle extends AbstractVerticle {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(KueHttpVerticle.class);
+
   private static final String HOST = "0.0.0.0";
-  private static final int PORT = 8080; // default port
+  private static final int PORT = 8080; // Default port
 
   // Kue REST API
   private static final String KUE_API_JOB_SEARCH = "/job/search/:q";

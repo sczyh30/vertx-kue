@@ -19,8 +19,7 @@ import java.util.Optional;
 
 
 /**
- * Vert.x Kue
- * Tasks processing verticle.
+ * The verticle for processing Kue tasks.
  *
  * @author Eric Zhao
  */
@@ -29,13 +28,13 @@ public class KueWorker extends AbstractVerticle {
   private static Logger logger = LoggerFactory.getLogger(Job.class);
 
   private final Kue kue;
-  private RedisClient client; // every worker use different client
+  private RedisClient client; // Every worker use different clients.
   private EventBus eventBus;
   private Job job;
   private final String type;
   private final Handler<Job> jobHandler;
 
-  private MessageConsumer doneConsumer; // preserve for unregister the consumer
+  private MessageConsumer doneConsumer; // Preserve for unregister the consumer.
   private MessageConsumer doneFailConsumer;
 
   public KueWorker(String type, Handler<Job> jobHandler, Kue kue) {
@@ -238,7 +237,7 @@ public class KueWorker extends AbstractVerticle {
   }
 
   /**
-   * Emit job event
+   * Emit job event.
    *
    * @param event event type
    * @param job   corresponding job

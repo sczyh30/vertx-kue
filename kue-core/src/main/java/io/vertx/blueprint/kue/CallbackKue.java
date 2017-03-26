@@ -45,5 +45,4 @@ public interface CallbackKue extends JobService {
 
   @Fluent
   CallbackKue processBlocking(String type, int n, Handler<Job> handler);
-
 }

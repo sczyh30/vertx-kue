@@ -28,6 +28,8 @@ import java.util.function.Function;
 @DataObject(generateConverter = true)
 public class Job {
 
+  // TODO: refactor the job class.
+
   private static Logger logger = LoggerFactory.getLogger(Job.class);
 
   private static Vertx vertx;
@@ -72,7 +74,7 @@ public class Job {
     _checkStatic();
   }
 
-  public Job(JsonObject json) { // TODO: optimize this
+  public Job(JsonObject json) { // TODO: optimize this!
     JobConverter.fromJson(json, this);
     this.address_id = json.getString("address_id");
     // generated converter cannot handle this

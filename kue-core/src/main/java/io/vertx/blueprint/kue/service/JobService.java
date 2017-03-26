@@ -16,8 +16,7 @@ import io.vertx.serviceproxy.ProxyHelper;
 import java.util.List;
 
 /**
- * Vert.x Blueprint - Job Queue
- * Job Service Interface
+ * Service interface for task operations.
  *
  * @author Eric Zhao
  */
@@ -25,16 +24,31 @@ import java.util.List;
 @VertxGen
 public interface JobService {
 
+  /**
+   * Factory method for creating a {@link JobService} instance.
+   *
+   * @param vertx  Vertx instance
+   * @param config configuration
+   * @return the new {@link JobService} instance
+   */
   static JobService create(Vertx vertx, JsonObject config) {
     return new JobServiceImpl(vertx, config);
   }
 
+  /**
+   * Factory method for creating a {@link JobService} service proxy.
+   * This is useful for doing RPCs.
+   *
+   * @param vertx Vertx instance
+   * @param address event bus address of RPC
+   * @return the new {@link JobService} service proxy
+   */
   static JobService createProxy(Vertx vertx, String address) {
     return ProxyHelper.createProxy(JobService.class, vertx, address);
   }
 
   /**
-   * Get job from backend by id
+   * Get the certain from backend by id.
    *
    * @param id      job id
    * @param handler async result handler
@@ -43,7 +57,7 @@ public interface JobService {
   JobService getJob(long id, Handler<AsyncResult<Job>> handler);
 
   /**
-   * Remove a job by id
+   * Remove a job by id.
    *
    * @param id      job id
    * @param handler async result handler
@@ -52,7 +66,7 @@ public interface JobService {
   JobService removeJob(long id, Handler<AsyncResult<Void>> handler);
 
   /**
-   * Judge whether a job with certain id exists
+   * Judge whether a job with certain id exists.
    *
    * @param id      job id
    * @param handler async result handler
@@ -61,7 +75,7 @@ public interface JobService {
   JobService existsJob(long id, Handler<AsyncResult<Boolean>> handler);
 
   /**
-   * Get job log by id
+   * Get job log by id.
    *
    * @param id      job id
    * @param handler async result handler
@@ -70,7 +84,7 @@ public interface JobService {
   JobService getJobLog(long id, Handler<AsyncResult<JsonArray>> handler);
 
   /**
-   * Get a list of job in certain state in range (from, to) with order
+   * Get a list of job in certain state in range (from, to) with order.
    *
    * @param state   expected job state
    * @param from    from
@@ -82,7 +96,7 @@ public interface JobService {
   JobService jobRangeByState(String state, long from, long to, String order, Handler<AsyncResult<List<Job>>> handler);
 
   /**
-   * Get a list of job in certain state and type in range (from, to) with order
+   * Get a list of job in certain state and type in range (from, to) with order.
    *
    * @param type    expected job type
    * @param state   expected job state
@@ -95,7 +109,7 @@ public interface JobService {
   JobService jobRangeByType(String type, String state, long from, long to, String order, Handler<AsyncResult<List<Job>>> handler);
 
   /**
-   * Get a list of job in range (from, to) with order
+   * Get a list of job in range (from, to) with order.
    *
    * @param from    from
    * @param to      to
@@ -105,10 +119,10 @@ public interface JobService {
   @Fluent
   JobService jobRange(long from, long to, String order, Handler<AsyncResult<List<Job>>> handler);
 
-  // runtime cardinality metrics
+  // Runtime cardinality metrics
 
   /**
-   * Get cardinality by job type and state
+   * Get cardinality by job type and state.
    *
    * @param type    job type
    * @param state   job state
@@ -118,7 +132,7 @@ public interface JobService {
   JobService cardByType(String type, JobState state, Handler<AsyncResult<Long>> handler);
 
   /**
-   * Get cardinality by job state
+   * Get cardinality by job state.
    *
    * @param state   job state
    * @param handler async result handler
@@ -127,7 +141,7 @@ public interface JobService {
   JobService card(JobState state, Handler<AsyncResult<Long>> handler);
 
   /**
-   * Get cardinality of completed jobs
+   * Get cardinality of completed jobs.
    *
    * @param type    job type; if null, then return global metrics
    * @param handler async result handler
@@ -136,7 +150,7 @@ public interface JobService {
   JobService completeCount(String type, Handler<AsyncResult<Long>> handler);
 
   /**
-   * Get cardinality of failed jobs
+   * Get cardinality of failed jobs.
    *
    * @param type job type; if null, then return global metrics
    */
@@ -144,7 +158,7 @@ public interface JobService {
   JobService failedCount(String type, Handler<AsyncResult<Long>> handler);
 
   /**
-   * Get cardinality of inactive jobs
+   * Get cardinality of inactive jobs.
    *
    * @param type job type; if null, then return global metrics
    */
@@ -152,7 +166,7 @@ public interface JobService {
   JobService inactiveCount(String type, Handler<AsyncResult<Long>> handler);
 
   /**
-   * Get cardinality of active jobs
+   * Get cardinality of active jobs.
    *
    * @param type job type; if null, then return global metrics
    */
@@ -160,7 +174,7 @@ public interface JobService {
   JobService activeCount(String type, Handler<AsyncResult<Long>> handler);
 
   /**
-   * Get cardinality of delayed jobs
+   * Get cardinality of delayed jobs.
    *
    * @param type job type; if null, then return global metrics
    */
@@ -168,7 +182,7 @@ public interface JobService {
   JobService delayedCount(String type, Handler<AsyncResult<Long>> handler);
 
   /**
-   * Get the job types present
+   * Get the job types present.
    *
    * @param handler async result handler
    */
@@ -176,7 +190,7 @@ public interface JobService {
   JobService getAllTypes(Handler<AsyncResult<List<String>>> handler);
 
   /**
-   * Return job ids with the given `state`
+   * Return job ids with the given {@link JobState}.
    *
    * @param state   job state
    * @param handler async result handler
@@ -185,12 +199,10 @@ public interface JobService {
   JobService getIdsByState(JobState state, Handler<AsyncResult<List<Long>>> handler);
 
   /**
-   * Get queue work time in milliseconds
+   * Get queue work time in milliseconds.
    *
    * @param handler async result handler
    */
   @Fluent
   JobService getWorkTime(Handler<AsyncResult<Long>> handler);
-
-
 }
