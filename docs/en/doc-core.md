@@ -11,9 +11,9 @@ What you are going to learn:
 - How to design clustered Vert.x applications
 - How to design and implement a job queue
 - How to use **Vert.x Service Proxy**
-- More complicated usage of [Vert.x Redis](http://vertx.io/docs/vertx-redis-client/java/)
+- More complicated usage of Redis and [Vert.x Redis Client](http://vertx.io/docs/vertx-redis-client/java/)
 
-This is the second part of [Vert.x Blueprint Project](http://vertx.io/blog/vert-x-blueprint-tutorials/). The entire code is available on [GitHub](https://github.com/sczyh30/vertx-blueprint-job-queue/tree/master).
+This is the second part of [Vert.x Blueprint Project](http://vertx.io/blog/vert-x-blueprint-tutorials/). The project works with Vert.x 3.4.1. The entire code is available on [GitHub](https://github.com/sczyh30/vertx-kue/tree/master).
 
 # Message system in Vert.x
 
@@ -88,13 +88,13 @@ In our Vert.x Kue, most of the asynchronous methods are `Future` based. In Vert.
 
 ## Events in Vert.x Kue
 
-As we've mentioned in the [feature document](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/docs/en/vertx-kue-features-en.md), Vert.x Kue support two kinds of events: **job events** and **queue events**. All events are sent and consumed on the clustered event bus. In Vert.x Kue we designed three kinds of address:
+As we've mentioned in the [feature document](https://github.com/sczyh30/vertx-kue/blob/master/docs/en/vertx-kue-features-en.md), Vert.x Kue support two kinds of events: **job events** and **queue events**. All events are sent and consumed on the clustered event bus. In Vert.x Kue we designed three kinds of address:
 
 - `vertx.kue.handler.job.{handlerType}.{addressId}.{jobType}`: job event address for a certain job
 - `vertx.kue.handler.workers.{eventType}`: queue event address
 - `vertx.kue.handler.workers.{eventType}.{addressId}`: queue event address for a certain job
 
-In the [feature document](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/docs/en/vertx-kue-features-en.md), we've mentioned several types of events:
+In the [feature document](https://github.com/sczyh30/vertx-kue/blob/master/docs/en/vertx-kue-features-en.md), we've mentioned several types of events:
 
 - `start` the job is now running (`onStart`)
 - `promotion` the job is promoted from delayed state to queued (`onPromotion`)
@@ -122,17 +122,17 @@ There are five job states in Vert.x Kue:
 
 We use state machine to depict the states:
 
-![Job State Machine](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-job-queue/master/docs/images/job_state_machine.png)
+![Job State Machine](https://raw.githubusercontent.com/sczyh30/vertx-kue/master/docs/images/job_state_machine.png)
 
 And here is the diagram of events between each state change:
 
-![Events with state change](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-job-queue/master/docs/images/event_emit_state_machine.png)
+![Events with state change](https://raw.githubusercontent.com/sczyh30/vertx-kue/master/docs/images/event_emit_state_machine.png)
 
 ## Workflow diagram
 
 To make it clear, we use this diagram to briefly illustrate how Vert.x Kue works at high level:
 
-![Diagram - How Vert.x Kue works](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-job-queue/master/docs/images/kue_diagram.png)
+![Diagram - How Vert.x Kue works](https://raw.githubusercontent.com/sczyh30/vertx-kue/master/docs/images/kue_diagram.png)
 
 Now we've had a rough understanding of Vert.x Kue's design, so it's time to concentrate on the code~~
 
@@ -140,7 +140,7 @@ Now we've had a rough understanding of Vert.x Kue's design, so it's time to conc
 
 Let's start our journey with Vert.x Kue! First get the code from GitHub:
 
-    git clone https://github.com/sczyh30/vertx-blueprint-job-queue.git
+    git clone https://github.com/sczyh30/vertx-kue.git
 
 You can import the code in your IDE as a Gradle project.
 
@@ -152,7 +152,7 @@ Let's take a look at `build.gradle`:
 configure(allprojects) { project ->
 
   ext {
-    vertxVersion = "3.3.0"
+    vertxVersion = "3.4.1"
   }
 
   apply plugin: 'java'
@@ -163,10 +163,10 @@ configure(allprojects) { project ->
 
   dependencies {
     compile("io.vertx:vertx-core:${vertxVersion}")
-    compile("io.vertx:vertx-codegen:${vertxVersion}")
     compile("io.vertx:vertx-rx-java:${vertxVersion}")
     compile("io.vertx:vertx-hazelcast:${vertxVersion}")
-    compile("io.vertx:vertx-lang-ruby:${vertxVersion}")
+    compileOnly("io.vertx:vertx-lang-js:${vertxVersion}")
+    compileOnly("io.vertx:vertx-codegen:${vertxVersion}")
 
     testCompile("io.vertx:vertx-unit:${vertxVersion}")
     testCompile group: 'junit', name: 'junit', version: '4.12'
@@ -256,7 +256,7 @@ project("kue-example") {
 }
 
 task wrapper(type: Wrapper) {
-  gradleVersion = '2.12'
+  gradleVersion = '3.4'
 }
 ```
 
@@ -270,7 +270,7 @@ In global dependencies, `vertx-hazelcast` is for clustered Vert.x and `vertx-cod
 We also need `settings.gradle` file to indicate the projects:
 
 ```gradle
-rootProject.name = 'vertx-blueprint-job-queue'
+rootProject.name = 'vertx-kue'
 
 include "kue-core"
 include "kue-http"
@@ -1158,7 +1158,7 @@ As we've mentioned above, the `JobService` contains common logic for `Job`. The 
 
 ## Job service implementation
 
-The code is long... So we don't show the code here. We just explain. You can look it up on [GitHub](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/kue-core/src/main/java/io/vertx/blueprint/kue/service/impl/JobServiceImpl.java).
+The code is long... So we don't show the code here. We just explain. You can look it up on [GitHub](https://github.com/sczyh30/vertx-kue/blob/master/kue-core/src/main/java/io/vertx/blueprint/kue/service/impl/JobServiceImpl.java).
 
 - `getJob`: This is very simple. Just use `hgetall` operation to retrieve the certain job from Redis. Once the result is retrieved, the handler will be called. If failure happens, we need to call `removeBadJob` to remove the bad job entity.
 - `removeJob`: We can regard this method as a combination of `getJob` and `Job#remove`.
@@ -1291,7 +1291,7 @@ public Future<Optional<Job>> getJob(long id) {
 
 Other future-based methods are similar so we don't explain one by one. You could refer to the code.
 
-![](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-job-queue/master/docs/images/kue_future_based_methods.png)
+![](https://raw.githubusercontent.com/sczyh30/vertx-kue/master/docs/images/kue_future_based_methods.png)
 
 ## Process and processBlocking
 
@@ -1619,7 +1619,7 @@ We could convert to the equalivant callback-based signature:
 CallbackKue saveJob(Job job, Handler<AsyncResult<Job>> handler);
 ```
 
-Other methods are similar so we don't elaborate here. You can visit the code on [GitHub](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/kue-core/src/main/java/io/vertx/blueprint/kue/CallbackKue.java).
+Other methods are similar so we don't elaborate here. You can visit the code on [GitHub](https://github.com/sczyh30/vertx-kue/blob/master/kue-core/src/main/java/io/vertx/blueprint/kue/CallbackKue.java).
 
 The `CallbackKue` interface should be annotated with `@VertxGen` annotation so that Vert.x Codegen could process the interface and then generate polyglot code:
 
@@ -1640,7 +1640,7 @@ The polyglot generation also requires corresponding dependency. For example, if 
 
 After correct configuration we could run `kue-core:annotationProcessing` task to generate the code. The generated Rx code will be in `generated` directory, while JS and Ruby code will be generated in `resources` directory. Then we can use Vert.x Kue in other languages! Amazing!
 
-As for implementation of `CallbackKue`, that's very simple as we could reuse `Kue` and `JobService`. You can visit the code on [GitHub](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/kue-core/src/main/java/io/vertx/blueprint/kue/CallbackKueImpl.java).
+As for implementation of `CallbackKue`, that's very simple as we could reuse `Kue` and `JobService`. You can visit the code on [GitHub](https://github.com/sczyh30/vertx-kue/blob/master/kue-core/src/main/java/io/vertx/blueprint/kue/CallbackKueImpl.java).
 
 # Show time!
 
@@ -1737,6 +1737,6 @@ Feeling: amazing and wonderful!
 
 Great! We have finished our journey with **Vert.x Kue Core**! In this long tutorial, you have learned how to develop a message based application with Vert.x. So cool!
 
-To learn the implementation of `kue-http`, please visit [Tutorial: Vert.x Blueprint - Vert.x Kue (Web)](http://sczyh30.github.io/vertx-blueprint-job-queue/kue-http/index.html). To learn more about Vert.x Kue features, please refer to [Vert.x Kue features documentation](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/docs/en/vertx-kue-features-en.md).
+To learn the implementation of `kue-http`, please visit [Tutorial: Vert.x Blueprint - Vert.x Kue (Web)](http://sczyh30.github.io/vertx-kue/kue-http/index.html). To learn more about Vert.x Kue features, please refer to [Vert.x Kue features documentation](https://github.com/sczyh30/vertx-kue/blob/master/docs/en/vertx-kue-features-en.md).
 
 Vert.x can do various kinds of stuff. To learn more about Vert.x, you can visit [Vert.x Documentation](http://vertx.io/docs/) - this is always the most comprehensive material :-)

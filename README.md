@@ -1,18 +1,18 @@
 # Vert.x Kue
 
-[![Travis Build Status](https://travis-ci.org/sczyh30/vertx-blueprint-job-queue.svg?branch=master)](https://travis-ci.org/sczyh30/vertx-blueprint-job-queue)
+[![Build Status](https://travis-ci.org/sczyh30/vertx-kue.svg?branch=master)](https://travis-ci.org/sczyh30/vertx-kue)
 
-Vert.x Blueprint Application - **Vert.x Kue** is a priority job queue developed with Vert.x and backed by **Redis**.
+**Vert.x Kue** is a priority task queue developed with Vert.x and backed by **Redis**.
 It's a Vert.x implementation version of [Automattic/kue](https://github.com/Automattic/kue).
 
-This repo is an introduction to **message-based application development using Vert.x**.
+This blueprint is an introduction to **message-based application development using Vert.x**.
 
 ## Detailed Document
 
 Detailed documents and tutorials:
 
-- [English Version](http://sczyh30.github.io/vertx-blueprint-job-queue/kue-core/index.html)
-- [中文文档](http://sczyh30.github.io/vertx-blueprint-job-queue/cn/kue-core/index.html)
+- [English Version](http://sczyh30.github.io/vertx-kue/kue-core/index.html)
+- [中文文档](http://sczyh30.github.io/vertx-kue/cn/kue-core/index.html)
 
 ## Features
 
@@ -75,7 +75,7 @@ java -jar kue-example/build/libs/vertx-blueprint-kue-example.jar -cluster
 
 # Architecture
 
-![Diagram - How Vert.x Kue works](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-job-queue/master/docs/images/kue_diagram.png)
+![Diagram - How Vert.x Kue works](https://raw.githubusercontent.com/sczyh30/vertx-kue/master/docs/images/kue_diagram.png)
 
 ## Want to improve this blueprint ?
 

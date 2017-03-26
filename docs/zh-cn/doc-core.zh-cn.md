@@ -1,17 +1,17 @@
 # 前言
 
-欢迎回到Vert.x 蓝图系列～在本教程中，我们将利用Vert.x开发一个基于消息的应用 - Vert.x Kue，它是一个使用Vert.x开发的优先级工作队列，数据存储使用的是 *Redis* 。Vert.x Kue是[Automattic/kue](https://github.com/Automattic/kue)的Vert.x实现版本。我们可以使用Vert.x Kue来处理各种各样的任务，比如文件转换、订单处理等等。
+欢迎回到Vert.x 蓝图系列～在本教程中，我们将利用Vert.x开发一个基于消息的应用 - Vert.x Kue，它是一个使用Vert.x开发的优先级任务队列，数据存储使用的是 *Redis* 。Vert.x Kue是[Automattic/kue](https://github.com/Automattic/kue)的Vert.x实现版本。我们可以使用Vert.x Kue来处理各种各样的任务，比如文件转换、订单处理等等。
 
 通过本教程，你将会学习到以下内容：
 
 - 消息、消息系统以及事件驱动的运用
 - Vert.x **Event Bus** 的几种事件机制（发布/订阅、点对点模式）
 - 设计 **分布式** 的Vert.x应用
-- 工作队列的设计
+- 任务队列的设计
 - **Vert.x Service Proxy**（服务代理）的运用
 - 更深层次的Redis运用
 
-本教程是 [Vert.x 蓝图系列](http://vertx.io/blog/vert-x-blueprint-tutorials/) 的第二篇教程，对应的Vert.x版本为 **3.3.3** 。本教程中的完整代码已托管至[GitHub](https://github.com/sczyh30/vertx-blueprint-job-queue/tree/master)。
+本教程是 [Vert.x 蓝图系列](http://vertx.io/blog/vert-x-blueprint-tutorials/) 的第二篇教程，对应的Vert.x版本为 **3.4.1** 。本教程中的完整代码已托管至[GitHub](https://github.com/sczyh30/vertx-kue/tree/master)。
 
 # Vert.x的消息系统
 
@@ -85,13 +85,13 @@ eventBus.publish("foo.bar.baz", "+1s"); // 向此地址发送消息
 
 ## Vert.x Kue中的事件
 
-正如我们在[Vert.x Kue 特性介绍](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/docs/zh-cn/vertx-kue-features.zh-cn.md)中提到的那样，Vert.x Kue支持两种级别的事件：**任务事件(job events)** 以及 **队列事件(queue events)**。在Vert.x Kue中，我们设计了三种事件地址：
+正如我们在[Vert.x Kue 特性介绍](https://github.com/sczyh30/vertx-kue/blob/master/docs/zh-cn/vertx-kue-features.zh-cn.md)中提到的那样，Vert.x Kue支持两种级别的事件：**任务事件(job events)** 以及 **队列事件(queue events)**。在Vert.x Kue中，我们设计了三种事件地址：
 
 - `vertx.kue.handler.job.{handlerType}.{addressId}.{jobType}`: 某个特定任务的任务事件地址
 - `vertx.kue.handler.workers.{eventType}`: （全局）队列事件地址
 - `vertx.kue.handler.workers.{eventType}.{addressId}`: 某个特定任务的内部事件地址
 
-在[特性介绍文档](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/docs/zh-cn/vertx-kue-features.zh-cn.md)中，我们提到了以下几种任务事件：
+在[特性介绍文档](https://github.com/sczyh30/vertx-kue/blob/master/docs/zh-cn/vertx-kue-features.zh-cn.md)中，我们提到了以下几种任务事件：
 
 - `start` 开始处理一个任务 (`onStart`)
 - `promotion` 一个延期的任务时间已到，提升至工作队列中 (`onPromotion`)
@@ -117,17 +117,17 @@ eventBus.publish("foo.bar.baz", "+1s"); // 向此地址发送消息
 
 我们使用状态图来描述任务状态的变化：
 
-![Job State Machine](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-job-queue/master/docs/images/job_state_machine.png)
+![Job State Machine](https://raw.githubusercontent.com/sczyh30/vertx-kue/master/docs/images/job_state_machine.png)
 
 以及任务状态的变化伴随的事件：
 
-![Events with state change](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-job-queue/master/docs/images/event_emit_state_machine.png)
+![Events with state change](https://raw.githubusercontent.com/sczyh30/vertx-kue/master/docs/images/event_emit_state_machine.png)
 
 ## 整体设计
 
 为了让大家对Vert.x Kue的架构有大致的了解，我用一幅图来简略描述整个Vert.x Kue的设计：
 
-![Diagram - How Vert.x Kue works](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-job-queue/master/docs/images/kue_diagram.png)
+![Diagram - How Vert.x Kue works](https://raw.githubusercontent.com/sczyh30/vertx-kue/master/docs/images/kue_diagram.png)
 
 现在我们对Vert.x Kue的设计有了大致的了解了，下面我们就来看一看Vert.x Kue的代码实现了～
 
@@ -135,7 +135,7 @@ eventBus.publish("foo.bar.baz", "+1s"); // 向此地址发送消息
 
 我们来开始探索Vert.x Kue的旅程吧！首先我们先从GitHub上clone源代码：
 
-    git clone https://github.com/sczyh30/vertx-blueprint-job-queue.git
+    git clone https://github.com/sczyh30/vertx-kue.git
 
 然后你可以把项目作为Gradle项目导入你的IDE中。（如何导入请参考相关IDE帮助文档）
 
@@ -145,7 +145,7 @@ eventBus.publish("foo.bar.baz", "+1s"); // 向此地址发送消息
 configure(allprojects) { project ->
 
   ext {
-    vertxVersion = "3.3.2"
+    vertxVersion = "3.4.1"
   }
 
   apply plugin: 'java'
@@ -156,10 +156,10 @@ configure(allprojects) { project ->
 
   dependencies {
     compile("io.vertx:vertx-core:${vertxVersion}")
-    compile("io.vertx:vertx-codegen:${vertxVersion}")
     compile("io.vertx:vertx-rx-java:${vertxVersion}")
     compile("io.vertx:vertx-hazelcast:${vertxVersion}")
-    compile("io.vertx:vertx-lang-ruby:${vertxVersion}")
+    compileOnly("io.vertx:vertx-lang-js:${vertxVersion}")
+    compileOnly("io.vertx:vertx-codegen:${vertxVersion}")
 
     testCompile("io.vertx:vertx-unit:${vertxVersion}")
     testCompile group: 'junit', name: 'junit', version: '4.12'
@@ -249,7 +249,7 @@ project("kue-example") {
 }
 
 task wrapper(type: Wrapper) {
-  gradleVersion = '2.12'
+  gradleVersion = '3.4'
 }
 ```
 
@@ -262,7 +262,7 @@ task wrapper(type: Wrapper) {
 我们还需要在 `settings.gradle` 中配置工程：
 
 ```gradle
-rootProject.name = 'vertx-blueprint-job-queue'
+rootProject.name = 'vertx-kue'
 
 include "kue-core"
 include "kue-http"
@@ -909,7 +909,9 @@ private Future<Job> reattempt() {
 
 所以讲到这里，你可能想问：到底怎么在Event Bus上注册服务呢？我们是不是需要写一大堆的逻辑去包装和发送信息，然后在另一端解码信息并进行调用呢？不，这太麻烦了！有了Vert.x 服务代理，我们不需要这么做！Vert.x提供了一个组件 **Vert.x Service Proxy** 来自动生成服务代理。有了它的帮助，我们就只需要按照规范设计我们的异步服务接口，然后用`@ProxyGen`注解修饰即可。
 
-[NOTE `@ProxyGen`注解的限制 | `@ProxyGen`注解的使用有诸多限制。比如，所有的异步方法都必须是基于回调的，也就是说每个方法都要接受一个`Handler<AsyncResult<R>>`类型的参数。并且，类型`R`也是有限制的 —— 只允许基本类型以及数据对象类型。详情请参考[官方文档](http://vertx.io/docs/vertx-service-proxy/)。 ]
+> `@ProxyGen`注解的限制
+
+> `@ProxyGen`注解的使用有诸多限制。比如，所有的异步方法都必须是基于回调的，也就是说每个方法都要接受一个`Handler<AsyncResult<R>>`类型的参数。并且，类型`R`也是有限制的 —— 只允许基本类型以及数据对象类型。详情请参考[官方文档](http://vertx.io/docs/vertx-service-proxy/)。
 
 ## 异步服务接口
 
@@ -1097,7 +1099,7 @@ public interface JobService {
 
 ## 任务服务的实现
 
-`JobService`接口的实现位于`JobServiceImpl`类中，代码非常长，因此这里就不贴代码了。。。大家可以对照[GitHub中的代码](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/kue-core/src/main/java/io/vertx/blueprint/kue/service/impl/JobServiceImpl.java)读下面的内容。
+`JobService`接口的实现位于`JobServiceImpl`类中，代码非常长，因此这里就不贴代码了。。。大家可以对照[GitHub中的代码](https://github.com/sczyh30/vertx-kue/blob/master/kue-core/src/main/java/io/vertx/blueprint/kue/service/impl/JobServiceImpl.java)读下面的内容。
 
 - `getJob`: 获取任务的方法非常简单。直接利用`hgetall`命令从Redis中取出对应的任务即可。
 - `removeJob`: 我们可以将此方法看作是`getJob`和`Job#remove`两个方法的组合。
@@ -1105,7 +1107,9 @@ public interface JobService {
 - `getJobLog`: 使用`lrange`命令从`vertx_kue:job:{id}:log`列表中取出日志。
 - `rangeGeneral`: 使用`zrange`命令获取一定范围内的任务，这是一个通用方法。
 
-[NOTE `zrange` 操作 | `zrange` 返回某一有序集合中某个特定范围内的元素。详情请见[ZRANGE - Redis](http://redis.io/commands/zrange)。 ]
+> `zrange` 操作
+
+> `zrange` 返回某一有序集合中某个特定范围内的元素。详情请见[ZRANGE - Redis](http://redis.io/commands/zrange)。
 
 以下三个方法复用了`rangeGeneral`方法：
 
@@ -1232,7 +1236,7 @@ public Future<Optional<Job>> getJob(long id) {
 
 其实就是加一层`Future`。其它的封装过程也类似所以我们就不细说了。
 
-![](https://raw.githubusercontent.com/sczyh30/vertx-blueprint-job-queue/master/docs/images/kue_future_based_methods.png)
+![](https://raw.githubusercontent.com/sczyh30/vertx-kue/master/docs/images/kue_future_based_methods.png)
 
 ## process和processBlocking方法
 
@@ -1666,6 +1670,6 @@ Feeling: amazing and wonderful!
 
 棒极了！我们终于结束了我们的Vert.x Kue核心部分探索之旅～～！从这篇超长的教程中，你学到了如何利用Vert.x去开发一个基于消息的应用！太酷了！
 
-如果想了解`kue-http`的实现，请移步[Vert.x 蓝图 | Vert.x Kue 教程（Web部分）](http://sczyh30.github.io/vertx-blueprint-job-queue/cn/kue-http/index.html)。如果想了解更多的关于Vert.x Kue的特性，请移步[Vert.x Kue 特性介绍](https://github.com/sczyh30/vertx-blueprint-job-queue/blob/master/docs/zh-cn/vertx-kue-features.zh-cn.md)。
+如果想了解`kue-http`的实现，请移步[Vert.x 蓝图 | Vert.x Kue 教程（Web部分）](http://sczyh30.github.io/vertx-kue/cn/kue-http/index.html)。如果想了解更多的关于Vert.x Kue的特性，请移步[Vert.x Kue 特性介绍](https://github.com/sczyh30/vertx-kue/blob/master/docs/zh-cn/vertx-kue-features.zh-cn.md)。
 
 Vert.x能做的不仅仅是这些。想要了解更多的关于Vert.x的知识，请参考[Vert.x 官方文档](http://vertx.io/docs/) —— 这永远是资料最齐全的地方。

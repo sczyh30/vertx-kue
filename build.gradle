@@ -1,7 +1,7 @@
 configure(allprojects) { project ->
 
   ext {
-    vertxVersion = "3.3.3"
+    vertxVersion = "3.4.1"
   }
 
   apply plugin: 'java'
@@ -14,7 +14,7 @@ configure(allprojects) { project ->
     compile("io.vertx:vertx-core:${vertxVersion}")
     compile("io.vertx:vertx-rx-java:${vertxVersion}")
     compile("io.vertx:vertx-hazelcast:${vertxVersion}")
-    compileOnly("io.vertx:vertx-lang-ruby:${vertxVersion}")
+    compileOnly("io.vertx:vertx-lang-js:${vertxVersion}")
     compileOnly("io.vertx:vertx-codegen:${vertxVersion}")
 
     testCompile("io.vertx:vertx-unit:${vertxVersion}")
@@ -58,7 +58,7 @@ project("kue-core") {
     options.compilerArgs = [
       "-proc:only",
       "-processor", "io.vertx.codegen.CodeGenProcessor",
-      "-AoutputDirectory=${project.projectDir}/src/main"
+      "-Acodegen.output=${project.projectDir}/src/main"
     ]
   }
 
@@ -105,5 +105,5 @@ project("kue-example") {
 }
 
 task wrapper(type: Wrapper) {
-  gradleVersion = '3.0'
+  gradleVersion = '3.4'
 }
