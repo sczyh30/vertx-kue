@@ -22,8 +22,8 @@ var Message = require('vertx-js/message');
 
 var io = Packages.io;
 var JsonObject = io.vertx.core.json.JsonObject;
-var JCallbackKue = io.vertx.blueprint.kue.CallbackKue;
-var Job = io.vertx.blueprint.kue.queue.Job;
+var JCallbackKue = Java.type('io.vertx.blueprint.kue.CallbackKue');
+var Job = Java.type('io.vertx.blueprint.kue.queue.Job');
 
 /**
 
@@ -36,7 +36,7 @@ var CallbackKue = function(j_val) {
   JobService.call(this, j_val);
 
   /**
-   Get job from backend by id
+   Get the certain from backend by id.
 
    @public
    @param id {number} job id 
@@ -58,7 +58,7 @@ var CallbackKue = function(j_val) {
   };
 
   /**
-   Remove a job by id
+   Remove a job by id.
 
    @public
    @param id {number} job id 
@@ -80,7 +80,7 @@ var CallbackKue = function(j_val) {
   };
 
   /**
-   Judge whether a job with certain id exists
+   Judge whether a job with certain id exists.
 
    @public
    @param id {number} job id 
@@ -102,7 +102,7 @@ var CallbackKue = function(j_val) {
   };
 
   /**
-   Get job log by id
+   Get job log by id.
 
    @public
    @param id {number} job id 
@@ -124,7 +124,7 @@ var CallbackKue = function(j_val) {
   };
 
   /**
-   Get a list of job in certain state in range (from, to) with order
+   Get a list of job in certain state in range (from, to) with order.
 
    @public
    @param state {string} expected job state 
@@ -149,7 +149,7 @@ var CallbackKue = function(j_val) {
   };
 
   /**
-   Get a list of job in certain state and type in range (from, to) with order
+   Get a list of job in certain state and type in range (from, to) with order.
 
    @public
    @param type {string} expected job type 
@@ -175,7 +175,7 @@ var CallbackKue = function(j_val) {
   };
 
   /**
-   Get a list of job in range (from, to) with order
+   Get a list of job in range (from, to) with order.
 
    @public
    @param from {number} from 
@@ -199,7 +199,7 @@ var CallbackKue = function(j_val) {
   };
 
   /**
-   Get cardinality by job type and state
+   Get cardinality by job type and state.
 
    @public
    @param type {string} job type 
@@ -222,7 +222,7 @@ var CallbackKue = function(j_val) {
   };
 
   /**
-   Get cardinality by job state
+   Get cardinality by job state.
 
    @public
    @param state {Object} job state 
@@ -244,7 +244,7 @@ var CallbackKue = function(j_val) {
   };
 
   /**
-   Get cardinality of completed jobs
+   Get cardinality of completed jobs.
 
    @public
    @param type {string} job type; if null, then return global metrics 
@@ -266,7 +266,7 @@ var CallbackKue = function(j_val) {
   };
 
   /**
-   Get cardinality of failed jobs
+   Get cardinality of failed jobs.
 
    @public
    @param type {string} job type; if null, then return global metrics 
@@ -288,7 +288,7 @@ var CallbackKue = function(j_val) {
   };
 
   /**
-   Get cardinality of inactive jobs
+   Get cardinality of inactive jobs.
 
    @public
    @param type {string} job type; if null, then return global metrics 
@@ -310,7 +310,7 @@ var CallbackKue = function(j_val) {
   };
 
   /**
-   Get cardinality of active jobs
+   Get cardinality of active jobs.
 
    @public
    @param type {string} job type; if null, then return global metrics 
@@ -332,7 +332,7 @@ var CallbackKue = function(j_val) {
   };
 
   /**
-   Get cardinality of delayed jobs
+   Get cardinality of delayed jobs.
 
    @public
    @param type {string} job type; if null, then return global metrics 
@@ -354,7 +354,7 @@ var CallbackKue = function(j_val) {
   };
 
   /**
-   Get the job types present
+   Get the job types present.
 
    @public
    @param handler {function} async result handler 
@@ -375,7 +375,7 @@ var CallbackKue = function(j_val) {
   };
 
   /**
-   Return job ids with the given `state`
+   Return job ids with the given .
 
    @public
    @param state {Object} job state 
@@ -397,7 +397,7 @@ var CallbackKue = function(j_val) {
   };
 
   /**
-   Get queue work time in milliseconds
+   Get queue work time in milliseconds.
 
    @public
    @param handler {function} async result handler 
@@ -442,7 +442,7 @@ var CallbackKue = function(j_val) {
     var __args = arguments;
     if (__args.length === 2 && typeof __args[0] === 'string' && typeof __args[1] === 'function') {
       j_callbackKue["on(java.lang.String,io.vertx.core.Handler)"](eventType, function(jVal) {
-      handler(utils.convReturnVertxGen(jVal, Message));
+        handler(utils.convReturnVertxGen(Message, jVal, undefined));
     });
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
@@ -458,7 +458,7 @@ var CallbackKue = function(j_val) {
   this.saveJob = function(job, handler) {
     var __args = arguments;
     if (__args.length === 2 && (typeof __args[0] === 'object' && __args[0] != null) && typeof __args[1] === 'function') {
-      j_callbackKue["saveJob(io.vertx.blueprint.kue.queue.Job,io.vertx.core.Handler)"](job != null ? new Job(new JsonObject(JSON.stringify(job))) : null, function(ar) {
+      j_callbackKue["saveJob(io.vertx.blueprint.kue.queue.Job,io.vertx.core.Handler)"](job != null ? new Job(new JsonObject(Java.asJSONCompatible(job))) : null, function (ar) {
       if (ar.succeeded()) {
         handler(utils.convReturnDataObject(ar.result()), null);
       } else {
@@ -481,7 +481,7 @@ var CallbackKue = function(j_val) {
   this.jobProgress = function(job, complete, total, handler) {
     var __args = arguments;
     if (__args.length === 4 && (typeof __args[0] === 'object' && __args[0] != null) && typeof __args[1] ==='number' && typeof __args[2] ==='number' && typeof __args[3] === 'function') {
-      j_callbackKue["jobProgress(io.vertx.blueprint.kue.queue.Job,int,int,io.vertx.core.Handler)"](job != null ? new Job(new JsonObject(JSON.stringify(job))) : null, complete, total, function(ar) {
+      j_callbackKue["jobProgress(io.vertx.blueprint.kue.queue.Job,int,int,io.vertx.core.Handler)"](job != null ? new Job(new JsonObject(Java.asJSONCompatible(job))) : null, complete, total, function (ar) {
       if (ar.succeeded()) {
         handler(utils.convReturnDataObject(ar.result()), null);
       } else {
@@ -501,7 +501,7 @@ var CallbackKue = function(j_val) {
   this.jobDone = function(job) {
     var __args = arguments;
     if (__args.length === 1 && (typeof __args[0] === 'object' && __args[0] != null)) {
-      j_callbackKue["jobDone(io.vertx.blueprint.kue.queue.Job)"](job != null ? new Job(new JsonObject(JSON.stringify(job))) : null);
+      j_callbackKue["jobDone(io.vertx.blueprint.kue.queue.Job)"](job != null ? new Job(new JsonObject(Java.asJSONCompatible(job))) : null);
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
   };
@@ -516,7 +516,7 @@ var CallbackKue = function(j_val) {
   this.jobDoneFail = function(job, ex) {
     var __args = arguments;
     if (__args.length === 2 && (typeof __args[0] === 'object' && __args[0] != null) && typeof __args[1] === 'object') {
-      j_callbackKue["jobDoneFail(io.vertx.blueprint.kue.queue.Job,java.lang.Throwable)"](job != null ? new Job(new JsonObject(JSON.stringify(job))) : null, utils.convParamThrowable(ex));
+      j_callbackKue["jobDoneFail(io.vertx.blueprint.kue.queue.Job,java.lang.Throwable)"](job != null ? new Job(new JsonObject(Java.asJSONCompatible(job))) : null, utils.convParamThrowable(ex));
       return that;
     } else throw new TypeError('function invoked with invalid arguments');
   };
@@ -563,6 +563,25 @@ var CallbackKue = function(j_val) {
   this._jdel = j_callbackKue;
 };
 
+CallbackKue._jclass = utils.getJavaClass("io.vertx.blueprint.kue.CallbackKue");
+CallbackKue._jtype = {
+  accept: function (obj) {
+    return CallbackKue._jclass.isInstance(obj._jdel);
+  },
+  wrap: function (jdel) {
+    var obj = Object.create(CallbackKue.prototype, {});
+    CallbackKue.apply(obj, arguments);
+    return obj;
+  },
+  unwrap: function (obj) {
+    return obj._jdel;
+  }
+};
+CallbackKue._create = function (jdel) {
+  var obj = Object.create(CallbackKue.prototype, {});
+  CallbackKue.apply(obj, arguments);
+  return obj;
+}
 /**
 
  @memberof module:vertx-kue-root-module-js/callback_kue
@@ -573,9 +592,8 @@ var CallbackKue = function(j_val) {
 CallbackKue.createKue = function(vertx, config) {
   var __args = arguments;
   if (__args.length === 2 && typeof __args[0] === 'object' && __args[0]._jdel && (typeof __args[1] === 'object' && __args[1] != null)) {
-    return utils.convReturnVertxGen(JCallbackKue["createKue(io.vertx.core.Vertx,io.vertx.core.json.JsonObject)"](vertx._jdel, utils.convParamJsonObject(config)), CallbackKue);
+    return utils.convReturnVertxGen(CallbackKue, JCallbackKue["createKue(io.vertx.core.Vertx,io.vertx.core.json.JsonObject)"](vertx._jdel, utils.convParamJsonObject(config)));
   } else throw new TypeError('function invoked with invalid arguments');
 };
 
-// We export the Constructor function
 module.exports = CallbackKue;

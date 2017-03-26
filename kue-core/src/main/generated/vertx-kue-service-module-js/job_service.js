@@ -20,12 +20,11 @@ var Vertx = require('vertx-js/vertx');
 
 var io = Packages.io;
 var JsonObject = io.vertx.core.json.JsonObject;
-var JJobService = io.vertx.blueprint.kue.service.JobService;
-var Job = io.vertx.blueprint.kue.queue.Job;
+var JJobService = Java.type('io.vertx.blueprint.kue.service.JobService');
+var Job = Java.type('io.vertx.blueprint.kue.queue.Job');
 
 /**
- Vert.x Blueprint - Job Queue
- Job Service Interface
+ Service interface for task operations.
 
  @class
 */
@@ -35,7 +34,7 @@ var JobService = function(j_val) {
   var that = this;
 
   /**
-   Get job from backend by id
+   Get the certain from backend by id.
 
    @public
    @param id {number} job id 
@@ -57,7 +56,7 @@ var JobService = function(j_val) {
   };
 
   /**
-   Remove a job by id
+   Remove a job by id.
 
    @public
    @param id {number} job id 
@@ -79,7 +78,7 @@ var JobService = function(j_val) {
   };
 
   /**
-   Judge whether a job with certain id exists
+   Judge whether a job with certain id exists.
 
    @public
    @param id {number} job id 
@@ -101,7 +100,7 @@ var JobService = function(j_val) {
   };
 
   /**
-   Get job log by id
+   Get job log by id.
 
    @public
    @param id {number} job id 
@@ -123,7 +122,7 @@ var JobService = function(j_val) {
   };
 
   /**
-   Get a list of job in certain state in range (from, to) with order
+   Get a list of job in certain state in range (from, to) with order.
 
    @public
    @param state {string} expected job state 
@@ -148,7 +147,7 @@ var JobService = function(j_val) {
   };
 
   /**
-   Get a list of job in certain state and type in range (from, to) with order
+   Get a list of job in certain state and type in range (from, to) with order.
 
    @public
    @param type {string} expected job type 
@@ -174,7 +173,7 @@ var JobService = function(j_val) {
   };
 
   /**
-   Get a list of job in range (from, to) with order
+   Get a list of job in range (from, to) with order.
 
    @public
    @param from {number} from 
@@ -198,7 +197,7 @@ var JobService = function(j_val) {
   };
 
   /**
-   Get cardinality by job type and state
+   Get cardinality by job type and state.
 
    @public
    @param type {string} job type 
@@ -221,7 +220,7 @@ var JobService = function(j_val) {
   };
 
   /**
-   Get cardinality by job state
+   Get cardinality by job state.
 
    @public
    @param state {Object} job state 
@@ -243,7 +242,7 @@ var JobService = function(j_val) {
   };
 
   /**
-   Get cardinality of completed jobs
+   Get cardinality of completed jobs.
 
    @public
    @param type {string} job type; if null, then return global metrics 
@@ -265,7 +264,7 @@ var JobService = function(j_val) {
   };
 
   /**
-   Get cardinality of failed jobs
+   Get cardinality of failed jobs.
 
    @public
    @param type {string} job type; if null, then return global metrics 
@@ -287,7 +286,7 @@ var JobService = function(j_val) {
   };
 
   /**
-   Get cardinality of inactive jobs
+   Get cardinality of inactive jobs.
 
    @public
    @param type {string} job type; if null, then return global metrics 
@@ -309,7 +308,7 @@ var JobService = function(j_val) {
   };
 
   /**
-   Get cardinality of active jobs
+   Get cardinality of active jobs.
 
    @public
    @param type {string} job type; if null, then return global metrics 
@@ -331,7 +330,7 @@ var JobService = function(j_val) {
   };
 
   /**
-   Get cardinality of delayed jobs
+   Get cardinality of delayed jobs.
 
    @public
    @param type {string} job type; if null, then return global metrics 
@@ -353,7 +352,7 @@ var JobService = function(j_val) {
   };
 
   /**
-   Get the job types present
+   Get the job types present.
 
    @public
    @param handler {function} async result handler 
@@ -374,7 +373,7 @@ var JobService = function(j_val) {
   };
 
   /**
-   Return job ids with the given `state`
+   Return job ids with the given .
 
    @public
    @param state {Object} job state 
@@ -396,7 +395,7 @@ var JobService = function(j_val) {
   };
 
   /**
-   Get queue work time in milliseconds
+   Get queue work time in milliseconds.
 
    @public
    @param handler {function} async result handler 
@@ -422,33 +421,54 @@ var JobService = function(j_val) {
   this._jdel = j_jobService;
 };
 
+JobService._jclass = utils.getJavaClass("io.vertx.blueprint.kue.service.JobService");
+JobService._jtype = {
+  accept: function (obj) {
+    return JobService._jclass.isInstance(obj._jdel);
+  },
+  wrap: function (jdel) {
+    var obj = Object.create(JobService.prototype, {});
+    JobService.apply(obj, arguments);
+    return obj;
+  },
+  unwrap: function (obj) {
+    return obj._jdel;
+  }
+};
+JobService._create = function (jdel) {
+  var obj = Object.create(JobService.prototype, {});
+  JobService.apply(obj, arguments);
+  return obj;
+}
 /**
+ Factory method for creating a {@link JobService} instance.
 
  @memberof module:vertx-kue-service-module-js/job_service
- @param vertx {Vertx} 
- @param config {Object} 
- @return {JobService}
+ @param vertx {Vertx} Vertx instance
+ @param config {Object} configuration
+ @return {JobService} the new {@link JobService} instance
  */
 JobService.create = function(vertx, config) {
   var __args = arguments;
   if (__args.length === 2 && typeof __args[0] === 'object' && __args[0]._jdel && (typeof __args[1] === 'object' && __args[1] != null)) {
-    return utils.convReturnVertxGen(JJobService["create(io.vertx.core.Vertx,io.vertx.core.json.JsonObject)"](vertx._jdel, utils.convParamJsonObject(config)), JobService);
+    return utils.convReturnVertxGen(JobService, JJobService["create(io.vertx.core.Vertx,io.vertx.core.json.JsonObject)"](vertx._jdel, utils.convParamJsonObject(config)));
   } else throw new TypeError('function invoked with invalid arguments');
 };
 
 /**
+ Factory method for creating a {@link JobService} service proxy.
+ This is useful for doing RPCs.
 
  @memberof module:vertx-kue-service-module-js/job_service
- @param vertx {Vertx} 
- @param address {string} 
- @return {JobService}
+ @param vertx {Vertx} Vertx instance
+ @param address {string} event bus address of RPC
+ @return {JobService} the new {@link JobService} service proxy
  */
 JobService.createProxy = function(vertx, address) {
   var __args = arguments;
   if (__args.length === 2 && typeof __args[0] === 'object' && __args[0]._jdel && typeof __args[1] === 'string') {
-    return utils.convReturnVertxGen(JJobService["createProxy(io.vertx.core.Vertx,java.lang.String)"](vertx._jdel, address), JobService);
+    return utils.convReturnVertxGen(JobService, JJobService["createProxy(io.vertx.core.Vertx,java.lang.String)"](vertx._jdel, address));
   } else throw new TypeError('function invoked with invalid arguments');
 };
 
-// We export the Constructor function
 module.exports = JobService;

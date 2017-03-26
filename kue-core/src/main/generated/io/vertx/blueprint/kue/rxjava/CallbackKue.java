@@ -18,38 +18,48 @@ package io.vertx.blueprint.kue.rxjava;
 
 import java.util.Map;
 import rx.Observable;
-import io.vertx.blueprint.kue.queue.Job;
+import rx.Single;
 import io.vertx.blueprint.kue.service.rxjava.JobService;
+import io.vertx.blueprint.kue.queue.JobState;
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.rxjava.core.eventbus.Message;
+import io.vertx.core.json.JsonArray;
+
+import java.util.List;
+
+import io.vertx.blueprint.kue.queue.Job;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 
 /**
- * Vert.x Blueprint - Job Queue
- * Callback-based Kue Interface
- * For Vert.x Codegen to support polyglot languages
+ * A callback-based {@link io.vertx.blueprint.kue.rxjava.Kue} interface for Vert.x Codegen to support polyglot languages.
  *
  * <p/>
  * NOTE: This class has been automatically generated from the {@link io.vertx.blueprint.kue.CallbackKue original} non RX-ified interface using Vert.x codegen.
  */
 
+@io.vertx.lang.rxjava.RxGen(io.vertx.blueprint.kue.CallbackKue.class)
 public class CallbackKue extends JobService {
 
-  final io.vertx.blueprint.kue.CallbackKue delegate;
+  public static final io.vertx.lang.rxjava.TypeArg<CallbackKue> __TYPE_ARG = new io.vertx.lang.rxjava.TypeArg<>(
+    obj -> new CallbackKue((io.vertx.blueprint.kue.CallbackKue) obj),
+    CallbackKue::getDelegate
+  );
 
+  private final io.vertx.blueprint.kue.CallbackKue delegate;
+  
   public CallbackKue(io.vertx.blueprint.kue.CallbackKue delegate) {
     super(delegate);
     this.delegate = delegate;
   }
 
-  public Object getDelegate() {
+  public io.vertx.blueprint.kue.CallbackKue getDelegate() {
     return delegate;
   }
 
   public static CallbackKue createKue(Vertx vertx, JsonObject config) {
-    CallbackKue ret = CallbackKue.newInstance(io.vertx.blueprint.kue.CallbackKue.createKue((io.vertx.core.Vertx) vertx.getDelegate(), config));
+    CallbackKue ret = CallbackKue.newInstance(io.vertx.blueprint.kue.CallbackKue.createKue(vertx.getDelegate(), config));
     return ret;
   }
 
@@ -61,7 +71,7 @@ public class CallbackKue extends JobService {
   public <R> CallbackKue on(String eventType, Handler<Message<R>> handler) { 
     delegate.on(eventType, new Handler<io.vertx.core.eventbus.Message<R>>() {
       public void handle(io.vertx.core.eventbus.Message<R> event) {
-        handler.handle(Message.newInstance(event));
+        handler.handle(Message.newInstance(event, io.vertx.lang.rxjava.TypeArg.unknown()));
       }
     });
     return this;
@@ -72,10 +82,10 @@ public class CallbackKue extends JobService {
     return this;
   }
 
-  public Observable<Job> saveJobObservable(Job job) { 
-    io.vertx.rx.java.ObservableFuture<Job> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    saveJob(job, handler.toHandler());
-    return handler;
+  public Single<Job> rxSaveJob(Job job) {
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      saveJob(job, fut);
+    }));
   }
 
   public CallbackKue jobProgress(Job job, int complete, int total, Handler<AsyncResult<Job>> handler) { 
@@ -83,10 +93,10 @@ public class CallbackKue extends JobService {
     return this;
   }
 
-  public Observable<Job> jobProgressObservable(Job job, int complete, int total) { 
-    io.vertx.rx.java.ObservableFuture<Job> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    jobProgress(job, complete, total, handler.toHandler());
-    return handler;
+  public Single<Job> rxJobProgress(Job job, int complete, int total) {
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      jobProgress(job, complete, total, fut);
+    }));
   }
 
   public CallbackKue jobDone(Job job) { 

@@ -18,6 +18,7 @@ package io.vertx.blueprint.kue.service.rxjava;
 
 import java.util.Map;
 import rx.Observable;
+import rx.Single;
 import io.vertx.rxjava.core.Vertx;
 import io.vertx.blueprint.kue.queue.JobState;
 import io.vertx.core.json.JsonArray;
@@ -28,37 +29,57 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 
 /**
- * Vert.x Blueprint - Job Queue
- * Job Service Interface
+ * Service interface for task operations.
  *
  * <p/>
  * NOTE: This class has been automatically generated from the {@link io.vertx.blueprint.kue.service.JobService original} non RX-ified interface using Vert.x codegen.
  */
 
+@io.vertx.lang.rxjava.RxGen(io.vertx.blueprint.kue.service.JobService.class)
 public class JobService {
 
-  final io.vertx.blueprint.kue.service.JobService delegate;
+  public static final io.vertx.lang.rxjava.TypeArg<JobService> __TYPE_ARG = new io.vertx.lang.rxjava.TypeArg<>(
+    obj -> new JobService((io.vertx.blueprint.kue.service.JobService) obj),
+    JobService::getDelegate
+  );
 
+  private final io.vertx.blueprint.kue.service.JobService delegate;
+  
   public JobService(io.vertx.blueprint.kue.service.JobService delegate) {
     this.delegate = delegate;
   }
 
-  public Object getDelegate() {
+  public io.vertx.blueprint.kue.service.JobService getDelegate() {
     return delegate;
   }
 
+  /**
+   * Factory method for creating a {@link io.vertx.blueprint.kue.service.rxjava.JobService} instance.
+   *
+   * @param vertx  Vertx instance
+   * @param config configuration
+   * @return the new {@link io.vertx.blueprint.kue.service.rxjava.JobService} instance
+   */
   public static JobService create(Vertx vertx, JsonObject config) {
-    JobService ret = JobService.newInstance(io.vertx.blueprint.kue.service.JobService.create((io.vertx.core.Vertx) vertx.getDelegate(), config));
-    return ret;
-  }
-
-  public static JobService createProxy(Vertx vertx, String address) {
-    JobService ret = JobService.newInstance(io.vertx.blueprint.kue.service.JobService.createProxy((io.vertx.core.Vertx) vertx.getDelegate(), address));
+    JobService ret = JobService.newInstance(io.vertx.blueprint.kue.service.JobService.create(vertx.getDelegate(), config));
     return ret;
   }
 
   /**
-   * Get job from backend by id
+   * Factory method for creating a {@link io.vertx.blueprint.kue.service.rxjava.JobService} service proxy.
+   * This is useful for doing RPCs.
+   *
+   * @param vertx   Vertx instance
+   * @param address event bus address of RPC
+   * @return the new {@link io.vertx.blueprint.kue.service.rxjava.JobService} service proxy
+   */
+  public static JobService createProxy(Vertx vertx, String address) {
+    JobService ret = JobService.newInstance(io.vertx.blueprint.kue.service.JobService.createProxy(vertx.getDelegate(), address));
+    return ret;
+  }
+
+  /**
+   * Get the certain from backend by id.
    * @param id job id
    * @param handler async result handler
    * @return 
@@ -69,18 +90,18 @@ public class JobService {
   }
 
   /**
-   * Get job from backend by id
+   * Get the certain from backend by id.
    * @param id job id
-   * @return 
+   * @return
    */
-  public Observable<Job> getJobObservable(long id) { 
-    io.vertx.rx.java.ObservableFuture<Job> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    getJob(id, handler.toHandler());
-    return handler;
+  public Single<Job> rxGetJob(long id) {
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      getJob(id, fut);
+    }));
   }
 
   /**
-   * Remove a job by id
+   * Remove a job by id.
    * @param id job id
    * @param handler async result handler
    * @return 
@@ -91,18 +112,18 @@ public class JobService {
   }
 
   /**
-   * Remove a job by id
+   * Remove a job by id.
    * @param id job id
-   * @return 
+   * @return
    */
-  public Observable<Void> removeJobObservable(long id) { 
-    io.vertx.rx.java.ObservableFuture<Void> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    removeJob(id, handler.toHandler());
-    return handler;
+  public Single<Void> rxRemoveJob(long id) {
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      removeJob(id, fut);
+    }));
   }
 
   /**
-   * Judge whether a job with certain id exists
+   * Judge whether a job with certain id exists.
    * @param id job id
    * @param handler async result handler
    * @return 
@@ -113,18 +134,18 @@ public class JobService {
   }
 
   /**
-   * Judge whether a job with certain id exists
+   * Judge whether a job with certain id exists.
    * @param id job id
-   * @return 
+   * @return
    */
-  public Observable<Boolean> existsJobObservable(long id) { 
-    io.vertx.rx.java.ObservableFuture<Boolean> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    existsJob(id, handler.toHandler());
-    return handler;
+  public Single<Boolean> rxExistsJob(long id) {
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      existsJob(id, fut);
+    }));
   }
 
   /**
-   * Get job log by id
+   * Get job log by id.
    * @param id job id
    * @param handler async result handler
    * @return 
@@ -135,18 +156,18 @@ public class JobService {
   }
 
   /**
-   * Get job log by id
+   * Get job log by id.
    * @param id job id
-   * @return 
+   * @return
    */
-  public Observable<JsonArray> getJobLogObservable(long id) { 
-    io.vertx.rx.java.ObservableFuture<JsonArray> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    getJobLog(id, handler.toHandler());
-    return handler;
+  public Single<JsonArray> rxGetJobLog(long id) {
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      getJobLog(id, fut);
+    }));
   }
 
   /**
-   * Get a list of job in certain state in range (from, to) with order
+   * Get a list of job in certain state in range (from, to) with order.
    * @param state expected job state
    * @param from from
    * @param to to
@@ -160,21 +181,21 @@ public class JobService {
   }
 
   /**
-   * Get a list of job in certain state in range (from, to) with order
+   * Get a list of job in certain state in range (from, to) with order.
    * @param state expected job state
    * @param from from
    * @param to to
    * @param order range order
-   * @return 
+   * @return
    */
-  public Observable<List<Job>> jobRangeByStateObservable(String state, long from, long to, String order) { 
-    io.vertx.rx.java.ObservableFuture<List<Job>> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    jobRangeByState(state, from, to, order, handler.toHandler());
-    return handler;
+  public Single<List<Job>> rxJobRangeByState(String state, long from, long to, String order) {
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      jobRangeByState(state, from, to, order, fut);
+    }));
   }
 
   /**
-   * Get a list of job in certain state and type in range (from, to) with order
+   * Get a list of job in certain state and type in range (from, to) with order.
    * @param type expected job type
    * @param state expected job state
    * @param from from
@@ -189,22 +210,22 @@ public class JobService {
   }
 
   /**
-   * Get a list of job in certain state and type in range (from, to) with order
+   * Get a list of job in certain state and type in range (from, to) with order.
    * @param type expected job type
    * @param state expected job state
    * @param from from
    * @param to to
    * @param order range order
-   * @return 
+   * @return
    */
-  public Observable<List<Job>> jobRangeByTypeObservable(String type, String state, long from, long to, String order) { 
-    io.vertx.rx.java.ObservableFuture<List<Job>> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    jobRangeByType(type, state, from, to, order, handler.toHandler());
-    return handler;
+  public Single<List<Job>> rxJobRangeByType(String type, String state, long from, long to, String order) {
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      jobRangeByType(type, state, from, to, order, fut);
+    }));
   }
 
   /**
-   * Get a list of job in range (from, to) with order
+   * Get a list of job in range (from, to) with order.
    * @param from from
    * @param to to
    * @param order range order
@@ -217,20 +238,20 @@ public class JobService {
   }
 
   /**
-   * Get a list of job in range (from, to) with order
+   * Get a list of job in range (from, to) with order.
    * @param from from
    * @param to to
    * @param order range order
-   * @return 
+   * @return
    */
-  public Observable<List<Job>> jobRangeObservable(long from, long to, String order) { 
-    io.vertx.rx.java.ObservableFuture<List<Job>> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    jobRange(from, to, order, handler.toHandler());
-    return handler;
+  public Single<List<Job>> rxJobRange(long from, long to, String order) {
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      jobRange(from, to, order, fut);
+    }));
   }
 
   /**
-   * Get cardinality by job type and state
+   * Get cardinality by job type and state.
    * @param type job type
    * @param state job state
    * @param handler async result handler
@@ -242,19 +263,19 @@ public class JobService {
   }
 
   /**
-   * Get cardinality by job type and state
+   * Get cardinality by job type and state.
    * @param type job type
    * @param state job state
-   * @return 
+   * @return
    */
-  public Observable<Long> cardByTypeObservable(String type, JobState state) { 
-    io.vertx.rx.java.ObservableFuture<Long> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    cardByType(type, state, handler.toHandler());
-    return handler;
+  public Single<Long> rxCardByType(String type, JobState state) {
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      cardByType(type, state, fut);
+    }));
   }
 
   /**
-   * Get cardinality by job state
+   * Get cardinality by job state.
    * @param state job state
    * @param handler async result handler
    * @return 
@@ -265,18 +286,18 @@ public class JobService {
   }
 
   /**
-   * Get cardinality by job state
+   * Get cardinality by job state.
    * @param state job state
-   * @return 
+   * @return
    */
-  public Observable<Long> cardObservable(JobState state) { 
-    io.vertx.rx.java.ObservableFuture<Long> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    card(state, handler.toHandler());
-    return handler;
+  public Single<Long> rxCard(JobState state) {
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      card(state, fut);
+    }));
   }
 
   /**
-   * Get cardinality of completed jobs
+   * Get cardinality of completed jobs.
    * @param type job type; if null, then return global metrics
    * @param handler async result handler
    * @return 
@@ -287,18 +308,18 @@ public class JobService {
   }
 
   /**
-   * Get cardinality of completed jobs
+   * Get cardinality of completed jobs.
    * @param type job type; if null, then return global metrics
-   * @return 
+   * @return
    */
-  public Observable<Long> completeCountObservable(String type) { 
-    io.vertx.rx.java.ObservableFuture<Long> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    completeCount(type, handler.toHandler());
-    return handler;
+  public Single<Long> rxCompleteCount(String type) {
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      completeCount(type, fut);
+    }));
   }
 
   /**
-   * Get cardinality of failed jobs
+   * Get cardinality of failed jobs.
    * @param type job type; if null, then return global metrics
    * @param handler 
    * @return 
@@ -309,18 +330,18 @@ public class JobService {
   }
 
   /**
-   * Get cardinality of failed jobs
+   * Get cardinality of failed jobs.
    * @param type job type; if null, then return global metrics
-   * @return 
+   * @return
    */
-  public Observable<Long> failedCountObservable(String type) { 
-    io.vertx.rx.java.ObservableFuture<Long> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    failedCount(type, handler.toHandler());
-    return handler;
+  public Single<Long> rxFailedCount(String type) {
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      failedCount(type, fut);
+    }));
   }
 
   /**
-   * Get cardinality of inactive jobs
+   * Get cardinality of inactive jobs.
    * @param type job type; if null, then return global metrics
    * @param handler 
    * @return 
@@ -331,18 +352,18 @@ public class JobService {
   }
 
   /**
-   * Get cardinality of inactive jobs
+   * Get cardinality of inactive jobs.
    * @param type job type; if null, then return global metrics
-   * @return 
+   * @return
    */
-  public Observable<Long> inactiveCountObservable(String type) { 
-    io.vertx.rx.java.ObservableFuture<Long> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    inactiveCount(type, handler.toHandler());
-    return handler;
+  public Single<Long> rxInactiveCount(String type) {
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      inactiveCount(type, fut);
+    }));
   }
 
   /**
-   * Get cardinality of active jobs
+   * Get cardinality of active jobs.
    * @param type job type; if null, then return global metrics
    * @param handler 
    * @return 
@@ -353,18 +374,18 @@ public class JobService {
   }
 
   /**
-   * Get cardinality of active jobs
+   * Get cardinality of active jobs.
    * @param type job type; if null, then return global metrics
-   * @return 
+   * @return
    */
-  public Observable<Long> activeCountObservable(String type) { 
-    io.vertx.rx.java.ObservableFuture<Long> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    activeCount(type, handler.toHandler());
-    return handler;
+  public Single<Long> rxActiveCount(String type) {
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      activeCount(type, fut);
+    }));
   }
 
   /**
-   * Get cardinality of delayed jobs
+   * Get cardinality of delayed jobs.
    * @param type job type; if null, then return global metrics
    * @param handler 
    * @return 
@@ -375,18 +396,18 @@ public class JobService {
   }
 
   /**
-   * Get cardinality of delayed jobs
+   * Get cardinality of delayed jobs.
    * @param type job type; if null, then return global metrics
-   * @return 
+   * @return
    */
-  public Observable<Long> delayedCountObservable(String type) { 
-    io.vertx.rx.java.ObservableFuture<Long> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    delayedCount(type, handler.toHandler());
-    return handler;
+  public Single<Long> rxDelayedCount(String type) {
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      delayedCount(type, fut);
+    }));
   }
 
   /**
-   * Get the job types present
+   * Get the job types present.
    * @param handler async result handler
    * @return 
    */
@@ -396,17 +417,17 @@ public class JobService {
   }
 
   /**
-   * Get the job types present
-   * @return 
+   * Get the job types present.
+   * @return
    */
-  public Observable<List<String>> getAllTypesObservable() { 
-    io.vertx.rx.java.ObservableFuture<List<String>> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    getAllTypes(handler.toHandler());
-    return handler;
+  public Single<List<String>> rxGetAllTypes() {
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      getAllTypes(fut);
+    }));
   }
 
   /**
-   * Return job ids with the given `state`
+   * Return job ids with the given .
    * @param state job state
    * @param handler async result handler
    * @return 
@@ -417,18 +438,18 @@ public class JobService {
   }
 
   /**
-   * Return job ids with the given `state`
+   * Return job ids with the given .
    * @param state job state
-   * @return 
+   * @return
    */
-  public Observable<List<Long>> getIdsByStateObservable(JobState state) { 
-    io.vertx.rx.java.ObservableFuture<List<Long>> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    getIdsByState(state, handler.toHandler());
-    return handler;
+  public Single<List<Long>> rxGetIdsByState(JobState state) {
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      getIdsByState(state, fut);
+    }));
   }
 
   /**
-   * Get queue work time in milliseconds
+   * Get queue work time in milliseconds.
    * @param handler async result handler
    * @return 
    */
@@ -438,13 +459,13 @@ public class JobService {
   }
 
   /**
-   * Get queue work time in milliseconds
-   * @return 
+   * Get queue work time in milliseconds.
+   * @return
    */
-  public Observable<Long> getWorkTimeObservable() { 
-    io.vertx.rx.java.ObservableFuture<Long> handler = io.vertx.rx.java.RxHelper.observableFuture();
-    getWorkTime(handler.toHandler());
-    return handler;
+  public Single<Long> rxGetWorkTime() {
+    return Single.create(new io.vertx.rx.java.SingleOnSubscribeAdapter<>(fut -> {
+      getWorkTime(fut);
+    }));
   }
 
 

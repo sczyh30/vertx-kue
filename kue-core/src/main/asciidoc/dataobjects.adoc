@@ -4,8 +4,8 @@
 == Job
 
 ++++
- Vert.x Blueprint - Job Queue
- Job Class
+ Vert.x Kue
+ Job domain class.
 ++++
 '''
 
