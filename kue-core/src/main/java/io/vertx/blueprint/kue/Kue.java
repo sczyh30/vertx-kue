@@ -104,7 +104,10 @@ public class Kue {
 
   private void processInternal(String type, Handler<Job> handler, boolean isWorker) {
     KueWorker worker = new KueWorker(type, handler, this);
-    vertx.deployVerticle(worker, new DeploymentOptions().setWorker(isWorker), r0 -> {
+    DeploymentOptions options = new DeploymentOptions();
+    options.setWorker(isWorker);
+    options.setConfig(vertx.getOrCreateContext().config());
+    vertx.deployVerticle(worker, options, r0 -> {
       if (r0.succeeded()) {
         this.on("job_complete", msg -> {
           long dur = new Job(((JsonObject) msg.body()).getJsonObject("job")).getDuration();
