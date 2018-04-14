@@ -160,8 +160,12 @@ public class Job {
    * @return async result of this job
    */
   public Future<Job> state(JobState newState) {
+    RedisClient client = RedisHelper.client(vertx, vertx.getOrCreateContext().config()); // use a new client to keep transaction
+    state(client, newState);
+  }
+
+  public Future<Job> state(RedisClient client, JobState newState) {
     Future<Job> future = Future.future();
-    //RedisClient client = RedisHelper.client(vertx, vertx.getOrCreateContext().config()); // use a new client to keep transaction
     JobState oldState = this.state;
     logger.debug("Job::state(from: " + oldState + ", to:" + newState.name() + ")");
     client.transaction().multi(r0 -> {
@@ -194,27 +198,12 @@ public class Job {
 
         client.transaction().exec(r -> {
           if (r.succeeded()) {
-//             client.close(c -> {
-//               if (c.failed()) {
-//                 c.cause().printStackTrace();
-//               }
-//             });
             future.complete(this);
           } else {
-//             client.close(c -> {
-//               if (c.failed()) {
-//                 c.cause().printStackTrace();
-//               }
-//             });
             future.fail(r.cause());
           }
         });
       } else {
-//         client.close(c -> {
-//           if (c.failed()) {
-//             c.cause().printStackTrace();
-//           }
-//         });
         future.fail(r0.cause());
       }
     });
@@ -429,11 +418,15 @@ public class Job {
    * Save the job to the backend.
    */
   public Future<Job> save() {
+    save(client);
+  }
+
+  public Future<Job> save(RedisClient client) {
     // check
     Objects.requireNonNull(this.type, "Job type cannot be null");
 
     if (this.id > 0)
-      return update();
+      return update(client);
 
     Future<Job> future = Future.future();
 
@@ -472,6 +465,10 @@ public class Job {
    * Update the job.
    */
   Future<Job> update() {
+    update(client);
+  }
+
+  Future<Job> update(RedisClient client) {
     Future<Job> future = Future.future();
     this.updated_at = System.currentTimeMillis();
 
