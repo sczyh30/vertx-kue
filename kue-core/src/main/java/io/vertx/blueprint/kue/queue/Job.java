@@ -161,7 +161,7 @@ public class Job {
    */
   public Future<Job> state(JobState newState) {
     Future<Job> future = Future.future();
-    //RedisClient client = RedisHelper.client(vertx, vertx.getOrCreateContext().config()); // use a new client to keep transaction
+    RedisClient client = RedisHelper.client(vertx, vertx.getOrCreateContext().config()); // use a new client to keep transaction
     JobState oldState = this.state;
     logger.debug("Job::state(from: " + oldState + ", to:" + newState.name() + ")");
     client.transaction().multi(r0 -> {
@@ -194,28 +194,28 @@ public class Job {
 
         client.transaction().exec(r -> {
           if (r.succeeded()) {
-//             client.close(c -> {
-//               if (c.failed()) {
-//                 c.cause().printStackTrace();
-//               }
-//             });
-            future.complete(this);
+             client.close(c -> {
+               if (c.failed()) {
+                 future.fail(c.cause());
+               }
+               future.complete(this);
+             });
           } else {
-//             client.close(c -> {
-//               if (c.failed()) {
-//                 c.cause().printStackTrace();
-//               }
-//             });
-            future.fail(r.cause());
+             client.close(c -> {
+               if (c.failed()) {
+                 future.fail(c.cause());
+               }
+               future.fail(r.cause());
+             });
           }
         });
       } else {
-//         client.close(c -> {
-//           if (c.failed()) {
-//             c.cause().printStackTrace();
-//           }
-//         });
-        future.fail(r0.cause());
+         client.close(c -> {
+           if (c.failed()) {
+             future.fail(c.cause());
+           }
+           future.fail(r0.cause());
+         });
       }
     });
 
