@@ -35,7 +35,7 @@ public final class JobServiceImpl implements JobService {
     this.vertx = vertx;
     this.config = config;
     this.client = RedisClient.create(vertx, RedisHelper.options(config));
-    Job.setVertx(vertx, RedisHelper.client(vertx, config)); // init static vertx instance inner job
+    Job.setVertx(vertx, RedisHelper.client(vertx, config), config); // init static vertx instance inner job
   }
 
   @Override
