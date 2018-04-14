@@ -39,7 +39,7 @@ public class Kue {
     this.config = config;
     this.jobService = JobService.createProxy(vertx, EB_JOB_SERVICE_ADDRESS);
     this.client = RedisHelper.client(vertx, config);
-    Job.setVertx(vertx, RedisHelper.client(vertx, config)); // init static vertx instance inner job
+    Job.setVertx(vertx, RedisHelper.client(vertx, config), config); // init static vertx instance inner job
   }
 
   /**
