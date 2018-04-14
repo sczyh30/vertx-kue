@@ -37,7 +37,7 @@ public class Job {
   private static JsonObject config;
   private static EventBus eventBus;
 
-  public static void setVertx(Vertx v, RedisClient redisClient, JsonObject config) {
+  public static void setVertx(Vertx v, RedisClient redisClient, JsonObject redisConfig) {
     vertx = v;
     client = redisClient;
     config = redisConfig;
