@@ -161,7 +161,7 @@ public class Job {
    */
   public Future<Job> state(JobState newState) {
     RedisClient client = RedisHelper.client(vertx, vertx.getOrCreateContext().config()); // use a new client to keep transaction
-    state(client, newState);
+    return state(client, newState);
   }
 
   public Future<Job> state(RedisClient client, JobState newState) {
@@ -418,7 +418,7 @@ public class Job {
    * Save the job to the backend.
    */
   public Future<Job> save() {
-    save(client);
+    return save(client);
   }
 
   public Future<Job> save(RedisClient client) {
@@ -465,7 +465,7 @@ public class Job {
    * Update the job.
    */
   Future<Job> update() {
-    update(client);
+    return update(client);
   }
 
   Future<Job> update(RedisClient client) {
