@@ -480,7 +480,7 @@ public class Job {
     // TODO: add search functionality (full-index engine, for Chinese language this is difficult)
 
     return future.compose(r ->
-      this.state(this.state));
+      this.state(client, this.state));
   }
 
   /**
