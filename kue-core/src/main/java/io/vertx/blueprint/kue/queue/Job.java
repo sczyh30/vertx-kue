@@ -161,7 +161,7 @@ public class Job {
    */
   public Future<Job> state(JobState newState) {
     Future<Job> future = Future.future();
-    RedisClient client = RedisHelper.client(vertx, new JsonObject()); // use a new client to keep transaction
+    RedisClient client = RedisHelper.client(vertx, vertx.getOrCreateContext().config()); // use a new client to keep transaction
     JobState oldState = this.state;
     logger.debug("Job::state(from: " + oldState + ", to:" + newState.name() + ")");
     client.transaction().multi(r0 -> {
