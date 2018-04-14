@@ -194,12 +194,27 @@ public class Job {
 
         client.transaction().exec(r -> {
           if (r.succeeded()) {
+            client.close(c -> {
+              if (c.failed()) {
+                c.cause().printStackTrace();
+              }
+            });
             future.complete(this);
           } else {
+            client.close(c -> {
+              if (c.failed()) {
+                c.cause().printStackTrace();
+              }
+            });
             future.fail(r.cause());
           }
         });
       } else {
+        client.close(c -> {
+          if (c.failed()) {
+            c.cause().printStackTrace();
+          }
+        });
         future.fail(r0.cause());
       }
     });
