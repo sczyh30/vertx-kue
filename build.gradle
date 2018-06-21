@@ -11,6 +11,9 @@ configure(allprojects) { project ->
   }
 
   dependencies {
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.9.2'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.9.2'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.9.2'
     compile("io.vertx:vertx-core:${vertxVersion}")
     compile("io.vertx:vertx-rx-java:${vertxVersion}")
     compile("io.vertx:vertx-hazelcast:${vertxVersion}")
