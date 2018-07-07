@@ -37,16 +37,16 @@ public class KueWorker extends AbstractVerticle {
   private MessageConsumer doneConsumer; // Preserve for unregister the consumer.
   private MessageConsumer doneFailConsumer;
 
-  public KueWorker(String type, Handler<Job> jobHandler, Kue kue) {
+  public KueWorker(String type, Handler<Job> jobHandler, Kue kue, RedisClient redisClient) {
     this.type = type;
     this.jobHandler = jobHandler;
     this.kue = kue;
+    this.client = redisClient;
   }
 
   @Override
   public void start() throws Exception {
     this.eventBus = vertx.eventBus();
-    this.client = RedisHelper.client(vertx, config());
 
     prepareAndStart();
   }

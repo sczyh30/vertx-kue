@@ -111,7 +111,7 @@ public class Kue {
   }
 
   private void processInternal(String type, Handler<Job> handler, boolean isWorker) {
-    KueWorker worker = new KueWorker(type, handler, this);
+    KueWorker worker = new KueWorker(type, handler, this, client);
     DeploymentOptions options = new DeploymentOptions();
     options.setWorker(isWorker);
     options.setConfig(config);
