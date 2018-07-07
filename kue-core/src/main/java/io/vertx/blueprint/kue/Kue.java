@@ -42,6 +42,14 @@ public class Kue {
     Job.setVertx(vertx, RedisHelper.client(vertx, config), config); // init static vertx instance inner job
   }
 
+  public Kue(Vertx vertx, JsonObject config, RedisClient redisClient) {
+    this.vertx = vertx;
+    this.config = config;
+    this.jobService = JobService.createProxy(vertx, EB_JOB_SERVICE_ADDRESS);
+    this.client = redisClient;
+    Job.setVertx(vertx, redisClient, config); // init static vertx instance inner job
+  }
+
   /**
    * Generate handler address with certain job on event bus.
    * <p>Format: vertx.kue.handler.job.{handlerType}.{addressId}.{jobType}</p>
