@@ -38,6 +38,13 @@ public final class JobServiceImpl implements JobService {
     Job.setVertx(vertx, RedisHelper.client(vertx, config), config); // init static vertx instance inner job
   }
 
+  public JobServiceImpl(Vertx vertx, JsonObject config, RedisClient redisClient) {
+    this.vertx = vertx;
+    this.config = config;
+    this.client = redisClient;
+    Job.setVertx(vertx, client, config); // init static vertx instance inner job
+  }
+
   @Override
   public JobService getJob(long id, Handler<AsyncResult<Job>> handler) {
     String zid = RedisHelper.createFIFO(id);
