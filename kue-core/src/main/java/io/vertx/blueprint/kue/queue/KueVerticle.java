@@ -31,9 +31,9 @@ public class KueVerticle extends AbstractVerticle {
   public void start(Future<Void> future) throws Exception {
     this.config = config();
     if (this.redisClient == null) {
-        this.jobService = JobService.create(vertx, config);
-        // create redis client
-        this.redisClient = RedisHelper.client(vertx, config);
+      // create redis client
+      this.redisClient = RedisHelper.client(vertx, config);
+      this.jobService = JobService.create(vertx, config, RedisHelper.client(vertx, config));
     } else {
         this.jobService = JobService.create(vertx, config, redisClient);
     }
