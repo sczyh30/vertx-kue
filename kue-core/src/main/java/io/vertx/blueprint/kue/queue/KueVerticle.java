@@ -25,14 +25,7 @@ public class KueVerticle extends AbstractVerticle {
 
   private JsonObject config;
   private JobService jobService;
-  private RedisClient redisClient;
-
-  KueVerticle() {
-  }
-
-  KueVerticle(RedisClient redisClient) {
-    this.redisClient = redisClient;
-  }
+  public static RedisClient redisClient;
 
   @Override
   public void start(Future<Void> future) throws Exception {
