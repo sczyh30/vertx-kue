@@ -45,8 +45,7 @@ public class KueVerticle extends AbstractVerticle {
         this.jobService = JobService.create(vertx, config, redisClient);
     }
 
-    //todo: impl ping
-    redisClient.get("ping", pr -> { // test connection
+    redisClient.ping(pr -> { // test connection
       if (pr.succeeded()) {
         logger.info("Kue Verticle is running...");
 
