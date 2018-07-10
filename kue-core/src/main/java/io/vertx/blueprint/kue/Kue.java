@@ -39,7 +39,15 @@ public class Kue {
     this.config = config;
     this.jobService = JobService.createProxy(vertx, EB_JOB_SERVICE_ADDRESS);
     this.client = RedisHelper.client(vertx, config);
-    Job.setVertx(vertx, RedisHelper.client(vertx, config)); // init static vertx instance inner job
+    Job.setVertx(vertx, RedisHelper.client(vertx, config), config); // init static vertx instance inner job
+  }
+
+  public Kue(Vertx vertx, JsonObject config, RedisClient redisClient) {
+    this.vertx = vertx;
+    this.config = config;
+    this.jobService = JobService.createProxy(vertx, EB_JOB_SERVICE_ADDRESS);
+    this.client = redisClient;
+    Job.setVertx(vertx, redisClient, config); // init static vertx instance inner job
   }
 
   /**
@@ -103,8 +111,11 @@ public class Kue {
   }
 
   private void processInternal(String type, Handler<Job> handler, boolean isWorker) {
-    KueWorker worker = new KueWorker(type, handler, this);
-    vertx.deployVerticle(worker, new DeploymentOptions().setWorker(isWorker), r0 -> {
+    KueWorker worker = new KueWorker(type, handler, this, client);
+    DeploymentOptions options = new DeploymentOptions();
+    options.setWorker(isWorker);
+    options.setConfig(config);
+    vertx.deployVerticle(worker, options, r0 -> {
       if (r0.succeeded()) {
         this.on("job_complete", msg -> {
           long dur = new Job(((JsonObject) msg.body()).getJsonObject("job")).getDuration();

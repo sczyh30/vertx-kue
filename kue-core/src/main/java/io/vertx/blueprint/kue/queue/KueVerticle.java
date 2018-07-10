@@ -25,13 +25,26 @@ public class KueVerticle extends AbstractVerticle {
 
   private JsonObject config;
   private JobService jobService;
+  private RedisClient redisClient;
+
+  public KueVerticle() {
+  }
+
+  public KueVerticle(RedisClient redisClient) {
+      this.redisClient = redisClient;
+  }
 
   @Override
   public void start(Future<Void> future) throws Exception {
     this.config = config();
-    this.jobService = JobService.create(vertx, config);
-    // create redis client
-    RedisClient redisClient = RedisHelper.client(vertx, config);
+    if (this.redisClient == null) {
+      // create redis client
+      this.redisClient = RedisHelper.client(vertx, config);
+      this.jobService = JobService.create(vertx, config, RedisHelper.client(vertx, config));
+    } else {
+        this.jobService = JobService.create(vertx, config, redisClient);
+    }
+
     redisClient.ping(pr -> { // test connection
       if (pr.succeeded()) {
         logger.info("Kue Verticle is running...");

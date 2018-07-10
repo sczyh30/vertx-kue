@@ -53,17 +53,17 @@ public class JobService {
     return delegate;
   }
 
-  /**
-   * Factory method for creating a {@link io.vertx.blueprint.kue.service.rxjava.JobService} instance.
-   *
-   * @param vertx  Vertx instance
-   * @param config configuration
-   * @return the new {@link io.vertx.blueprint.kue.service.rxjava.JobService} instance
-   */
-  public static JobService create(Vertx vertx, JsonObject config) {
-    JobService ret = JobService.newInstance(io.vertx.blueprint.kue.service.JobService.create(vertx.getDelegate(), config));
-    return ret;
-  }
+//  /**
+//   * Factory method for creating a {@link io.vertx.blueprint.kue.service.rxjava.JobService} instance.
+//   *
+//   * @param vertx  Vertx instance
+//   * @param config configuration
+//   * @return the new {@link io.vertx.blueprint.kue.service.rxjava.JobService} instance
+//   */
+//  public static JobService create(Vertx vertx, JsonObject config) {
+//    JobService ret = JobService.newInstance(io.vertx.blueprint.kue.service.JobService.create(vertx.getDelegate(), config));
+//    return ret;
+//  }
 
   /**
    * Factory method for creating a {@link io.vertx.blueprint.kue.service.rxjava.JobService} service proxy.

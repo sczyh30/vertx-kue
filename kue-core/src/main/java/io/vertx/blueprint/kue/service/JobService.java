@@ -11,6 +11,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.redis.RedisClient;
 import io.vertx.serviceproxy.ProxyHelper;
 
 import java.util.List;
@@ -23,16 +24,20 @@ import java.util.List;
 @ProxyGen
 @VertxGen
 public interface JobService {
+//
+//  /**
+//   * Factory method for creating a {@link JobService} instance.
+//   *
+//   * @param vertx  Vertx instance
+//   * @param config configuration
+//   * @return the new {@link JobService} instance
+//   */
+//  static JobService create(Vertx vertx, JsonObject config) {
+//    return new JobServiceImpl(vertx, config);
+//  }
 
-  /**
-   * Factory method for creating a {@link JobService} instance.
-   *
-   * @param vertx  Vertx instance
-   * @param config configuration
-   * @return the new {@link JobService} instance
-   */
-  static JobService create(Vertx vertx, JsonObject config) {
-    return new JobServiceImpl(vertx, config);
+  static JobService create(Vertx vertx, JsonObject config, RedisClient redisClient) {
+    return new JobServiceImpl(vertx, config, redisClient);
   }
 
   /**

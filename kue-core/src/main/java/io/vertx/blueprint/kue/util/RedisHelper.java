@@ -38,7 +38,8 @@ public final class RedisHelper {
   public static RedisOptions options(JsonObject config) {
     return new RedisOptions()
       .setHost(config.getString("redis.host", "127.0.0.1"))
-      .setPort(config.getInteger("redis.port", 6379));
+      .setPort(config.getInteger("redis.port", 6379))
+      .setAuth(config.getString("redis.auth", null));
   }
 
   /**
